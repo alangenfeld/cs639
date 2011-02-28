@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=chunk
+TARG=chunk.6
 GOFILES=\
 	chunk.go\
 

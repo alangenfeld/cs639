@@ -7,7 +7,7 @@ import (
 const CHUNK_SIZE = 1024*1024*32 // 32 MB
 
 type Chunk struct {
-	data [CHUNK_SIZE]byte
+	Data [CHUNK_SIZE]byte
 }
 
 type ReadArgs struct {

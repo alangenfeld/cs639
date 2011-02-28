@@ -1,8 +1,8 @@
 package main
 
 import (
-	"http"
 	"../include/chunk"
+	"http"
 	"rpc"
 	"os"
 	"log"
@@ -10,14 +10,14 @@ import (
 	"fmt"
 )
 
-func (t *BFS) Read(args *Args, block *Block) os.Error {
+func (t *SFS) Read(args *ReadArgs, chunk *Chunk) os.Error {
 
 	file, err := os.Open(args.ChunkID, os.O_RDONLY, 0666)
 	if err != nil {
 		log.Fatal("os.Open error: ", err)
 	}
 
-	_, err = file.Read(block.Data[:])
+	_, err = file.Read(chunk.Data[:])
 	if err != nil {
 		log.Fatal("file.Read error: ", err)
 	}
@@ -28,9 +28,8 @@ func (t *BFS) Read(args *Args, block *Block) os.Error {
 }
 
 func main() {
-
-	bfs := new(BFS)
-	rpc.Register(bfs)
+	sfs := new(SFS)
+	rpc.Register(sfs)
 	rpc.HandleHTTP()
 
 	l, e := net.Listen("tcp", ":1234")
