@@ -2,31 +2,13 @@ package main
 
 import (
 	"http"
+	"../include/chunk"
 	"rpc"
 	"os"
 	"log"
 	"net"
 	"fmt"
 )
-
-type Args struct {
-	ChunkID string
-	BlockOffset int
-}
-
-type Block struct {
-	Data [64 * 1024]byte
-}
-
-type Chunk struct {
-	Blocks [10]Block
-	Checksums [10]uint32
-}
-
-type BFS int
-
-const BLOCK_SIZE int = 1024 * 64
-const BLOCKS_PER_CHUNK int = 1024
 
 func (t *BFS) Read(args *Args, block *Block) os.Error {
 
@@ -35,7 +17,6 @@ func (t *BFS) Read(args *Args, block *Block) os.Error {
 		log.Fatal("os.Open error: ", err)
 	}
 
-//	_, err = file.ReadAt(block.Data[:], (int64)(args.BlockOffset*BLOCK_SIZE))
 	_, err = file.Read(block.Data[:])
 	if err != nil {
 		log.Fatal("file.Read error: ", err)
