@@ -1,7 +1,7 @@
 package sfs
 
 import (
-	"os"
+//	"os"
 )
 
 const CHUNK_SIZE = 1024*1024*32 // 32 MB
@@ -18,4 +18,4 @@ type ReadArgs struct {
 
 type Handle int
 
-func (t *Handle) Read(args *ReadArgs, chunk *Chunk) os.Error
+//func (t *Handle) Read(args *ReadArgs, chunk *Chunk) os.Error
