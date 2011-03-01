@@ -19,6 +19,10 @@ import (
 */
 //NEED TYPE FOR CHUNK TO HAVE SPACE FOR A FULL CHUNK
 
+/*create*/
+func Create(String filename) (int){
+}
+
 /* open */
 func Open(String filename) (int){
 	//open the file by the name filename
