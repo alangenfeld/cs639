@@ -1,7 +1,6 @@
-include $(GOROOT)/src/Make.inc
+chunkServer: chunkServer.go chunk
+	6g chunkServer.go
+	6l chunkServer.6
 
-TARG=chunkServ
-GOFILES=\
-	chunkServer.go\
-
-include $(GOROOT)/src/Make.cmd
+chunk:
+	6g chunk.go
