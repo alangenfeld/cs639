@@ -1,18 +1,43 @@
-package main
+package master
 
-type inode struct (
+import(
+	"net"
+	"./trie"
+	"fmt"
+	"os"
+)
+
+type inode struct {
 	name string
 	permissions uint64
 	size uint64
 	nchunks uint64
-)
+}
 
-import (
-	"fmt"
-)
+type chunk struct {
+	chunkId		uint64
+	pFileChunk	*chunk
+	nFileChunk	*chunk
+	pServChunk	*chunk
+	nServChunk	*chunk
+	server		*server
+}
 
-func main(){
+type server struct {
+	addr net.IPAddr
+	sChunkHead *chunk
+}
+
+func AddFile(name string) err os.Error {
+	i := new(inode)
 	
-	fmt.println("the master is working\n")
+	t.AddValue(name, inode)
+}
+
+func GetFile(name string) (i *inode, status bool) {
 	
+}
+
+func init() {
+	t := trie.NewTrie()
 }

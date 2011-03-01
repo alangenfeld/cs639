@@ -191,7 +191,7 @@ func (p *Trie) buildMembers(prefix string) *vector.StringVector {
 	// for each child, go grab all suffixes
 	for rune, child := range p.children {
 		buf := make([]byte, 4)
-		numChars := utf8.EncodeRune(rune, buf)
+		numChars := utf8.EncodeRune(buf, rune)
 		strList.AppendVector(child.buildMembers(prefix + string(buf[0:numChars])))
 	}
 
