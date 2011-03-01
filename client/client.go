@@ -23,10 +23,15 @@ import (
 func Create(String filename) (int){
 }
 
+/* requestForAdditionalChunk */
+//func RequestAdditionalChunk(String filename) (chunkIDNUMBER, chunkServersThatOwnFile){
+//}
+
 /* open */
-func Open(String filename) (int){
+func Open(string filename, bool write) (int){
 	//open the file by the name filename
 	//return an int giving the fd#.  if -1, it was a fail!
+	//read == false  write == true
 }
 
 /* close */
