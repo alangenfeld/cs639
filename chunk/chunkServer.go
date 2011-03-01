@@ -1,18 +1,20 @@
 package main
 
 import (
-	"../include/chunk"
+	"../include/sfs" 
 	"http"
 	"rpc"
 	"os"
 	"log"
 	"net"
 	"fmt"
+	"strconv"
 )
 
-func (t *SFS) Read(args *ReadArgs, chunk *Chunk) os.Error {
+func (t *sfs.Handle) Read(args *sfs.ReadArgs, chunk *sfs.Chunk) os.Error {
 
-	file, err := os.Open(args.ChunkID, os.O_RDONLY, 0666)
+	fileName := strconv.Uitob64(args.ChunkID, 10)
+	file, err := os.Open(fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		log.Fatal("os.Open error: ", err)
 	}
@@ -28,7 +30,7 @@ func (t *SFS) Read(args *ReadArgs, chunk *Chunk) os.Error {
 }
 
 func main() {
-	sfs := new(SFS)
+	sfs := new(sfs.Handle)
 	rpc.Register(sfs)
 	rpc.HandleHTTP()
 
