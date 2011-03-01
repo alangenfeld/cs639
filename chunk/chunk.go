@@ -1,3 +1,4 @@
+// Filesystem implementation of chunk server (lazzzzy)
 package chunk
 
 import (

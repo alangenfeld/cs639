@@ -26,3 +26,4 @@ func (t *Server) Read(args *sfs.ReadArgs, chunk *sfs.Chunk) os.Error {
 
 	return nil
 }
+
