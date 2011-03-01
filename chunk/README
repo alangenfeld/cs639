@@ -1,1 +1,11 @@
-stealthy...
+To make a call to the chunk server, do something like this:
+
+readArgs sfs.ReadArgs
+chunk sfs.Chunk
+client.Call("Chunk.Read", readArgs, &chunk)
+
+
+
+FOR CHUNK DEVS:
+
+use import "./chunkXXX" to change what rpc calls the server is serving
