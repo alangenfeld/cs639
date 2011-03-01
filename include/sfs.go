@@ -1,4 +1,4 @@
-package chunk
+package sfs
 
 import (
 	"os"
@@ -16,6 +16,6 @@ type ReadArgs struct {
 	length uint // bytes
 }
 
-type SFS int
+type Handle int
 
-func (t *SFS) Read(args *ReadArgs, chunk *Chunk) os.Error
+func (t *Handle) Read(args *ReadArgs, chunk *Chunk) os.Error
