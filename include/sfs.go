@@ -34,27 +34,15 @@ type Status struct {
     ChunkIDs list.List
 }
 
-type CreateArgs struct{
-	Name string
-}
-
-type CreateReturn struct{
-	Confirmation int  //0 on success 1 on failure?
-	ServerLocation net.IP 
-	Chunk int
-/// anything else?
-}
-
 type OpenArgs struct{
 	Name string
-	Write bool
 }
 
 type OpenReturn struct{
-	Confirmation int
-	Size int
-	ServerLocations [5]net.IP // size ??? 
-	Chunks [5]int //size???	
+	New bool
+	Size uint64
+	ServerLocation net.IPAddr // size ??? 
+	Chunk uint64 //size???	
 }
 
 
