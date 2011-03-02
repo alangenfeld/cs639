@@ -3,6 +3,7 @@ package sfs
 import (
 //	"os"
 	"container/list"
+	"net"
 )
 
 const CHUNK_SIZE = 1024*1024*32 // 32 MB
