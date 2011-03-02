@@ -12,8 +12,8 @@ type Chunk struct {
 
 type ReadArgs struct {
 	ChunkID uint64
-	offset uint // bytes
-	length uint // bytes
+	Offset uint // bytes
+	Length uint // bytes
 }
 
 type Handle int
