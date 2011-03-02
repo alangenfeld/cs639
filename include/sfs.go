@@ -19,19 +19,45 @@ type ReadArgs struct {
 
 type WriteArgs struct {
 	ChunkID uint64
-	offset uint // bytes
-	length uint // bytes
+	Offset uint // bytes
+	Length uint // bytes
 }
 
+
 type HeartbeatArgs struct {
-        error uint //reserved, but can't think of anything to put here yet
+    Error uint //reserved, but can't think of anything to put here yet
 }
 
 type Status struct {
-        ChunkCount uint
-        ChunkIDs list.List
+    ChunkCount uint
+    ChunkIDs list.List
 }
+
+type CreateArgs struct{
+	Name string
+}
+
+type CreateReturn struct{
+	Confirmation int  //0 on success 1 on failure?
+	ServerLocation net.IP 
+	Chunk int
+/// anything else?
+}
+
+type OpenArgs struct{
+	Name string
+	Write bool
+}
+
+type OpenReturn struct{
+	Confirmation int
+	Size int
+	ServerLocations [5]net.IP // size ??? 
+	Chunks [5]int //size???	
+}
+
 
 type Handle int
 
 //func (t *Handle) Read(args *ReadArgs, chunk *Chunk) os.Error
+
