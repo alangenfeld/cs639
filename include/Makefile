@@ -1,2 +1,2 @@
 default:
-	6g sfs.go
+	8g sfs.go

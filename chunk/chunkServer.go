@@ -15,6 +15,7 @@ import (
 
 func main() {
 	chunkServ := new(chunk.Server)
+	chunk.Init()
 	rpc.Register(chunkServ)
 	rpc.HandleHTTP()
 

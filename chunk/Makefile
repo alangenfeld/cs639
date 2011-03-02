@@ -2,23 +2,25 @@ LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
 gc=6g
 gl=6l
+su=6
 else
 gc=8g
 gl=8l
+su=8
 endif
 
 chunkServer: chunkServer.go chunk
 	$(gc) chunkServer.go
-	$(gl) chunkServer.6
+	$(gl) -o chunkServer.out chunkServer.$(su)
 
 chunk:
 	$(gc) chunk.go
 
 fs:
-	$(gc) -o chunk.6 chunk_fs.go
+	$(gc) -o chunk.$(su) chunk_fs.go
 
 mem:
-	$(gc) -o chunk.6 chunk_mem.go
+	$(gc) -o chunk.$(su) chunk_mem.go
 
 clean:
-	rm *.6
+	rm *.$(su)
