@@ -24,8 +24,9 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	}
 	fmt.Println("Reading from chunk ", args.ChunkID)
 
-	ret.Data.Data[0] = data.Data[0]
+	ret.Data.Data = data.Data
 
+	ret.Status = 0
 	return nil	
 }
 
@@ -37,7 +38,8 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	}
 
 	fmt.Println("Writing to chunk ", args.ChunkID)
-	data.Data[0] = args.Data.Data[0]
+
+	data.Data = args.Data.Data
 	chunkTable[args.ChunkID] = data
 
 	return nil	

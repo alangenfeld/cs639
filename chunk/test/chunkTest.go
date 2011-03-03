@@ -13,7 +13,7 @@ import (
 func main() {
 
 	serverAddress := flag.Arg(0)
-	client, err := rpc.DialHTTP("tcp", serverAddress + ":1234")
+	client, err := rpc.DialHTTP("tcp", serverAddress + ":1337")
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
@@ -33,7 +33,7 @@ func main() {
 	
 	rdArgs.ChunkID = 12
 	
-	err = client.Call("Server.Read", &args, &ret)
+	err = client.Call("Server.Read", &rdArgs, &rdRet)
 	if err != nil {
 		log.Fatal("chunk server error: ", err)
 	}
