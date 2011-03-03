@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var currentStatus* sfs.Status
+var CurrentStatus* sfs.Status
 var currentFD int
 
 type Server int
@@ -51,12 +51,13 @@ func (t *Server) Write(args *sfs.WriteArgs, chunk *sfs.Chunk) os.Error {
 }
 
 func (t *Server) Heartbeat(args *sfs.HeartbeatArgs, status *sfs.Status) os.Error {
-	status = currentStatus
+	status = CurrentStatus
         return nil
 }
 
 func Init() {
-        currentStatus.ChunkCount = 0
+        CurrentStatus := new(sfs.Status)
+	CurrentStatus.ChunkCount = 0
 	currentFD = 100
         return
 }
