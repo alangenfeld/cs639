@@ -3,6 +3,7 @@ package chunk
 import (
 	"../include/sfs" 
 	"os"
+	"fmt"
 )
 
 type Server int
@@ -19,19 +20,25 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	data,present := chunkTable[args.ChunkID]
 	if !present{
 		ret.Status = -1
+		return nil
 	}
-	ret.Data = data
+	fmt.Println("Reading from chunk ", args.ChunkID)
+
+	ret.Data.Data[0] = data.Data[0]
+
 	return nil	
 }
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 
-	_,present := chunkTable[args.ChunkID]
+	data,present := chunkTable[args.ChunkID]
 	if !present{
 		//ret.Status = -1
 	}
 
-	chunkTable[args.ChunkID] = args.Data
+	fmt.Println("Writing to chunk ", args.ChunkID)
+	data.Data[0] = args.Data.Data[0]
+	chunkTable[args.ChunkID] = data
 
 	return nil	
 }

@@ -6,7 +6,8 @@ import (
 	"net"
 )
 
-const CHUNK_SIZE = 1024*1024*32 // 32 MB
+//const CHUNK_SIZE = 1024*1024*32 // 32 MB
+const CHUNK_SIZE = 32 // 32 B
 
 type Chunk struct {
 	Data [CHUNK_SIZE]byte
