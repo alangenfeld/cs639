@@ -29,6 +29,9 @@ type WriteArgs struct {
 	Length uint // bytes
 }
 
+type WriteReturn struct{
+	Status int
+}
 
 type HeartbeatArgs struct {
     Error uint //reserved, but can't think of anything to put here yet
