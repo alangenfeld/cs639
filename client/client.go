@@ -4,7 +4,6 @@ package client
 import (
 	"rpc"
 	"os"
-	"http"
 //	"log"
 //	"net"
 	"fmt"
@@ -78,7 +77,7 @@ func Close(fd int) (int){
 func Read (fd int, chunk int) (sfs.Chunk){
 	//goes to chunk and gets a chunk of memory to read...
 ///*
-	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
 		os.Exit(1);
@@ -113,7 +112,7 @@ func Write (fd int , chunk sfs.Chunk  ) (int){
 	//the return indicates whether it was successful
 
 ///*
-	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
 		os.Exit(1);
@@ -129,10 +128,10 @@ func Write (fd int , chunk sfs.Chunk  ) (int){
 		fmt.Printf("error in reply from rpc\n");
 	}
 
-	fmt.Printf("\nChunkID: %d\n", fileInfo.ChunkID);
-	fmt.Printf("Offset: %d\n", fileInfo.Offset);
-	fmt.Printf("Length: %d\n", fileInfo.Length);
-	fmt.Printf(": %d\n", fileInfo.Length);
+//	fmt.Printf("\nChunkID: %d\n", fileInfo.ChunkID);
+//	fmt.Printf("Offset: %d\n", fileInfo.Offset);
+//	fmt.Printf("Length: %d\n", fileInfo.Length);
+//	fmt.Printf(": %d\n", fileInfo.Length);
 
 //// store info for file from  fileInfo into file type
 //// return file descriptor arbitrary for now
