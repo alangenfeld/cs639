@@ -45,7 +45,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 }
 
 func (m *Master) ReadChunkPing(args *sfs.PingArgs, info *sfs.PingReturn) os.Error {
-	AddServer(args.ChunkServer.String())
+	AddServer(fmt.Sprintf("%s:%d", args.ChunkServer.IP.String(), args.ChunkServer.Port))
 
 	return nil
 }
