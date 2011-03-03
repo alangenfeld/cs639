@@ -6,13 +6,14 @@ import(
 	"log"
 	"os"
 	"container/vector"
+	"container/heap"
 	"../include/sfs"
 )
 
 var t *trie.Trie
 var nextChunk uint64 = 0
 var serverIndex uint64 = 0
-var servers *vector.Vector
+var servers *heap.Heap
 
 type inode struct {
 	name string
@@ -24,6 +25,7 @@ type inode struct {
 
 type server struct {
 	addr net.TCPAddr
+	capacity uint64
 	chunks *vector.Vector
 }
 
@@ -46,7 +48,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 }
 
 func (m *Master) ReadChunkPing(args *sfs.PingArgs, info *sfs.PingReturn) os.Error {
-	AddServer(args.ChunkServer)
+	AddServer(args.ChunkServer, args.Capacity)
 
 	return nil
 }
@@ -72,8 +74,13 @@ func AddFile(name string) (i *inode, err os.Error) {
 	log.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, servers.Len())
 	
 	i.size = 1
-	i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
+	//i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
 	//i.addr = servers[0]
+	dest := heap.Pop(servers)
+	
+	dest.chunks.Push()
+	
+	i.addr = dest.addr
 	i.chunk = nextChunk
 	nextChunk += 1
 	
@@ -93,15 +100,28 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	return inter.(*inode), exists
 }
 
-func AddServer(server net.TCPAddr) os.Error {
-	str := log.Sprintf("%s:%d", server.IP.String(), server.Port)
+func AddChunk(id uint64, serv *server) os.Error {
+	
+	
+	return nil
+}
+
+func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
+	str := log.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
 	log.Printf("AddServer: adding %s\n", str)
-	servers.Push(&server)
+	
+	var s server
+	
+	s.addr = servAddr
+	s.capacity = capacity
+	
+	heap.Push(servers, s)
 		
 	return nil
 }
 
 func init() {
 	t = trie.NewTrie()
-	servers = new(vector.Vector)
+	servers = new(server)
+	heap.Init(servers)
 }

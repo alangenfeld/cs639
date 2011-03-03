@@ -26,6 +26,7 @@ type ReadReturn struct {
 
 type PingArgs struct {
 	ChunkServer net.TCPAddr
+	Capacity uint64
 }
 type PingReturn struct {
 
