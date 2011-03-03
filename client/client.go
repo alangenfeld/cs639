@@ -4,10 +4,9 @@ package client
 import (
 	"rpc"
 	"os"
-//	"log"
-//	"net"
 	"fmt"
 	"../include/sfs"
+	"net"
 )
 
 //NEED TO MAKE A TYPE FOR FILE
@@ -19,27 +18,22 @@ import (
 	int size
 
 */
-//NEED TYPE FOR CHUNK TO HAVE SPACE FOR A FULL CHUNK
-//defined in include/sfs???
+type file struct {
+	chunk int
+	serverAddress net.TCPAddr
+}
 
-/*create*/
-//func Create(string filename) (int){
-
-
-//	return 1;
-//}
 
 /* requestForAdditionalChunk */
 //func RequestAdditionalChunk(String filename) (chunkIDNUMBER, chunkServersThatOwnFile){
 //}
 
 /* open */
-func Open(filename string , write bool) (int){
+func Open(filename string , write bool ) (int, net.TCPAddr){
 	//open the file by the name filename
 	//return an int giving the fd#.  if -1, it was a fail!
 	//read == false  write == true
 
-	//fmt.Printf("Attempting to Connect\n");
 	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
@@ -61,23 +55,19 @@ func Open(filename string , write bool) (int){
 	fmt.Printf("File Size = %d\n", fileInfo.Size)
 	fmt.Printf("File Chunk = %d\n", fileInfo.Chunk)
 	fmt.Printf("ServerLocation Port = %s\n", fileInfo.ServerLocation.String())
+//	asdf.serverAddress = fileInfo.ServerLocation;
 //// store info for file from  fileInfo into file type
 //// return file descriptor arbitrary for now
 	fd := 111; // 
-	return fd;
-}
-
-/* close */
-func Close(fd int) (int){
-	//will have to tell this so that the master can be informed of the new file sizes...
-	return 1;
+	return fd, fileInfo.ServerLocation;
 }
 
 /* read */
-func Read (fd int, chunk int) (sfs.Chunk){
+func Read (fd int, chunk int,  serveLoc net.TCPAddr) (sfs.Chunk){
 	//goes to chunk and gets a chunk of memory to read...
 ///*
-	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+
+	client,err :=rpc.DialHTTP("tcp", serveLoc.String()); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
 		os.Exit(1);
@@ -94,24 +84,16 @@ func Read (fd int, chunk int) (sfs.Chunk){
 		fmt.Printf("error in reply from rpc\n");
 	}
 	fmt.Printf("\nStatus = %d\n",fileInfo.Status);
-
 	fmt.Printf("chunk = %d\n",fileInfo.Status);
 
 
-//// store info for file from  fileInfo into file type
-//// return file descriptor arbitrary for now
-//*/
-
-
-	return fileInfo.Data;
+	return  fileInfo.Data;
 }
 
 /* write */
 func Write (fd int , chunk sfs.Chunk  ) (int){
 	//we will need to write data to different blocks
 	//the return indicates whether it was successful
-
-///*
 	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
@@ -119,7 +101,6 @@ func Write (fd int , chunk sfs.Chunk  ) (int){
 	}
 	fileInfo := new (sfs.WriteReturn);
 	fileArgs := new (sfs.WriteArgs);
-//	fileArgs.Name = filename;
 //	fileArgs.Name = filename;
 	chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
 	replyCall:= <-chunkCall.Done
@@ -133,11 +114,15 @@ func Write (fd int , chunk sfs.Chunk  ) (int){
 //	fmt.Printf("Length: %d\n", fileInfo.Length);
 //	fmt.Printf(": %d\n", fileInfo.Length);
 
-//// store info for file from  fileInfo into file type
-//// return file descriptor arbitrary for now
-
 //*/
 	return 1;	
+}
+
+
+/* close */
+func Close(fd int) (int){
+	//will have to tell this so that the master can be informed of the new file sizes...
+	return 1;
 }
 
 
@@ -149,4 +134,10 @@ func Write (fd int , chunk sfs.Chunk  ) (int){
 
 /* remove - LATER */
 
+/*create*/
+//func Create(string filename) (int){
+
+
+//	return 1;
+//}
 

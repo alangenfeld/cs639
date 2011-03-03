@@ -38,7 +38,17 @@ func main(){
 
 	case "c":
 		fmt.Printf("calling hello\n");	
-		client.Open("hello", true);
+		_, serveLoc := client.Open("hello", true);
+		client.Read(0,0, serveLoc);
+		//fmt.Printf("done\n");	
+	case "r":
+		fmt.Printf("calling read\n");	
+/*
+		serveLoc:= new (net.TCPAddr);
+		serveLoc.IP = "127.0.0.1" 
+		serveLoc.Port = "1337" 
+		client.Read(0,0, serveLoc);
+*/
 		fmt.Printf("done\n");	
 
 	default:
