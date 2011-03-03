@@ -25,7 +25,7 @@ type ReadReturn struct {
 }
 
 type PingArgs struct {
-	ChunkServer net.Addr
+	ChunkServer net.TCPAddr
 }
 type PingReturn struct {
 
