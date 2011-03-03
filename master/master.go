@@ -3,7 +3,7 @@ package master
 import(
 	"net"
 	"./trie"
-	"fmt"
+	"log"
 	"os"
 	"container/vector"
 	"../include/sfs"
@@ -59,7 +59,7 @@ func OpenFile(name string) (i *inode, newFile bool, err os.Error){
 	newFile = !newFile
 	
 	if newFile {
-		fmt.Printf("OpenFile: file %s does not exist\n", name)
+		log.Printf("OpenFile: file %s does not exist\n", name)
 		i, err = AddFile(name)
 	}
 	
@@ -69,7 +69,7 @@ func OpenFile(name string) (i *inode, newFile bool, err os.Error){
 func AddFile(name string) (i *inode, err os.Error) {
 	i = new(inode)
 	
-	fmt.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, servers.Len())
+	log.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, servers.Len())
 	
 	i.size = 1
 	i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
@@ -77,7 +77,7 @@ func AddFile(name string) (i *inode, err os.Error) {
 	i.chunk = nextChunk
 	nextChunk += 1
 	
-	t.AddValue(name, i)
+	t.AddValue(name, i) // trie insert
 	
 	return i, nil
 }
@@ -86,7 +86,7 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	inter, exists := t.GetValue(name)
 	
 	if !exists{
-		fmt.Printf("QueryFile: file %s does not exist\n", name)
+		log.Printf("QueryFile: file %s does not exist\n", name)
 		return nil, exists
 	}
 	
@@ -94,8 +94,8 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 }
 
 func AddServer(server net.TCPAddr) os.Error {
-	str := fmt.Sprintf("%s:%d", server.IP.String(), server.Port)
-	fmt.Printf("AddServer: adding %s\n", str)
+	str := log.Sprintf("%s:%d", server.IP.String(), server.Port)
+	log.Printf("AddServer: adding %s\n", str)
 	servers.Push(&server)
 		
 	return nil
