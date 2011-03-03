@@ -19,7 +19,7 @@ func main() {
 	rpc.Register(chunkServ)
 	rpc.HandleHTTP()
 
-	l, e := net.Listen("tcp", ":1234")
+	l, e := net.Listen("tcp", ":1337")
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
