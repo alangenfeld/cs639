@@ -18,6 +18,11 @@ type ReadArgs struct {
 	Length uint // bytes
 }
 
+type ReadReturn struct {
+	Data Chunk
+	Status int
+}
+
 type WriteArgs struct {
 	ChunkID uint64
 	Offset uint // bytes
