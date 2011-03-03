@@ -5,14 +5,14 @@ import(
 	"./trie"
 	"fmt"
 	"os"
-//	"container/vector"
+	"container/vector"
 	"../include/sfs"
 )
 
 var t *trie.Trie
 var nextChunk uint64 = 0
 var serverIndex uint64 = 0
-var servers = make(map[uint64]net.TCPAddr)
+var servers *vector.Vector
 
 type inode struct {
 	name string
@@ -45,7 +45,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 }
 
 func (m *Master) ReadChunkPing(args *sfs.PingArgs, info *sfs.PingReturn) os.Error {
-	AddServer(fmt.Sprintf("%s:%d", args.ChunkServer.IP.String(), args.ChunkServer.Port))
+	AddServer(args.ChunkServer)
 
 	return nil
 }
@@ -68,10 +68,10 @@ func OpenFile(name string) (i *inode, newFile bool, err os.Error){
 func AddFile(name string) (i *inode, err os.Error) {
 	i = new(inode)
 	
-	fmt.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, uint64(len(servers)))
+	fmt.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, servers.Len())
 	
 	i.size = 1
-	i.addr = servers[nextChunk % serverIndex]
+	i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
 	//i.addr = servers[0]
 	i.chunk = nextChunk
 	nextChunk += 1
@@ -92,19 +92,15 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	return inter.(*inode), exists
 }
 
-func AddServer(server string) os.Error {
-	fmt.Printf("AddServer: adding %s\n", server)
-	addr, err := net.ResolveTCPAddr(server)
-	
-	if err != nil {
-		fmt.Printf("AddServer: error adding %s\n", server)
-		servers[serverIndex] = *addr
-		serverIndex += 1
-	}
-	
-	return err
+func AddServer(server net.TCPAddr) os.Error {
+	str := fmt.Sprintf("%s:%d", server.IP.String(), server.Port)
+	fmt.Printf("AddServer: adding %s\n", str)
+	servers.Push(&server)
+		
+	return nil
 }
 
 func init() {
 	t = trie.NewTrie()
+	servers = new(vector.Vector)
 }
