@@ -9,13 +9,17 @@ import (
 	"log"
 	"net"
 	"fmt"
+	"flag"
 //	"strconv"
 )
 
 
 func main() {
+
+	serverAddress := flag.Arg(0)
+
 	chunkServ := new(chunk.Server)
-	chunk.Init()
+	chunk.Init(serverAddress)
 	rpc.Register(chunkServ)
 	rpc.HandleHTTP()
 

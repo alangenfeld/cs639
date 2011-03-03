@@ -24,6 +24,14 @@ type ReadReturn struct {
 	Status int
 }
 
+type PingArgs struct {
+	ChunkServer net.Addr
+}
+type PingReturn struct {
+
+}
+
+
 type WriteArgs struct {
 	ChunkID uint64
 	Data Chunk

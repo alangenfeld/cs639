@@ -1,30 +1,31 @@
 package main
 
 import (
-	"./bloom"
+	"./master"
 	"fmt"
+	"flag"
+	"rpc"
+	"http"
+	"net"
+	"log"
 )
 
+var host = flag.String("h", "localhost:1337", "host to connect to")
 
 func main(){
-	tstring := "Hello world"
+	m := new(master.Master)
+	
+	flag.Parse()
+	
+	master.AddServer(*host)
+	
+	rpc.Register(m)
+	rpc.HandleHTTP()
 
-	b := bloom.New()
-	
-	if b.Test(tstring){
-		fmt.Printf("success!\n")
+	l, e := net.Listen("tcp", ":1338")
+	if e != nil {
+		log.Fatal("listen error:", e)
 	}
-	
-	b.Set(tstring)
-	
-	if b.Test(tstring){
-		fmt.Printf("success!\n")
-	}
-	
-	tstring = "Hello world!"
-	b.Set(tstring)
-	
-	if b.Test(tstring){
-		fmt.Printf("success!\n")
-	}
+	http.Serve(l, nil)
+	fmt.Println("done")
 }
