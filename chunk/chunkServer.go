@@ -16,10 +16,11 @@ import (
 
 func main() {
 
-	serverAddress := flag.Arg(0)
+	thisAddr := flag.Arg(0)
+	serverAddress := flag.Arg(1)
 
 	chunkServ := new(chunk.Server)
-	chunk.Init(serverAddress)
+	chunk.Init(thisAddr, serverAddress)
 	rpc.Register(chunkServ)
 	rpc.HandleHTTP()
 
