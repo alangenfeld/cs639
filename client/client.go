@@ -1,11 +1,11 @@
 //this is the location for the client library
-package main
+package client
 
 import (
 	"rpc"
 	"os"
-	"log"
-	"net"
+//	"log"
+//	"net"
 	"fmt"
 	"../include/sfs"
 )
@@ -23,58 +23,121 @@ import (
 //defined in include/sfs???
 
 /*create*/
-func Create(String filename) (int){
-		//fmt.Printf("Attempting to Connect\n");
-		client,err :=rpc.Dial("tcp", "127.0.0.1:12345"); //IP needs to be changed to Master's IP
-		if err != nil{
-			fmt.Printf("Dial Failed");
-			os.Exit(1);
-		}
-		fileInfo := new (CreateReturn);
-		fileArgs := new (CreateArgs);
-		fileArgs.Name = filename;
-		masterCall := client.Go("type.functionname this needs to be decided on", &fileArgs,&fileInfo, nil);
-		replyCall:= <-masterCall.Done
-		//this is asynchronous, probably want to change it to synchronous
-		if replyCall.Error!=nil{
-			fmt.Printf("error in reply from rpc\n");
-		}
-		if fileInfo.Confirmation !=0 {
-			fmt.Printf("Create Failed!\n");
-			return -1;
-		}
-//// store info for file from  fileInfo into file type
-//// return file descriptor arbitrary for now
-		fd := 111; // 
-		return fd;
+//func Create(string filename) (int){
 
-}
+
+//	return 1;
+//}
 
 /* requestForAdditionalChunk */
 //func RequestAdditionalChunk(String filename) (chunkIDNUMBER, chunkServersThatOwnFile){
 //}
 
 /* open */
-func Open(string filename, bool write) (int){
+func Open(filename string , write bool) (int){
 	//open the file by the name filename
 	//return an int giving the fd#.  if -1, it was a fail!
 	//read == false  write == true
+
+	//fmt.Printf("Attempting to Connect\n");
+	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	if err != nil{
+		fmt.Printf("Dial Failed");
+		os.Exit(1);
+	}
+	fileInfo := new (sfs.OpenReturn);
+	fileArgs := new (sfs.OpenArgs);
+	fileArgs.Name = filename;
+	masterCall := client.Go("Master.ReadOpen", &fileArgs,&fileInfo, nil);
+	replyCall:= <-masterCall.Done
+	//this is asynchronous, probably want to change it to synchronous
+	if replyCall.Error!=nil{
+		fmt.Printf("error in reply from rpc\n");
+	}
+
+	if fileInfo.New {
+		fmt.Printf("\nNew!\n");
+	}
+	fmt.Printf("File Size = %d\n", fileInfo.Size)
+	fmt.Printf("File Chunk = %d\n", fileInfo.Chunk)
+	fmt.Printf("ServerLocation Port = %s\n", fileInfo.ServerLocation.String())
+//// store info for file from  fileInfo into file type
+//// return file descriptor arbitrary for now
+	fd := 111; // 
+	return fd;
 }
 
 /* close */
-func Close(int fd) (int){
+func Close(fd int) (int){
 	//will have to tell this so that the master can be informed of the new file sizes...
+	return 1;
 }
 
 /* read */
-func Read (int fd, int chunk) (chunk){
+func Read (fd int, chunk int) (sfs.Chunk){
 	//goes to chunk and gets a chunk of memory to read...
+///*
+	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	if err != nil{
+		fmt.Printf("Dial Failed");
+		os.Exit(1);
+	}
+	fileInfo := new (sfs.ReadReturn);
+	fileArgs := new (sfs.ReadArgs);
+	fileArgs.ChunkID= 0;
+	fileArgs.Offset = 1;
+	fileArgs.Length = 1;
+	chunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
+	replyCall:= <-chunkCall.Done
+	//this is asynchronous, probably want to change it to synchronous
+	if replyCall.Error!=nil{
+		fmt.Printf("error in reply from rpc\n");
+	}
+	fmt.Printf("\nStatus = %d\n",fileInfo.Status);
+
+	fmt.Printf("chunk = %d\n",fileInfo.Status);
+
+
+//// store info for file from  fileInfo into file type
+//// return file descriptor arbitrary for now
+//*/
+
+
+	return fileInfo.Data;
 }
 
 /* write */
-func Write (int fd, chunk chunkData) (int){
+func Write (fd int , chunk sfs.Chunk  ) (int){
 	//we will need to write data to different blocks
 	//the return indicates whether it was successful
+
+///*
+	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	if err != nil{
+		fmt.Printf("Dial Failed");
+		os.Exit(1);
+	}
+	fileInfo := new (sfs.WriteReturn);
+	fileArgs := new (sfs.WriteArgs);
+//	fileArgs.Name = filename;
+//	fileArgs.Name = filename;
+	chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
+	replyCall:= <-chunkCall.Done
+	//this is asynchronous, probably want to change it to synchronous
+	if replyCall.Error!=nil{
+		fmt.Printf("error in reply from rpc\n");
+	}
+
+/*	if fileInfo.New {
+		fmt.Printf("New!\n");
+		return -1;
+	}
+*/
+//// store info for file from  fileInfo into file type
+//// return file descriptor arbitrary for now
+
+//*/
+	return 1;	
 }
 
 
