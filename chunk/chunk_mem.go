@@ -15,18 +15,22 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 
 var chunkTable = map[uint64] sfs.Chunk {}
 
-func Init(serverAddress string) {
+func Init(thisAddr string, serverAddress string) {
+
+	var args sfs.PingArgs
+	var ret sfs.PingReturn 
+	var err os.Error
+
+	args.ChunkServer, err = net.ResolveTCPAddr(thisAddr+ ":1337")
+	if err != nil {
+		log.Fatal("ping error: ", err)
+	}
+	fmt.Println(args.ChunkServer)
 
 	client, err := rpc.DialHTTP("tcp", serverAddress + ":1338")
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
-
-	var addr net.TCPConn
-	
-	var args sfs.PingArgs
-	var ret sfs.PingReturn 
-	args.ChunkServer = (addr.LocalAddr())
 
 	err = client.Call("Master.ReadChunkPing", &args, &ret)
 	if err != nil {
