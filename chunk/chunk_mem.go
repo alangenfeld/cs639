@@ -19,3 +19,15 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	ret.Data = data
 	return nil	
 }
+
+func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
+
+	_,present := chunkTable[args.ChunkID]
+	if !present{
+		//ret.Status = -1
+	}
+
+	chunkTable[args.ChunkID] = args.Data
+
+	return nil	
+}

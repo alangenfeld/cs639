@@ -25,6 +25,7 @@ type ReadReturn struct {
 
 type WriteArgs struct {
 	ChunkID uint64
+	Data Chunk
 	Offset uint // bytes
 	Length uint // bytes
 }
