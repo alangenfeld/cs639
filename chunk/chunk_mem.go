@@ -2,27 +2,20 @@ package chunk
 
 import (
 	"../include/sfs" 
-	"log"
 	"os"
-	"strconv"
 )
 
 type Server int
 
-func (t *Server) Read(args *sfs.ReadArgs, chunk *sfs.Chunk) os.Error {
+const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 
-	fileName := strconv.Uitob64(args.ChunkID, 10)
-	file, err := os.Open(fileName, os.O_RDONLY, 0666)
-	if err != nil {
-		log.Fatal("os.Open error: ", err)
+var chunkTable = map[uint64] sfs.Chunk {}
+
+func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
+	data,present := chunkTable[args.ChunkID]
+	if !present{
+		ret.Status = -1
 	}
-
-	_, err = file.Read(chunk.Data[:])
-	if err != nil {
-		log.Fatal("file.Read error: ", err)
-	}
-
-	file.Close()
-
-	return nil
+	ret.Data = data
+	return nil	
 }
