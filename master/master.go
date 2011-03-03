@@ -22,14 +22,15 @@ type inode struct {
 	addr net.TCPAddr
 }
 
-/*type chunk struct {
+type server struct {
+	addr net.TCPAddr
+	chunks *vector.Vector
+}
+
+type chunk struct {
 	chunkId		uint64
-	pFileChunk	*chunk
-	nFileChunk	*chunk
-	pServChunk	*chunk
-	nServChunk	*chunk
-	server		*server
-}*/
+	servers		*vector.Vector
+}
 
 type Master int
 
