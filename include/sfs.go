@@ -50,7 +50,7 @@ type OpenArgs struct{
 type OpenReturn struct{
 	New bool
 	Size uint64
-	ServerLocation net.IPAddr // size ??? 
+	ServerLocation net.TCPAddr // size ??? 
 	Chunk uint64 //size???	
 }
 
