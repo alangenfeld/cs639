@@ -30,7 +30,7 @@ func (s * serverHeap) Swap(i, j int)      {
 func (s * serverHeap) Push(serv * server) {
 	s.vec.Push(serv)
 }
-func (s * serverHeap) Pop() * server {
+func (s * serverHeap) Pop() interface {} {
 	return s.vec.Pop().(*server)
 }
 
