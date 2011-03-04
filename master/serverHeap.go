@@ -27,10 +27,10 @@ func (s * serverHeap) Less(i, j int) bool {
 func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
-func (s * serverHeap) Push(serv * server) {
+func (s * serverHeap) Push(serv interface {}) {
 	s.vec.Push(serv)
 }
 func (s * serverHeap) Pop() interface {} {
-	return s.vec.Pop().(*server)
+	return s.vec.Pop()
 }
 
