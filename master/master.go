@@ -5,6 +5,7 @@ import(
 	"./trie"
 	"log"
 	"os"
+	"fmt"
 	"container/vector"
 	"container/heap"
 	"../include/sfs"
@@ -13,7 +14,7 @@ import(
 var t *trie.Trie
 var nextChunk uint64 = 0
 var serverIndex uint64 = 0
-var servers *heap.Heap
+var sHeap *serverHeap
 
 var nReplicas int = 1
 
@@ -21,12 +22,6 @@ type inode struct {
 	name string
 	permissions uint64
 	size uint64
-	chunks *vector.Vector
-}
-
-type server struct {
-	addr net.TCPAddr
-	capacity uint64
 	chunks *vector.Vector
 }
 
@@ -72,7 +67,7 @@ func OpenFile(name string) (i *inode, newFile bool, err os.Error){
 func AddFile(name string) (i *inode, err os.Error) {
 	i = new(inode)
 	
-	log.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, servers.Len())
+	log.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, sHeap.Len())
 	
 	i.size = 1
 	//i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
@@ -96,8 +91,8 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	return inter.(*inode), exists
 }
 
-func (i *inode) AddChunk() chunkID uint64 {
-	serv := heap.Pop(servers)
+func (i *inode) AddChunk() (chunkID uint64) {
+	serv := heap.Pop(sHeap).(*server)
 	thisChunk := new(chunk)
 	thisChunk.chunkID = nextChunk
 	nextChunk += 1
@@ -108,13 +103,13 @@ func (i *inode) AddChunk() chunkID uint64 {
 	serv.chunks.Push(thisChunk)
 	i.chunks.Push(thisChunk)
 	
-	heap.Push(servers, serv)
+	heap.Push(sHeap, serv)
 	
 	return thisChunk.chunkID
 }
 
 func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
-	str := log.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
+	str := fmt.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
 	log.Printf("AddServer: adding %s\n", str)
 	
 	var s server
@@ -122,13 +117,14 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 	s.addr = servAddr
 	s.capacity = capacity
 	
-	heap.Push(servers, s)
+	heap.Push(sHeap, s)
 		
 	return nil
 }
 
 func init() {
 	t = trie.NewTrie()
-	servers = new(serverHeap)
-	heap.Init(servers)
+	sHeap = new(serverHeap)
+	sHeap.vec = new(vector.Vector)
+	heap.Init(sHeap)
 }

@@ -17,18 +17,20 @@ func main(){
 	
 	flag.Parse()
 	
-	master.AddServer(*host)
+	//addr, _ := net.ResolveTCPAddr(*host)
+	
+	//master.AddServer(*addr, 1000)
 	
 	rpc.Register(m)
-	//rpc.HandleHTTP()
+	rpc.HandleHTTP()
 
 	l, e := net.Listen("tcp", ":1338")
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
-	rpc.Accept(l)
+	//rpc.Accept(l)
 	fmt.Println("done")
 	
-	//http.Serve(l, nil)
+	http.Serve(l, nil)
 	
 }
