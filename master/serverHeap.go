@@ -7,7 +7,7 @@ import (
 
 type server struct {
 	addr net.TCPAddr
-	capacity uint
+	capacity uint64
 	chunks *vector.Vector
 }
 
@@ -22,7 +22,7 @@ func (s * serverHeap) Len() int           {
 func (s * serverHeap) Less(i, j int) bool { 
 	si := s.vec.At(i).(*server)
 	sj := s.vec.At(j).(*server)
-	return (si.capacity/uint(si.chunks.Len())) < (sj.capacity/uint(sj.chunks.Len()))
+	return (si.capacity/uint64(si.chunks.Len())) < (sj.capacity/uint64(sj.chunks.Len()))
 }
 func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
