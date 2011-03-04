@@ -19,12 +19,13 @@ func Init(thisAddr string, serverAddress string) {
 
 	var args sfs.PingArgs
 	var ret sfs.PingReturn 
-	var err os.Error
 
-	args.ChunkServer, err = net.ResolveTCPAddr(thisAddr+ ":1337")
+	addr, err := net.ResolveTCPAddr(thisAddr+ ":1337")
 	if err != nil {
 		log.Fatal("ping error: ", err)
 	}
+
+	args.ChunkServer = *addr
 	fmt.Println(args.ChunkServer)
 
 	client, err := rpc.DialHTTP("tcp", serverAddress + ":1338")
