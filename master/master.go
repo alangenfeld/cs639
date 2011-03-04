@@ -15,12 +15,13 @@ var nextChunk uint64 = 0
 var serverIndex uint64 = 0
 var servers *heap.Heap
 
+var nReplicas int = 1
+
 type inode struct {
 	name string
 	permissions uint64
 	size uint64
-	chunk uint64
-	addr net.TCPAddr
+	chunks *vector.Vector
 }
 
 type server struct {
@@ -30,7 +31,7 @@ type server struct {
 }
 
 type chunk struct {
-	chunkId		uint64
+	chunkID		uint64
 	servers		*vector.Vector
 }
 
@@ -41,8 +42,8 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	
 	info.New = newFile
 	info.Size = i.size
-	info.Chunk = i.chunk
-	info.ServerLocation = i.addr
+	info.Chunk = (i.chunks.At(0).(*chunk)).chunkID
+	info.ServerLocation = ((i.chunks.At(0).(*chunk)).servers.At(0).(*server)).addr
 	
 	return err
 }
@@ -76,13 +77,8 @@ func AddFile(name string) (i *inode, err os.Error) {
 	i.size = 1
 	//i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
 	//i.addr = servers[0]
-	dest := heap.Pop(servers)
 	
-	dest.chunks.Push()
-	
-	i.addr = dest.addr
-	i.chunk = nextChunk
-	nextChunk += 1
+	i.AddChunk()
 	
 	t.AddValue(name, i) // trie insert
 	
@@ -100,10 +96,21 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	return inter.(*inode), exists
 }
 
-func AddChunk(id uint64, serv *server) os.Error {
+func (i *inode) AddChunk() chunkID uint64 {
+	serv := heap.Pop(servers)
+	thisChunk := new(chunk)
+	thisChunk.chunkID = nextChunk
+	nextChunk += 1
 	
+	thisChunk.servers = new(vector.Vector)
 	
-	return nil
+	thisChunk.servers.Push(serv)	
+	serv.chunks.Push(thisChunk)
+	i.chunks.Push(thisChunk)
+	
+	heap.Push(servers, serv)
+	
+	return thisChunk.chunkID
 }
 
 func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
@@ -122,6 +129,6 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 
 func init() {
 	t = trie.NewTrie()
-	servers = new(server)
+	servers = new(serverHeap)
 	heap.Init(servers)
 }
