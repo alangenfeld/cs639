@@ -15,6 +15,7 @@ var t 			*trie.Trie
 var nextChunk	uint64 = 0
 var serverIndex	uint64 = 0
 var sHeap		*serverHeap
+var chunks		map[uint64](*chunk)
 
 var nReplicas	int = 1
 
@@ -46,6 +47,10 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 func (m *Master) ReadChunkPing(args *sfs.PingArgs, info *sfs.PingReturn) os.Error {
 	AddServer(args.ChunkServer, args.Capacity)
 
+	return nil
+}
+
+func (m *Master) WriteReplicationReq(c *chunk) (err os.Error){
 	return nil
 }
 
@@ -106,6 +111,8 @@ func (i *inode) AddChunk() (chunkID uint64) {
 	i.chunks.Push(thisChunk)
 
 	heap.Push(sHeap, serv)
+	
+	chunks[thisChunk.chunkID] = thisChunk
 
 	return thisChunk.chunkID
 }
@@ -125,9 +132,29 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 	return nil
 }
 
+func FindMissingChunkReplicas() (ret uint64) {
+	for cID, _ := range chunks{
+		if chunks[cID].servers.Len() < nReplicas {
+			ret += 1
+			replicateChunk(cID)
+		}
+	}
+	
+	return ret
+}
+
+func replicateChunk(cID uint64) (err os.Error){
+	var m Master
+	
+	m.WriteReplicationReq(chunks[cID])
+	
+	return nil
+}
+
 func init() {
 	t = trie.NewTrie()
 	sHeap = new(serverHeap)
 	sHeap.vec = new(vector.Vector)
+	chunks = make(map[uint64](*chunk))
 	heap.Init(sHeap)
 }
