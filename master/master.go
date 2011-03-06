@@ -72,6 +72,8 @@ func AddFile(name string) (i *inode, err os.Error) {
 	i.size = 1
 	//i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
 	//i.addr = servers[0]
+	
+	i.chunks = new(vector.Vector)
 
 	i.AddChunk()
 
@@ -92,7 +94,7 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 }
 
 func (i *inode) AddChunk() (chunkID uint64) {
-	serv := heap.Pop(sHeap).(*server)
+	var serv *server = heap.Pop(sHeap).(*server)
 	thisChunk := new(chunk)
 	thisChunk.chunkID = nextChunk
 	nextChunk += 1
@@ -116,6 +118,7 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 
 	s.addr = servAddr
 	s.capacity = capacity
+	s.chunks = new(vector.Vector)
 
 	heap.Push(sHeap, s)
 
