@@ -17,10 +17,10 @@ import (
 func main() {
 
 	thisAddr := flag.Arg(0)
-	serverAddress := flag.Arg(1)
+	masterAddress := flag.Arg(1)
 
 	chunkServ := new(chunk.Server)
-	chunk.Init(thisAddr, serverAddress)
+	chunk.Init(thisAddr, masterAddress)
 	rpc.Register(chunkServ)
 
 	l, e := net.Listen("tcp", ":1337")
