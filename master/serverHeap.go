@@ -15,7 +15,7 @@ type serverHeap struct {
 	vec * vector.Vector
 }
 
-func (s * serverHeap) Len() int           { 
+func (s * serverHeap) Len() int { 
 	return s.vec.Len() 
 }
 
