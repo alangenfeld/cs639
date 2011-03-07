@@ -13,7 +13,7 @@ import (
 func main() {
 
 	serverAddress := flag.Arg(0)
-	client, err := rpc.DialHTTP("tcp", serverAddress + ":1337")
+	client, err := rpc.Dial("tcp", serverAddress + ":1337")
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
