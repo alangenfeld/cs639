@@ -29,7 +29,6 @@ type PingArgs struct {
 	Capacity uint64
 }
 type PingReturn struct {
-
 }
 
 
