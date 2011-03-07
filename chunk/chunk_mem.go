@@ -3,7 +3,6 @@ package chunk
 import (
 	"../include/sfs" 
 	"os"
-	"fmt"
 	"rpc"
 	"log"
 	"net"
@@ -26,7 +25,7 @@ func Init(thisAddr string, serverAddress string) {
 	}
 
 	args.ChunkServer = *addr
-	fmt.Println(args.ChunkServer)
+	log.Println(args.ChunkServer)
 
 	client, err := rpc.DialHTTP("tcp", serverAddress + ":1338")
 	if err != nil {
@@ -45,7 +44,7 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 		ret.Status = -1
 		return nil
 	}
-	fmt.Println("Reading from chunk ", args.ChunkID)
+	log.Println("Reading from chunk ", args.ChunkID)
 
 	ret.Data.Data = data.Data
 
@@ -60,7 +59,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		//ret.Status = -1
 	}
 
-	fmt.Println("Writing to chunk ", args.ChunkID)
+	log.Println("Writing to chunk ", args.ChunkID)
 
 	data.Data = args.Data.Data
 	chunkTable[args.ChunkID] = data

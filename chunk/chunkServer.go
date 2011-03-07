@@ -3,7 +3,7 @@ package main
 import (
 //	"../include/sfs" 
 	"./chunk"
-	"http"
+//	"http"
 	"rpc"
 //	"os"
 	"log"
@@ -22,12 +22,11 @@ func main() {
 	chunkServ := new(chunk.Server)
 	chunk.Init(thisAddr, serverAddress)
 	rpc.Register(chunkServ)
-	rpc.HandleHTTP()
 
 	l, e := net.Listen("tcp", ":1337")
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
-	http.Serve(l, nil)
+	rpc.Accept(l)
 	fmt.Println("done")
 }
