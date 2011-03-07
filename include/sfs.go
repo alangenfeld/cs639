@@ -45,7 +45,12 @@ type WriteReturn struct{
 }
 
 type HeartbeatArgs struct {
-    Error uint //reserved, but can't think of anything to put here yet
+    capacity uint64
+    addedChunks vector.Vector
+}
+
+type HeartbeatReturn struct {
+  chunksToGet vector.Vector
 }
 
 type Status struct {
