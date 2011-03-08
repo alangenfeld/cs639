@@ -46,8 +46,8 @@ type WriteReturn struct{
 }
 
 type HeartbeatArgs struct {
-    capacity uint64
-    addedChunks vector.Vector
+    Capacity uint64
+    AddedChunks vector.Vector
 }
 
 type HeartbeatReturn struct {
