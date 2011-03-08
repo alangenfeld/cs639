@@ -25,7 +25,7 @@ func Init(thisAddr string, masterAddress string) {
 
 	addr, err := net.ResolveTCPAddr(thisAddr+ ":1337")
 	if err != nil {
-		log.Fatal("chunk: ping error: ", err)
+		log.Fatal("chunk resolveTCP error: ", err)
 	}
 
 	capacity = 5
@@ -34,12 +34,12 @@ func Init(thisAddr string, masterAddress string) {
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	if err != nil {
-		log.Fatal("chunk: dialing:", err)
+		log.Fatal("chunk dial error:", err)
 	}
 
 	err = master.Call("Master.ReadChunkPing", &args, &ret)
 	if err != nil {
-		log.Fatal("chunk: ping error: ", err)
+		log.Fatal("chunk call error: ", err)
 	}
 }
 
@@ -49,7 +49,7 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 		ret.Status = -1
 		return nil
 	}
-	log.Println("Reading from chunk ", args.ChunkID)
+	log.Println("chunk: Reading from chunk ", args.ChunkID)
 
 	ret.Data.Data = data.Data
 
@@ -65,7 +65,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		capacity --
 	}
 
-	log.Println("Writing to chunk ", args.ChunkID)
+	log.Println("chunk: Writing to chunk ", args.ChunkID)
 
 	data.Data = args.Data.Data
 	chunkTable[args.ChunkID] = data
@@ -92,7 +92,7 @@ func SendHeartbeat(masterAddress string){
 		args.AddedChunks = addedChunks
 		err = master.Call("Master.ReadChunkHeartbeat", &args, &ret)
 		if err != nil {
-			log.Fatal("chunk: ping error: ", err)
+			log.Fatal("chunk: heartbeat error: ", err)
 		}
 		addedChunks.Resize(0, 0)
 		time.Sleep(sfs.HEARTBEAT_WAIT)		
