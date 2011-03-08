@@ -12,6 +12,8 @@ endif
 
 default: *.go
 	$(gc) trie.go
-	$(gc) serverHeap.go master.go
+	$(gc) master.go serverHeap.go
 	$(gc) runmaster.go
 	$(gl) -o master runmaster.$(su)
+clean:
+	rm *.$(su) -f

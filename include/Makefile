@@ -9,5 +9,7 @@ gl=8l
 su=8
 endif
 
-default:
+default: *.go
 	$(gc) sfs.go
+clean:
+	rm *.$(su)

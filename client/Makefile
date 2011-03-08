@@ -1,13 +1,21 @@
-6.out: client.go sfs.go 
-	6g test.go
-	6l test.6
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+gc=6g
+gl=6l
+su=6
+else
+gc=8g
+gl=8l
+su=8
+endif
 
-client.go:  sfs.go 
-	6g client.go
+client: client.$(su)
+	$(gc) test.go
+	$(gl) -o client test.$(su)
 
-sfs.go:   
-	6g ../include/sfs.go
-	cp sfs.6 ../include/
+client.$(su): 
+	$(gc) client.go
 
-
+clean:
+	rm *.$(su) -f
 

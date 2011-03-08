@@ -5,10 +5,10 @@ import (
 	"./chunk"
 //	"http"
 	"rpc"
-//	"os"
+	"os"
 	"log"
 	"net"
-	"fmt"
+//	"fmt"
 	"flag"
 //	"strconv"
 )
@@ -16,17 +16,23 @@ import (
 
 func main() {
 
-	thisAddr := flag.Arg(0)
-	masterAddress := flag.Arg(1)
+	thisAddr,e := os.Hostname()
+	if e != nil {
+		log.Fatal("chunk error:", e)
+	}
+
+	masterAddress := flag.Arg(0)
 
 	chunkServ := new(chunk.Server)
 	chunk.Init(thisAddr, masterAddress)
 	rpc.Register(chunkServ)
+	
+	log.Println("chunk: Server Online.")
 
 	l, e := net.Listen("tcp", ":1337")
 	if e != nil {
-		log.Fatal("listen error:", e)
+		log.Fatal("chunk error:", e)
 	}
 	rpc.Accept(l)
-	fmt.Println("done")
+	log.Println("chunk: done.")
 }

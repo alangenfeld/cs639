@@ -4,6 +4,7 @@ import (
 //	"os"
 	"container/list"
 	"net"
+  "container/vector"
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
@@ -24,11 +25,11 @@ type ReadReturn struct {
 	Status int
 }
 
-type PingArgs struct {
+type ChunkBirthArgs struct {
 	ChunkServer net.TCPAddr
 	Capacity uint64
 }
-type PingReturn struct {
+type ChunkBirthReturn struct {
 }
 
 
