@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"container/vector"
+	"time"
 )
 
 type Server int
@@ -94,7 +95,7 @@ func SendHeartbeat(masterAddress string){
 			log.Fatal("chunk: ping error: ", err)
 		}
 		addedChunks.Resize(0, 0)
-		
+		time.Sleep(sfs.HEARTBEAT_WAIT)		
 	}
 	return
 }
