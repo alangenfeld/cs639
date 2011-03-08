@@ -25,11 +25,11 @@ type ReadReturn struct {
 	Status int
 }
 
-type PingArgs struct {
+type ChunkBirthArgs struct {
 	ChunkServer net.TCPAddr
 	Capacity uint64
 }
-type PingReturn struct {
+type ChunkBirthReturn struct {
 }
 
 
