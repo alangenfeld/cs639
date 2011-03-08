@@ -25,6 +25,7 @@ func main() {
 
 	chunkServ := new(chunk.Server)
 	chunk.Init(thisAddr, masterAddress)
+	go chunk.SendHeartbeat(masterAddress)
 	rpc.Register(chunkServ)
 	
 	log.Println("chunk: Server Online.")

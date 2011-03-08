@@ -1,14 +1,25 @@
 package main
 
+
 import (
-	"../include/chunk"
 	"http"
 	"rpc"
 	"os"
 	"log"
 	"net"
 	"fmt"
+	"container/list"
+	"../include/sfs"
 )
+
+type HeartbeatArgs struct {
+        error uint //reserved, but can't think of anything to put here yet
+}
+
+type Status struct {
+        ChunkCount uint
+        ChunkIDs list.List
+}
 
 func (t *SFS) Read(args *ReadArgs, chunk *Chunk) os.Error {
 
@@ -28,17 +39,20 @@ func (t *SFS) Read(args *ReadArgs, chunk *Chunk) os.Error {
 }
 
 func (t *SFS) Heartbeat(args *HeartbeatArgs, status *Status) os.Error {
+	return nil
 }
 
 func Init(status Status) {
-	status.ChunkIDs := ChunkIDs.New()
-	return nil
-:}
+	status.ChunkCount = 0
+	status.ChunkIDs = ChunkIDs.New(List)
+	return 
+}
 	
 
 func main() {
 	sfs := new(SFS)
-	Init()
+	status := new(Status)
+	Init(status)
 	rpc.Register(sfs)
 	rpc.HandleHTTP()
 
