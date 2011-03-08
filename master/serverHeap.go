@@ -11,7 +11,12 @@ type server struct {
 	chunks *vector.Vector
 }
 
+type heapCommand struct {
+	command uint64
+	server interface {}
+}
 type serverHeap struct {
+	serverChan chan * heapCommand
 	vec * vector.Vector
 }
 
@@ -28,9 +33,25 @@ func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
 func (s * serverHeap) Push(serv interface {}) {
-	s.vec.Push(serv)
+	s.serverChan <- &heapCommand{0,serv}
+	//s.vec.Push(serv)
 }
 func (s * serverHeap) Pop() interface {} {
-	return s.vec.Pop()
+	s.serverChan <- &heapCommand{1,nil}
+	command := new(heapCommand)
+	command <- s.serverChan
+	return command.server
+}
+func (s * serverHeap) Handler() {
+
+	for rec := range s.serverChan {
+	
+		if(rec.command == 0){
+			s.vec.Push(rec.server)
+		}
+		if(rec.command == 1){
+			s.serverChan <- &heapCommand{1,s.vec.Pop()}
+		}
+	}
 }
 

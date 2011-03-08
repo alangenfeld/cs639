@@ -157,4 +157,9 @@ func init() {
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
 	heap.Init(sHeap)
+	
+	missingCh := make(chan uint64)
+	
+	go FindMissingChunkReplicas(missingCh)
+	go QueueReplication(missingCh)
 }
