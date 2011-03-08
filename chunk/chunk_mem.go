@@ -6,6 +6,7 @@ import (
 	"rpc"
 	"log"
 	"net"
+	"container/vector"
 )
 
 type Server int
@@ -14,6 +15,7 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
+var addedChunks vector.Vector
 
 func Init(thisAddr string, masterAddress string) {
 
@@ -22,7 +24,7 @@ func Init(thisAddr string, masterAddress string) {
 
 	addr, err := net.ResolveTCPAddr(thisAddr+ ":1337")
 	if err != nil {
-		log.Fatal("ping error: ", err)
+		log.Fatal("chunk: ping error: ", err)
 	}
 
 	capacity = 5
@@ -31,12 +33,12 @@ func Init(thisAddr string, masterAddress string) {
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	if err != nil {
-		log.Fatal("dialing:", err)
+		log.Fatal("chunk: dialing:", err)
 	}
 
 	err = master.Call("Master.ReadChunkPing", &args, &ret)
 	if err != nil {
-		log.Fatal("ping error: ", err)
+		log.Fatal("chunk: ping error: ", err)
 	}
 }
 
@@ -58,21 +60,21 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 
 	data,present := chunkTable[args.ChunkID]
 	if !present{
-		//ret.Status = -1
+		addedChunks.Push(args.ChunkID)
+		capacity --
 	}
 
 	log.Println("Writing to chunk ", args.ChunkID)
 
 	data.Data = args.Data.Data
 	chunkTable[args.ChunkID] = data
-	capacity --
 
 	return nil	
 }
 
-func (t *Server) Get(args *sfs.PingArgs, ret *sfs.PingReturn) os.Error {
+/*func (t *Server) Get(args *sfs.PingArgs, ret *sfs.PingReturn) os.Error {
 	return nil
-}
+}*/
 
 func SendHeartbeat(masterAddress string){
 	var args sfs.HeartbeatArgs
@@ -80,15 +82,19 @@ func SendHeartbeat(masterAddress string){
 	
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	if err != nil {
-		log.Fatal("dialing:", err)
+		log.Fatal("chunk: dialing:", err)
 	}
+	
 
 	for {
-		
+		args.Capacity = capacity
+		args.AddedChunks = addedChunks
 		err = master.Call("Master.ReadChunkHeartbeat", &args, &ret)
 		if err != nil {
-			log.Fatal("ping error: ", err)
+			log.Fatal("chunk: ping error: ", err)
 		}
+		addedChunks.Resize(0, 0)
+		
 	}
 	return
 }
