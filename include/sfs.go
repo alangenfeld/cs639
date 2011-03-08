@@ -9,6 +9,7 @@ import (
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
 const CHUNK_SIZE = 32 // 32 B
+const HEARTBEAT_WAIT = 15 * 1000000000 // 15 seconds
 
 type Chunk struct {
 	Data [CHUNK_SIZE]byte
@@ -45,8 +46,8 @@ type WriteReturn struct{
 }
 
 type HeartbeatArgs struct {
-    capacity uint64
-    addedChunks vector.Vector
+    Capacity uint64
+    AddedChunks vector.Vector
 }
 
 type HeartbeatReturn struct {

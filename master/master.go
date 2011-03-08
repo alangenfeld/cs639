@@ -44,7 +44,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	return err
 }
 
-func (m *Master) ReadChunkPing(args *sfs.PingArgs, info *sfs.PingReturn) os.Error {
+func (m *Master) ReadChunkChunkBirth(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
 	AddServer(args.ChunkServer, args.Capacity)
 
 	return nil
