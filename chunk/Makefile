@@ -9,19 +9,20 @@ gl=8l
 su=8
 endif
 
-chunkServer: chunkServer.go
-	$(gc) chunkServer.go
-	$(gl) -o serv chunkServer.$(su)
-
-fs: chunk_fs.go
-	$(gc) -o chunk.$(su) chunk_fs.go
-	$(gc) chunkServer.go
-	$(gl) -o serv chunkServer.$(su)
-
 mem: chunk_mem.go
 	$(gc) -o chunk.$(su) chunk_mem.go
 	$(gc) chunkServer.go
 	$(gl) -o serv chunkServer.$(su)
 
+chunkServer: chunkServer.go
+	$(gc) chunkServer.go
+	$(gl) -o chunk chunkServer.$(su)
+
+fs: chunk_fs.go
+	$(gc) -o chunk.$(su) chunk_fs.go
+	$(gc) chunkServer.go
+	$(gl) -o chunk chunkServer.$(su)
+
+
 clean:
-	rm *.$(su)
+	rm *.$(su) -f

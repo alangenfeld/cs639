@@ -34,7 +34,7 @@ func Open(filename string , write bool ) (int, net.TCPAddr){
 	//return an int giving the fd#.  if -1, it was a fail!
 	//read == false  write == true
 
-	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
 		os.Exit(1);
@@ -67,7 +67,7 @@ func Read (fd int, chunk int,  serveLoc net.TCPAddr) (sfs.Chunk){
 	//goes to chunk and gets a chunk of memory to read...
 ///*
 
-	client,err :=rpc.DialHTTP("tcp", serveLoc.String()); //IP needs to be changed to Master's IP
+	client,err :=rpc.Dial("tcp", serveLoc.String()); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
 		os.Exit(1);
@@ -94,7 +94,7 @@ func Read (fd int, chunk int,  serveLoc net.TCPAddr) (sfs.Chunk){
 func Write (fd int , chunk sfs.Chunk  ) (int){
 	//we will need to write data to different blocks
 	//the return indicates whether it was successful
-	client,err :=rpc.DialHTTP("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		fmt.Printf("Dial Failed");
 		os.Exit(1);
