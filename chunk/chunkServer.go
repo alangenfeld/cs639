@@ -5,7 +5,7 @@ import (
 	"./chunk"
 //	"http"
 	"rpc"
-	"os"
+//	"os"
 	"log"
 	"net"
 //	"fmt"
@@ -16,15 +16,10 @@ import (
 
 func main() {
 
-	thisAddr,e := os.Hostname()
-	if e != nil {
-		log.Fatal("chunk error:", e)
-	}
-
 	masterAddress := flag.Arg(0)
 
 	chunkServ := new(chunk.Server)
-	chunk.Init(thisAddr, masterAddress)
+	chunk.Init(masterAddress)
 	go chunk.SendHeartbeat(masterAddress)
 	rpc.Register(chunkServ)
 	
