@@ -17,24 +17,19 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
 var addedChunks vector.Vector
+var chunkServerID uint64
 
-func Init(thisAddr string, masterAddress string) {
+func Init(masterAddress string) {
 
 	var args sfs.ChunkBirthArgs
 	var ret sfs.ChunkBirthReturn 
 
-	addr, err := net.ResolveTCPAddr(thisAddr+ ":1337")
-	if err != nil {
-		log.Fatal("chunk resolveTCP error: ", err)
-	}
-
 	args.Capacity = 5
-	args.ChunkServer = *addr
 	host,_ := os.Hostname()
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
-	log.Println(args.ChunkServer)
+	log.Println(args.ChunkServerIP)
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	if err != nil {
@@ -45,6 +40,7 @@ func Init(thisAddr string, masterAddress string) {
 	if err != nil {
 		log.Fatal("chunk call error: ", err)
 	}
+	chunkServerID = ret.ChunkServerID
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
@@ -94,6 +90,7 @@ func SendHeartbeat(masterAddress string){
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
+	args.ChunkServerID = chunkServerID 
 
 	for {
 		args.Capacity = capacity
