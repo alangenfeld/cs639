@@ -28,8 +28,12 @@ func Init(thisAddr string, masterAddress string) {
 		log.Fatal("chunk resolveTCP error: ", err)
 	}
 
-	capacity = 5
+	args.Capacity = 5
 	args.ChunkServer = *addr
+	host,_ := os.Hostname()
+	_,iparray,_ := net.LookupHost(host)
+	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
+	args.ChunkServerIP = *tcpAddr
 	log.Println(args.ChunkServer)
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
@@ -37,7 +41,7 @@ func Init(thisAddr string, masterAddress string) {
 		log.Fatal("chunk dial error:", err)
 	}
 
-	err = master.Call("Master.ReadChunkPing", &args, &ret)
+	err = master.Call("Master.BirthChunk", &args, &ret)
 	if err != nil {
 		log.Fatal("chunk call error: ", err)
 	}
@@ -85,12 +89,16 @@ func SendHeartbeat(masterAddress string){
 	if err != nil {
 		log.Fatal("chunk: dialing:", err)
 	}
-	
+
+	host,_ := os.Hostname()
+	_,iparray,_ := net.LookupHost(host)
+	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
+	args.ChunkServerIP = *tcpAddr
 
 	for {
 		args.Capacity = capacity
 		args.AddedChunks = addedChunks
-		err = master.Call("Master.ReadChunkHeartbeat", &args, &ret)
+		err = master.Call("Master.BeatHeart", &args, &ret)
 		if err != nil {
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
@@ -98,4 +106,18 @@ func SendHeartbeat(masterAddress string){
 		time.Sleep(sfs.HEARTBEAT_WAIT)		
 	}
 	return
+}
+
+func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
+
+	 var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
+	//replicationHost, err := rpc.Dial("tcp", replicationHostAddr.IP + ":"+ replicationHostAddr.Port)
+	/*if err != nil {
+		log.Fatal("chunk: replication call:", err)
+	}*/
+
+	log.Printf("replication request for site %s and chunk %d\n",replicationHostAddr.IP.String(),args.ChunkID);
+	
+	return nil
+
 }
