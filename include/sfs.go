@@ -70,6 +70,11 @@ type OpenReturn struct{
 	Chunk uint64 //size???	
 }
 
+type ReplicateChunkArgs struct{
+	ChunkID uint64
+	Servers vector.Vector
+}
+
 
 type Handle int
 
