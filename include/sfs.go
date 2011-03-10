@@ -27,7 +27,7 @@ type ReadReturn struct {
 }
 
 type ChunkBirthArgs struct {
-	ChunkServer net.TCPAddr
+	ChunkServerIP net.TCPAddr
 	Capacity uint64
 }
 type ChunkBirthReturn struct {
@@ -46,7 +46,7 @@ type WriteReturn struct{
 }
 
 type HeartbeatArgs struct {
-	ChunkIP net.TCPAddr
+	ChunkServerIP net.TCPAddr
     Capacity uint64
     AddedChunks vector.Vector
 }
