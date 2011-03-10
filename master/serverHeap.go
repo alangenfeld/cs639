@@ -7,6 +7,7 @@ import (
 
 type server struct {
 	addr net.TCPAddr
+	id uint64
 	capacity uint64
 	chunks *vector.Vector
 }
