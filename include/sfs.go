@@ -75,6 +75,10 @@ type ReplicateChunkArgs struct{
 	Servers vector.Vector
 }
 
+type ReplicateChunkReturn struct{
+	Status int
+}
+
 
 type Handle int
 
