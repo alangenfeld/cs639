@@ -38,8 +38,8 @@ func (s * serverHeap) Push(serv interface {}) {
 }
 func (s * serverHeap) Pop() interface {} {
 	s.serverChan <- &heapCommand{1,nil}
-	command := new(heapCommand)
-	command <- s.serverChan
+	//command := new(heapCommand)
+	command := <- s.serverChan
 	return command.server
 }
 func (s * serverHeap) Handler() {

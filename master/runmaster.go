@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"flag"
 	"rpc"
-	"http"
+	//"http"
 	"net"
-	"log"
+	//"log"
 )
 
 func main(){
@@ -17,10 +17,10 @@ func main(){
 	
 	rpc.Register(m)
 
-	l, e := net.Listen("tcp", ":1338")
-	if e != nil {
+	l, _ := net.Listen("tcp", ":1338")
+	/*if e != nil {
 		log.Fatal("listen error:", e)
-	}
+	}*/
 	rpc.Accept(l)
 	fmt.Println("done")
 	
