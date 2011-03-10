@@ -46,12 +46,15 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
 	AddServer(args.ChunkServer, args.Capacity)
+	
+	log.Println("Birthed a Chunk Server!\n")
 
 	return nil
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
 
+	log.Println("The Heart is Beating!\n")
 	return nil
 
 }
@@ -137,6 +140,10 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 	return nil
 }
 
+/*func RemoveServer(servAddr net.TCPAddr) os.Error {
+
+
+}*/
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks{
 		if chunks[cID].servers.Len() < nReplicas {
@@ -162,6 +169,7 @@ func init() {
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
 	heap.Init(sHeap)
+	sHeap.serverChan = make(chan * heapCommand)
 	
 	//missingCh := make(chan uint64)
 	

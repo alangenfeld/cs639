@@ -46,6 +46,7 @@ type WriteReturn struct{
 }
 
 type HeartbeatArgs struct {
+	Sever net.TCPAddr
     Capacity uint64
     AddedChunks vector.Vector
 }
