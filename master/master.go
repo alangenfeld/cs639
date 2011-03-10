@@ -6,18 +6,22 @@ import (
 	"log"
 	"os"
 	"fmt"
+	"time"
 	"container/vector"
 	"container/heap"
 	"../include/sfs"
 )
 
-var t 			*trie.Trie
-var nextChunk	uint64 = 0
-var serverIndex	uint64 = 0
-var sHeap		*serverHeap
-var chunks		map[uint64](*chunk)
+var t *trie.Trie
+var nextChunk uint64 = 0
+var serverIndex uint64 = 0
+var sHeap *serverHeap
+var sMap map[net.TCPAddr](*server)
+var chunks map[uint64](*chunk)
 
-var nReplicas	int = 1
+var nReplicas int = 1
+
+var heartMons map[net.TCPAddr](chan int)
 
 type inode struct {
 	name        string
@@ -27,8 +31,8 @@ type inode struct {
 }
 
 type chunk struct {
-	chunkID		uint64
-	servers		*vector.Vector
+	chunkID uint64
+	servers *vector.Vector
 }
 
 type Master int
@@ -55,9 +59,23 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 	return nil
 
 }
-/*func (m *Master) WriteReplicationReq(c *chunk) (err os.Error){
-	return nil
-}*/
+
+func (s *server) monitorServer(beats chan uint64) int {
+	var b uint64
+
+	for {	
+		t := time.NewTicker(HEARTBEAT_WAIT*2)
+		defer t.Stop()
+	
+		select {
+			case <- beats:
+				continue
+			case <-t.C:
+				return -1
+		}
+	}
+	return 0
+}
 
 func OpenFile(name string) (i *inode, newFile bool, err os.Error) {
 	err = nil
@@ -82,7 +100,7 @@ func AddFile(name string) (i *inode, err os.Error) {
 	i.size = 1
 	//i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
 	//i.addr = servers[0]
-	
+
 	i.chunks = new(vector.Vector)
 
 	i.AddChunk()
@@ -116,7 +134,7 @@ func (i *inode) AddChunk() (chunkID uint64) {
 	i.chunks.Push(thisChunk)
 
 	heap.Push(sHeap, serv)
-	
+
 	chunks[thisChunk.chunkID] = thisChunk
 
 	return thisChunk.chunkID
@@ -138,21 +156,21 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 }
 
 func FindMissingChunkReplicas() (ret uint64) {
-	for cID, _ := range chunks{
+	for cID, _ := range chunks {
 		if chunks[cID].servers.Len() < nReplicas {
 			ret += 1
 			replicateChunk(cID)
 		}
 	}
-	
+
 	return ret
 }
 
-func replicateChunk(cID uint64) (err os.Error){
+func replicateChunk(cID uint64) (err os.Error) {
 	//var m Master
-	
+
 	//m.WriteReplicationReq(chunks[cID])
-	
+
 	return nil
 }
 
@@ -161,10 +179,12 @@ func init() {
 	sHeap = new(serverHeap)
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
+	heartMons = make(map[net.TCPAddr](chan uint64))
+	sMap = make(map[net.TCPAddr](*server))
 	heap.Init(sHeap)
-	
+
 	//missingCh := make(chan uint64)
-	
+
 	//go FindMissingChunkReplicas(missingCh)
 	//go QueueReplication(missingCh)
 }

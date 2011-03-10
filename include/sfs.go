@@ -51,7 +51,7 @@ type HeartbeatArgs struct {
 }
 
 type HeartbeatReturn struct {
-  chunksToGet vector.Vector
+	ChunksToGet vector.Vector
 }
 
 type Status struct {
@@ -75,6 +75,9 @@ type ReplicateChunkArgs struct{
 	Servers vector.Vector
 }
 
+type ReplicateChunkReturn struct{
+	Success bool
+}
 
 type Handle int
 
