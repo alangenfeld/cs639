@@ -57,10 +57,12 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
+	str := fmt.Sprintf("%s:%d", args.Server.IP.String(), args.Server.Port)
+	log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
 
-	log.Println("The Heart is Beating!\n")
+	
+
 	return nil
-
 }
 
 func (s *server) monitorServer(beats chan uint64) int {
@@ -73,7 +75,8 @@ func (s *server) monitorServer(beats chan uint64) int {
 		select {
 			case <- beats:
 				continue
-			case <-t.C:
+			case <- t.C:
+				removeServer(s)
 				return -1
 		}
 	}
