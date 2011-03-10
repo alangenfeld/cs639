@@ -10,6 +10,7 @@ import (
 	"container/vector"
 	"container/heap"
 	"../include/sfs"
+	"rpc"
 )
 
 var t *trie.Trie
@@ -87,8 +88,22 @@ func (s *server) monitorServerBeats(beats chan int64) int {
 }
 
 func RemoveServer(serv *server) os.Error {
-	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
-	log.Printf("RemoveServer: removing %s\n", str)
+	str1 := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
+	
+	otherserver := sHeap.Pop().(*server)
+	
+	str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
+	
+	client, _ := rpc.Dial("tcp", str)
+	//vec := new(vector.Vector)
+	args := &sfs.ReplicateChunkArgs{1001,nil}
+	reply := new(sfs.ReplicateChunkReturn)
+	
+	client.Call("chunk.ReplicateChunk", args, reply)
+	
+	log.Printf("%s", reply)
+	
+	log.Printf("RemoveServer: removing %s\n", str1)
 	return nil
 }
 
@@ -205,6 +220,7 @@ func init() {
 //	sMap = make(map[net.TCPAddr](*server))
 	heap.Init(sHeap)
 	sHeap.serverChan = make(chan * heapCommand)
+	go sHeap.Handler()
 	
 	//missingCh := make(chan uint64)
 
