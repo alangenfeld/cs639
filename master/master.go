@@ -14,14 +14,15 @@ import (
 
 var t *trie.Trie
 var nextChunk uint64 = 0
+var nextChunkServerID uint64 = 0
 var serverIndex uint64 = 0
 var sHeap *serverHeap
-var sMap map[net.TCPAddr](*server)
+//var sMap map[net.TCPAddr](*server)
 var chunks map[uint64](*chunk)
 
 var nReplicas int = 1
 
-var heartMons map[net.TCPAddr](chan int)
+var heartbeatMonitors map[uint64](chan int64)
 
 type inode struct {
 	name        string
@@ -51,7 +52,9 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
 	s := AddServer(args.ChunkServerIP, args.Capacity)
 	
-	s.monitorServerBeats(heartMons[s.addr])
+	go s.monitorServerBeats(heartbeatMonitors[s.id])
+	
+	info.ChunkServerID = s.id
 	
 	log.Println("Birthed a Chunk Server!\n")
 
@@ -62,14 +65,12 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 	str := fmt.Sprintf("%s:%d", args.ChunkServerIP.IP.String(), args.ChunkServerIP.Port)
 	log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
 
-	heartMons[args.ChunkIP] <- time.Nanoseconds()
+	heartbeatMonitors[args.ChunkServerID] <- time.Nanoseconds()
 
 	return nil
 }
 
-func (s *server) monitorServer(beats chan uint64) int {
-	var b uint64
-
+func (s *server) monitorServerBeats(beats chan int64) int {
 	for {	
 		t := time.NewTicker(sfs.HEARTBEAT_WAIT*2)
 		defer t.Stop()
@@ -78,11 +79,17 @@ func (s *server) monitorServer(beats chan uint64) int {
 			case <- beats:
 				continue
 			case <- t.C:
-				removeServer(s)
+				RemoveServer(s)
 				return -1
 		}
 	}
 	return 0
+}
+
+func RemoveServer(serv *server) os.Error {
+	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
+	log.Printf("RemoveServer: removing %s\n", str)
+	return nil
 }
 
 func OpenFile(name string) (i *inode, newFile bool, err os.Error) {
@@ -154,11 +161,13 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	s := new(server)
 
+	s.id = nextChunkServerID
+	nextChunkServerID += 1
 	s.addr = servAddr
 	s.capacity = capacity
 	s.chunks = new(vector.Vector)
 
-	heartMon[servAddr] = make(chan uint64)
+	heartbeatMonitors[s.id] = make(chan int64)
 	heap.Push(sHeap, s)
 
 	return s
@@ -192,8 +201,8 @@ func init() {
 	sHeap = new(serverHeap)
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
-	heartMons = make(map[net.TCPAddr](chan uint64))
-	sMap = make(map[net.TCPAddr](*server))
+	heartbeatMonitors = make(map[uint64](chan int64))
+//	sMap = make(map[net.TCPAddr](*server))
 	heap.Init(sHeap)
 	sHeap.serverChan = make(chan * heapCommand)
 	
