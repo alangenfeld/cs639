@@ -72,7 +72,7 @@ type OpenReturn struct{
 
 type ReplicateChunkArgs struct{
 	ChunkID uint64
-	Servers list.list
+	Servers vector.Vector
 }
 
 
