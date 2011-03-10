@@ -44,15 +44,20 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	return err
 }
 
-func (m *Master) ReadChunkChunkBirth(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
+func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
 	AddServer(args.ChunkServer, args.Capacity)
 
 	return nil
 }
 
-func (m *Master) WriteReplicationReq(c *chunk) (err os.Error){
+func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
+
 	return nil
+
 }
+/*func (m *Master) WriteReplicationReq(c *chunk) (err os.Error){
+	return nil
+}*/
 
 func OpenFile(name string) (i *inode, newFile bool, err os.Error) {
 	err = nil
@@ -144,9 +149,9 @@ func FindMissingChunkReplicas() (ret uint64) {
 }
 
 func replicateChunk(cID uint64) (err os.Error){
-	var m Master
+	//var m Master
 	
-	m.WriteReplicationReq(chunks[cID])
+	//m.WriteReplicationReq(chunks[cID])
 	
 	return nil
 }
@@ -158,8 +163,8 @@ func init() {
 	chunks = make(map[uint64](*chunk))
 	heap.Init(sHeap)
 	
-	missingCh := make(chan uint64)
+	//missingCh := make(chan uint64)
 	
-	go FindMissingChunkReplicas(missingCh)
-	go QueueReplication(missingCh)
+	//go FindMissingChunkReplicas(missingCh)
+	//go QueueReplication(missingCh)
 }
