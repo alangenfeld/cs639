@@ -49,7 +49,9 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 }
 
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
-	AddServer(args.ChunkServer, args.Capacity)
+	s := AddServer(args.ChunkServerIP, args.Capacity)
+	
+	s.monitorServerBeats(heartMons[s.addr])
 	
 	log.Println("Birthed a Chunk Server!\n")
 
@@ -57,10 +59,10 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
-	str := fmt.Sprintf("%s:%d", args.Server.IP.String(), args.Server.Port)
+	str := fmt.Sprintf("%s:%d", args.ChunkServerIP.IP.String(), args.ChunkServerIP.Port)
 	log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
 
-	
+	heartMons[args.ChunkIP] <- time.Nanoseconds()
 
 	return nil
 }
@@ -69,7 +71,7 @@ func (s *server) monitorServer(beats chan uint64) int {
 	var b uint64
 
 	for {	
-		t := time.NewTicker(HEARTBEAT_WAIT*2)
+		t := time.NewTicker(sfs.HEARTBEAT_WAIT*2)
 		defer t.Stop()
 	
 		select {
@@ -146,7 +148,7 @@ func (i *inode) AddChunk() (chunkID uint64) {
 	return thisChunk.chunkID
 }
 
-func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
+func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	str := fmt.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
 	log.Printf("AddServer: adding %s\n", str)
 
@@ -156,9 +158,10 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) os.Error {
 	s.capacity = capacity
 	s.chunks = new(vector.Vector)
 
+	heartMon[servAddr] = make(chan uint64)
 	heap.Push(sHeap, s)
 
-	return nil
+	return s
 }
 
 /*func RemoveServer(servAddr net.TCPAddr) os.Error {
