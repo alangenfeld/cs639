@@ -77,14 +77,9 @@ type ReplicateChunkArgs struct{
 }
 
 type ReplicateChunkReturn struct{
-<<<<<<< HEAD
-	Success bool
-}
-=======
 	Status int
 }
 
->>>>>>> 31339a585dac60ac31d85c43c9811d4b76c0bcd9
 
 type Handle int
 
