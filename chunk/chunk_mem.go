@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"container/vector"
+	"syscall"
 	"time"
 )
 
@@ -93,6 +94,14 @@ func SendHeartbeat(masterAddress string){
 	args.ChunkServerID = chunkServerID 
 
 	for {
+		var info syscall.Sysinfo_t
+		syscall.Sysinfo(&info)
+		var mem_usage float32
+		mem_usage = float32 (info.Freeram) / float32 (info.Totalram)
+		if mem_usage > .8 { 
+			capacity --
+			//TODO: This is super sketchy and needs to be fixed, free up current blocks, etc
+		}
 		args.Capacity = capacity
 		args.AddedChunks = addedChunks
 		err = master.Call("Master.BeatHeart", &args, &ret)
