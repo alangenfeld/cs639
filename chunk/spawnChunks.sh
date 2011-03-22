@@ -2,8 +2,7 @@
 ################################################################################
 # Spawns chunk servers on mumble-01 through mumble-N
 #
-# If you havent already, make sure that you have sshed in to all mumble machines
-# so the RSA fingerprinting has already happened.
+# If you havent already, use login.sh to ensure this script works properly
 ################################################################################
 
 pwd=`pwd`
@@ -12,6 +11,7 @@ num=0
 if [ "$#" != "2" ]
 then
     echo "Specify master and the number of computers to infect."
+    echo "example: spawnChunks hostname numServers"
 else
     if [ $2 -gt 40 ]
     then
