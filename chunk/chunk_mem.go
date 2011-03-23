@@ -117,14 +117,15 @@ func SendHeartbeat(masterAddress string){
 
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
 
-	if args.Servers.At(0) == nil {
+	if args.Servers == nil {
 		log.Printf("chunk: replication call: nil address.")
+		return nil
 	}
 	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
-	
-	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 
-replicationHost, err := rpc.Dial("tcp", str)
+	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
+	
+	replicationHost, err := rpc.Dial("tcp", str)
 	if err != nil {
 		log.Fatal("chunk: replication call:", err)
 	}
