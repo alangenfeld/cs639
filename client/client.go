@@ -34,21 +34,16 @@ func Open(filename string , write bool, master string  ) (int){
 	//return an int giving the fd#.  if -1, it was a fail!
 	//read == false  write == true
 
-	client,err :=rpc.Dial("tcp", "127.0.0.1:1338"); //IP needs to be changed to Master's IP
+	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		log.Printf("Client: Dial Failed");
+		log.Printf("Client: Error", err.String());
 		os.Exit(1);
 	}
 	fileInfo := new (sfs.OpenReturn);
 	fileArgs := new (sfs.OpenArgs);
 	fileArgs.Name = filename;
-//l	masterCall := 
 	client.Call("Master.ReadOpen", &fileArgs,&fileInfo);
-//	replyCall:= <-masterCall.Done
-	//this is asynchronous, probably want to change it to synchronous
-//	if masterCall.Error!=nil{
-//		log.Printf("Client: error in reply from rpc in open\n");
-//	}
 
 	if fileInfo.New {
 		log.Printf("\nClient: New file!\n");
@@ -62,6 +57,7 @@ func Open(filename string , write bool, master string  ) (int){
 	nextFile.serverAddress = fileInfo.ServerLocation
 	openFiles[fd] = nextFile
 	return fd;
+
 }
 
 /* read */
@@ -75,10 +71,9 @@ func Read (fd int) (sfs.Chunk, int ){
 		log.Printf("Client: File not in open list!\n")
 		return fileInfo.Data, -1
 	}
-
-	client,err :=rpc.Dial("tcp",fdFile.serverAddress.String()); //IP needs to be changed to Master's IP
+	client,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
 	if err != nil{
-		log.Printf("Client: Dial Failed");
+		log.Printf("Client: Dial Failed")
 		return fileInfo.Data, -1
 	}
 	fileArgs.ChunkID= fdFile.chunk;
