@@ -6,6 +6,7 @@ import (
 	"rpc"
 	"log"
 	"net"
+	"fmt"
 	"container/vector"
 	"syscall"
 	"time"
@@ -116,14 +117,31 @@ func SendHeartbeat(masterAddress string){
 
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
 
-	 var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
-	//replicationHost, err := rpc.Dial("tcp", replicationHostAddr.IP + ":"+ replicationHostAddr.Port)
-	/*if err != nil {
-		log.Fatal("chunk: replication call:", err)
-	}*/
-
-	log.Printf("replication request for site %s and chunk %d\n",replicationHostAddr.IP.String(),args.ChunkID);
+	if args.Servers.At(0) == nil {
+		log.Printf("chunk: replication call: nil address.")
+	}
+	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
 	
-	return nil
+	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 
+replicationHost, err := rpc.Dial("tcp", str)
+	if err != nil {
+		log.Fatal("chunk: replication call:", err)
+	}
+
+	var readArgs sfs.ReadArgs
+	var readRet sfs.ReadReturn
+	readArgs.ChunkID = args.ChunkID
+
+	log.Printf("replication request for site %s and chunk %d\n",
+		replicationHostAddr.IP.String(),args.ChunkID);
+
+	err = replicationHost.Call("Server.Write", &readArgs, &readRet)
+	if err != nil {
+		log.Fatal("chunk: replication call:", err)
+	}
+
+	chunkTable[args.ChunkID] = readRet.Data
+
+	return nil
 }
