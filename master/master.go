@@ -40,6 +40,11 @@ type chunk struct {
 type Master int
 
 func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
+
+	if(sHeap.vec.Len() == 0){
+		err := os.NewError("No chunk servers!")
+		return err
+	}
 	i, newFile, err := OpenFile(args.Name)
 
 	info.New = newFile
@@ -99,7 +104,7 @@ func RemoveServer(serv *server) os.Error {
 	args := &sfs.ReplicateChunkArgs{1001,nil}
 	reply := new(sfs.ReplicateChunkReturn)
 	
-	client.Call("chunk.ReplicateChunk", args, reply)
+	client.Call("Server.ReplicateChunk", args, reply)
 	
 	log.Printf("%s", reply)
 	

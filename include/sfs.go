@@ -85,5 +85,12 @@ type ReplicateChunkReturn struct{
 
 type Handle int
 
+type server struct {
+	addr net.TCPAddr
+	id uint64
+	capacity uint64
+	chunks *vector.Vector
+}
+
 //func (t *Handle) Read(args *ReadArgs, chunk *Chunk) os.Error
 
