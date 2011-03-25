@@ -36,10 +36,11 @@ func Open(filename string , write bool, master string  ) (int){
 
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
-		log.Printf("Client: Dial Failed");
+	//	log.Printf("Client: Dial Failed");
 		log.Printf("Client: Error", err.String());
 		os.Exit(1);
-	}
+		return -1
+	}else{
 	fileInfo := new (sfs.OpenReturn);
 	fileArgs := new (sfs.OpenArgs);
 	fileArgs.Name = filename;
@@ -57,7 +58,7 @@ func Open(filename string , write bool, master string  ) (int){
 	nextFile.serverAddress = fileInfo.ServerLocation
 	openFiles[fd] = nextFile
 	return fd;
-
+	}
 }
 
 /* read */
