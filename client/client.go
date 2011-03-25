@@ -59,6 +59,7 @@ func Open(filename string , write bool, master string  ) (int){
 	openFiles[fd] = nextFile
 	return fd;
 	}
+	return -1
 }
 
 /* read */
@@ -153,7 +154,7 @@ func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
 		log.Printf("Client: File not in open list!\n")
 		return fileInfo.Data, -1
 	}
-	client,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
+	_,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
 	if err != nil{
 		log.Printf("Client: Dial Failed")
 		return fileInfo.Data, -1
@@ -187,7 +188,7 @@ func Remove(fd int) (int){
 
 /*create*/
 //TODO
-func Create(string filename) (int){
-	return -1
-}
+//func Create(string filename) (int){
+//	return -1
+//}
 
