@@ -130,6 +130,7 @@ func Write (fd int , data [sfs.CHUNK_SIZE]byte  ) (int){
 
 
 /* close */
+//TODO
 
 func Close(fd int) (int){
 	//will have to tell this so that the master can be informed of the new file sizes...
@@ -138,18 +139,54 @@ func Close(fd int) (int){
 }
 
 
-/* seek - LATER */
+/* seek */
+//TODO
+func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
+	//BASED Off of READ as they should be fairly similar...
+	//goes to chunk and gets a chunk of memory to read...
+///*
+	fileInfo := new (sfs.ReadReturn);
+	fileArgs := new (sfs.ReadArgs);
+	fdFile, inMap := openFiles[fd]
+	if !inMap {
+		log.Printf("Client: File not in open list!\n")
+		return fileInfo.Data, -1
+	}
+	client,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
+	if err != nil{
+		log.Printf("Client: Dial Failed")
+		return fileInfo.Data, -1
+	}
+	fileArgs.ChunkID= fdFile.chunk;
+	fileArgs.Offset = 0;
+	fileArgs.Length = sfs.CHUNK_SIZE;
+	//ChunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
+	//replyCall:= <-chunkCall.Done
+	//this is asynchronous, probably want to change it to synchronous
+	//if replyCall.Error!=nil{
+	//	log.Printf("Client: error in reply from rpc in read\n");
+	//	return fileInfo.Data, -1
+	//}
+	//log.Printf("\nClient: Status = %d\n",fileInfo.Status);
+	//log.Printf("Client: Data = %d\n",fileInfo.Data);
 
+	return  fileInfo.Data, fileInfo.Status;
+}
 
 /* append - LATER */
-
+//TODO
+//func Append(fd int, data ???) (int){
+//}
 
 /* remove - LATER */
+//TODO
+func Remove(fd int) (int){
+	return -1
+}
 
 /*create*/
-//func Create(string filename) (int){
-
-
-//	return 1;
-//}
+//TODO
+func Create(string filename) (int){
+	return -1
+}
 
