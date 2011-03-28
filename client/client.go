@@ -54,13 +54,13 @@ func Open(filename string , write bool, master string, size uint64  ) (int){
 	fd++
 	var nextFile file
 	nextFile.chunks = new(vector.Vector)
-	nextFile.chunks = &fileInfo.Chunks
+	nextFile.chunks = &fileInfo.Chunk
 //**************************
 	//CHUNKS AND SERVER LOCATIONS in fileInfo will need to be updated to whatever new structs are.
 	nextFile.serverAddresses = new(vector.Vector)
-	nextFile.serverAddresses = &fileInfo.ServerLocations//.Copy()
-	nextFile.chunks.Push(fileInfo.Chunks)
-	nextFile.serverAddresses.Push(fileInfo.ServerLocations)
+	nextFile.serverAddresses = &fileInfo.ServerLocation//.Copy()
+//	nextFile.chunks.Push(fileInfo.Chunks)
+	nextFile.serverAddresses.Push(fileInfo.ServerLocation)
 	openFiles[fd] = nextFile
 	return fd;
 	}
