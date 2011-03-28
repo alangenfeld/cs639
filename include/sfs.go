@@ -1,10 +1,10 @@
 package sfs
 
 import (
-//	"os"
+	//	"os"
 	"container/list"
 	"net"
-  "container/vector"
+	"container/vector"
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
@@ -16,9 +16,9 @@ type Chunk struct {
 }
 
 type ReadArgs struct {
-	ChunkID uint64
-	Offset uint // bytes
-	Length uint // bytes
+	ChunkIDs uint64
+	Offsets uint // bytes
+	Lengths uint // bytes
 }
 
 type ReadReturn struct {
@@ -40,6 +40,7 @@ type WriteArgs struct {
 	Data Chunk
 	Offset uint // bytes
 	Length uint // bytes
+
 }
 
 type WriteReturn struct{
@@ -49,8 +50,8 @@ type WriteReturn struct{
 type HeartbeatArgs struct {
 	ChunkServerIP net.TCPAddr
 	ChunkServerID uint64
-    Capacity uint64
-    AddedChunks vector.Vector
+	Capacity uint64
+	AddedChunks vector.Vector
 }
 
 type HeartbeatReturn struct {
@@ -58,19 +59,20 @@ type HeartbeatReturn struct {
 }
 
 type Status struct {
-    ChunkCount uint
-    ChunkIDs list.List
+	ChunkCount uint
+	ChunkIDs list.List
 }
 
 type OpenArgs struct{
 	Name string
+	Size uint64
 }
 
 type OpenReturn struct{
 	New bool
 	Size uint64
-	ServerLocation net.TCPAddr // size ??? 
-	Chunk uint64 //size???	
+	ServerLocations vector.Vector  // bytes
+	Chunks	vector.Vector  // bytes
 }
 
 type ReplicateChunkArgs struct{
