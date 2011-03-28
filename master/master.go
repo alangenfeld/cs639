@@ -49,8 +49,28 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 
 	info.New = newFile
 	info.Size = i.size
-	info.Chunk = (i.chunks.At(0).(*chunk)).chunkID
-	info.ServerLocation = ((i.chunks.At(0).(*chunk)).servers.At(0).(*server)).addr
+	
+	chunkInfoVec := new(vector.Vector)
+	
+	//for each chunk in the server, make a replication call.
+	for i := 0; i < i.chunks.Len(); i++ {
+		chunk := i.chunks.At(i).(*chunk)
+		
+		//populate chunk location vector
+		servList := new(vector.Vector)
+		
+		for j := 0; j < chunk.servers.Len(); j++ {
+			servList.Push(chunk.servers.At(j).(*server).addr)
+		}
+		
+		var chunkInfo sfs.ChunkInfo
+		chunkInfo.ChunkID = chunk.chunkID
+		chunkInfo.Servers = *servList
+		
+		chunkInfoVec.Push(chunkInfo)
+	}
+	
+	info.Chunks = *chunkInfoVec
 
 	return err
 }
