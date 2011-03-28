@@ -46,12 +46,12 @@ func Init(masterAddress string) {
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
-	data,present := chunkTable[args.ChunkID]
+	data,present := chunkTable[args.ChunkIDs]
 	if !present{
 		ret.Status = -1
 		return nil
 	}
-	log.Println("chunk: Reading from chunk ", args.ChunkID)
+	log.Println("chunk: Reading from chunk ", args.ChunkIDs)
 
 	ret.Data.Data = data.Data
 
@@ -132,7 +132,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 
 	var readArgs sfs.ReadArgs
 	var readRet sfs.ReadReturn
-	readArgs.ChunkID = args.ChunkID
+	readArgs.ChunkIDs = args.ChunkID
 
 	log.Printf("replication request for site %s and chunk %d\n",
 		replicationHostAddr.IP.String(),args.ChunkID);
