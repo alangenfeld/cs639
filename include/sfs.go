@@ -16,9 +16,9 @@ type Chunk struct {
 }
 
 type ReadArgs struct {
-	ChunkID uint64
-	Offset uint // bytes
-	Length uint // bytes
+	ChunkIDs uint64
+	Offsets uint // bytes
+	Lengths uint // bytes
 }
 
 type ReadReturn struct {
@@ -40,6 +40,7 @@ type WriteArgs struct {
 	Data Chunk
 	Offset uint // bytes
 	Length uint // bytes
+
 }
 
 type WriteReturn struct{
@@ -64,13 +65,14 @@ type Status struct {
 
 type OpenArgs struct{
 	Name string
+	Size uint64
 }
 
 type OpenReturn struct{
 	New bool
 	Size uint64
-	ServerLocation net.TCPAddr // size ??? 
-	Chunk uint64 //size???	
+	ServerLocations vector.Vector  // bytes
+	Chunks	vector.Vector  // bytes
 }
 
 type ReplicateChunkArgs struct{
