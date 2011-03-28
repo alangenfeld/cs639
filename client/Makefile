@@ -11,7 +11,7 @@ endif
 
 client: client.$(su) test.go
 	$(gc) test.go
-	$(gl) -o client  test.$(su)
+	$(gl) -o test test.$(su)
 
 client.$(su): client.go
 	$(gc) client.go
