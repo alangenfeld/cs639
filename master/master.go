@@ -95,18 +95,33 @@ func (s *server) monitorServerBeats(beats chan int64) int {
 func RemoveServer(serv *server) os.Error {
 	str1 := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 	
-	otherserver := sHeap.Pop().(*server)
+	otherserver := sHeap.vec.At(0).(*server)
 	
 	str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
 	
 	client, _ := rpc.Dial("tcp", str)
-	//vec := new(vector.Vector)
-	args := &sfs.ReplicateChunkArgs{1001,nil}
-	reply := new(sfs.ReplicateChunkReturn)
 	
-	client.Call("Server.ReplicateChunk", args, reply)
+	//for each chunk in the server, make a replication call.
+	chunkRange := serv.chunks.Len()
+	for cnt := 0; cnt < chunkRange ; cnt++{
 	
-	log.Printf("%s", reply)
+		chunk := serv.chunks.At(cnt).(*chunk)
+		
+		//populate chunk location vector
+		chunklist := new(vector.Vector)
+		locRange := chunk.servers.Len()
+		for cnt1 := 0; cnt1 < locRange; cnt1++ {
+			chunklist.Push(chunk.servers.At(cnt1).(*server).addr)
+		}
+		
+		//send rpc call off
+		args := &sfs.ReplicateChunkArgs{chunk.chunkID,*chunklist}
+		reply := new(sfs.ReplicateChunkReturn)
+		client.Call("Server.ReplicateChunk", args, reply)
+		log.Printf("%s", reply)
+	}	
+	
+	
 	
 	log.Printf("RemoveServer: removing %s\n", str1)
 	return nil

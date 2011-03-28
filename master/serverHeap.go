@@ -38,6 +38,9 @@ func (s * serverHeap) Less(i, j int) bool {
 func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
+func (s * serverHeap) Remove(serv interface{}) {
+    s.serverChan <- &heapCommand{2,serv}
+}
 func (s * serverHeap) Push(serv interface {}) {
 	s.serverChan <- &heapCommand{0,serv}
 	//s.vec.Push(serv)
