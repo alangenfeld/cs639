@@ -71,8 +71,8 @@ type OpenArgs struct{
 type OpenReturn struct{
 	New bool
 	Size uint64
-	ServerLocations vector.Vector  // bytes
-	Chunks	vector.Vector  // bytes
+	ServerLocation vector.Vector  // bytes
+	Chunk	vector.Vector  // bytes
 }
 
 type ReplicateChunkArgs struct{

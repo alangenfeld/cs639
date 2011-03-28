@@ -38,9 +38,6 @@ func (s * serverHeap) Less(i, j int) bool {
 func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
-func (s * serverHeap) Remove(serv interface{}) {
-    s.serverChan <- &heapCommand{2,serv}
-}
 func (s * serverHeap) Push(serv interface {}) {
 	s.serverChan <- &heapCommand{0,serv}
 	//s.vec.Push(serv)
@@ -52,6 +49,9 @@ func (s * serverHeap) Pop() interface {} {
 	return command.server
 	//return s.vec.Pop()
 }
+func (s * serverHeap) Remove(serv interface{}) {
+    s.serverChan <- &heapCommand{2,serv}
+}
 func (s * serverHeap) Handler() {
 
 	for rec := range s.serverChan {
@@ -61,6 +61,16 @@ func (s * serverHeap) Handler() {
 		}
 		if(rec.command == 1){
 			s.serverChan <- &heapCommand{1,s.vec.Pop()}
+		}
+		if(rec.command == 2){
+			/*server := rec.server.(*server)
+			vecRange := s.vec.Len()
+			for cnt := 0; cnt < vecRange; cnt++{
+				var testserv *server = s.vec.At(cnt).(*server)
+				if(testserv.addr == server.addr){
+					s.vec.Delete(cnt)
+				}
+			}*/
 		}
 	}
 }
