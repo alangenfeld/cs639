@@ -2,9 +2,11 @@
 package client
 
 import (
+	"container/vector"
 	"rpc"
 	"os"
 	"log"
+	"io/ioutil"
 	"../include/sfs"
 	"net"
 )
@@ -21,22 +23,22 @@ import (
 type file struct {
 	chunk uint64
 	serverAddress net.TCPAddr
+
+	chunks *vector.Vector
+	serverAddresses *vector.Vector
 }
 var fd = 0
 var openFiles = map[int] file{}
 
-/* requestForAdditionalChunk */
-//func RequestAdditionalChunk(String filename) (chunkIDNUMBER, chunkServersThatOwnFile){
-//}
+//maybe need another one without size for acompletely new file
 /* open */
-func Open(filename string , write bool, master string  ) (int){
+func Open(filename string , write bool, master string, size uint64  ) (int){
 	//open the file by the name filename
 	//return an int giving the fd#.  if -1, it was a fail!
 	//read == false  write == true
 
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
-	//	log.Printf("Client: Dial Failed");
 		log.Printf("Client: Error", err.String());
 		os.Exit(1);
 		return -1
@@ -44,18 +46,21 @@ func Open(filename string , write bool, master string  ) (int){
 	fileInfo := new (sfs.OpenReturn);
 	fileArgs := new (sfs.OpenArgs);
 	fileArgs.Name = filename;
+	fileArgs.Size = size;
 	client.Call("Master.ReadOpen", &fileArgs,&fileInfo);
-
 	if fileInfo.New {
 		log.Printf("\nClient: New file!\n");
 	}
-	log.Printf("Client: File Size = %d\n", fileInfo.Size)
-	log.Printf("Client: File Chunk = %d\n", fileInfo.Chunk)
-	log.Printf("Client: ServerLocation Port = %s\n", fileInfo.ServerLocation.String())
 	fd++
 	var nextFile file
-	nextFile.chunk = fileInfo.Chunk
-	nextFile.serverAddress = fileInfo.ServerLocation
+	nextFile.chunks = new(vector.Vector)
+	nextFile.chunks = &fileInfo.Chunks
+//**************************
+	//CHUNKS AND SERVER LOCATIONS in fileInfo will need to be updated to whatever new structs are.
+	nextFile.serverAddresses = new(vector.Vector)
+	nextFile.serverAddresses = &fileInfo.ServerLocations//.Copy()
+	nextFile.chunks.Push(fileInfo.Chunks)
+	nextFile.serverAddresses.Push(fileInfo.ServerLocations)
 	openFiles[fd] = nextFile
 	return fd;
 	}
@@ -63,77 +68,133 @@ func Open(filename string , write bool, master string  ) (int){
 }
 
 /* read */
-func Read (fd int) (sfs.Chunk, int ){
+func Read (fd int) (vector.Vector, int ){
 	//goes to chunk and gets a chunk of memory to read...
-///*
 	fileInfo := new (sfs.ReadReturn);
 	fileArgs := new (sfs.ReadArgs);
 	fdFile, inMap := openFiles[fd]
+	var entireRead vector.Vector
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
-		return fileInfo.Data, -1
+		return entireRead, -1
 	}
-	client,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
-	if err != nil{
-		log.Printf("Client: Dial Failed")
-		return fileInfo.Data, -1
-	}
-	fileArgs.ChunkID= fdFile.chunk;
-	fileArgs.Offset = 0;
-	fileArgs.Length = sfs.CHUNK_SIZE;
-	chunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
-	replyCall:= <-chunkCall.Done
-	//this is asynchronous, probably want to change it to synchronous
-	if replyCall.Error!=nil{
-		log.Printf("Client: error in reply from rpc in read\n");
-		return fileInfo.Data, -1
-	}
-	log.Printf("\nClient: Status = %d\n",fileInfo.Status);
-	log.Printf("Client: Data = %d\n",fileInfo.Data);
+	index := 0;
+	for i := 0; i<fdFile.chunks.Len(); i++ {
+		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.At(i).(*net.TCPAddr).String())
+		if err != nil{
+			log.Printf("Client: Dial Failed in Read")
+			return entireRead, -1
+		}
+		fileArgs.ChunkIDs = fdFile.chunks.At(i).(uint64);
+		fileArgs.Offsets = 0;
+		fileArgs.Lengths  = sfs.CHUNK_SIZE;
 
-	return  fileInfo.Data, fileInfo.Status;
+		chunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
+		replyCall:= <-chunkCall.Done
+		if replyCall.Error!=nil{
+			log.Printf("Client: error in reply from rpc in read\n");
+			return entireRead, -1
+		}
+		log.Printf("\nClient: Status = %d\n",fileInfo.Status);
+		log.Printf("Client: Data = %d\n",fileInfo.Data);
+		if(fileInfo.Status!=0){
+			break;
+		}
+		for j:=0; j<sfs.CHUNK_SIZE ; j++{
+			entireRead.Push(fileInfo.Data.Data[j]);
+			index++;
+		}
+	}
+
+	return  entireRead, fileInfo.Status;
 }
 
 /* write */
-func Write (fd int , data [sfs.CHUNK_SIZE]byte  ) (int){
+func Write (fd int , data vector.Vector  ) (int){
+
 	//we will need to write data to different blocks
 	//the return indicates whether it was successful
-	fileInfo := new (sfs.WriteReturn);
 	fileArgs := new (sfs.WriteArgs);
+	fileInfo := new (sfs.WriteReturn);
 	fdFile, inMap := openFiles[fd]
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
 		return -1
 	}
-	client,err :=rpc.Dial("tcp",fdFile.serverAddress.String()); //IP needs to be changed to Master's IP
-	if err != nil{
-		log.Printf("Client: Dial Failed");
-		os.Exit(1);
+	index:=  0
+	var size uint64
+	var numChunks uint64
+	size = uint64(data.Len());
+	numChunks = size / sfs.CHUNK_SIZE
+	if((size %sfs.CHUNK_SIZE)!= 0){
+		numChunks++
 	}
-	fileArgs.Data.Data = data;
-	fileArgs.ChunkID = fdFile.chunk;
-	fileArgs.Offset = 0;
-	fileArgs.Length = sfs.CHUNK_SIZE;
-	chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
-	replyCall:= <-chunkCall.Done
-	//this is asynchronous, probably want to change it to synchronous
-	if replyCall.Error!=nil{
-		log.Printf("Client: error in reply from rpc in write\n");
-		return -1
+	for i := 0; i<int(numChunks); i++ {
+		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.At(i).(*net.TCPAddr).String())
+		if err != nil{
+			log.Printf("Client: Dial Failed in write");
+			os.Exit(1);
+		}
+		for j:=0; j<sfs.CHUNK_SIZE ; j++{
+			if(index < int(size)){
+				fileArgs.Data.Data[j] = data.At(j).(byte);
+			}
+			index++;
+		}
+		fileArgs.ChunkID = fdFile.chunks.At(i).(uint64);
+		fileArgs.Offset = 0;
+		if((i != fdFile.chunks.Len()-1)|| (size%sfs.CHUNK_SIZE==0)){
+			fileArgs.Length = sfs.CHUNK_SIZE;
+		}else{
+			fileArgs.Length =uint(size)% uint(sfs.CHUNK_SIZE)
+		}
+		chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
+		replyCall:= <-chunkCall.Done
+		if replyCall.Error!=nil{
+			log.Printf("Client: error in reply from rpc in write\n");
+			return -1
+		}
+		if(fileInfo.Status!=0){
+			break;
+		}
 	}
-//	log.Printf("\nClient: ChunkID: %d\n", fileArgs.ChunkID);
-//	log.Printf("Client: Offset: %d\n", fileArgs.Offset);
-//	log.Printf("Client: Length: %d\n", fileArgs.Length);
-	log.Printf("Client: Data: %d\n", fileArgs.Length);
-
 	return fileInfo.Status;
+}
+/// no idea if this works at all
+func WriteFromFile(fileNameLocal string, fileNameServer string, master string)(int){
+	f, err := ioutil.ReadFile(fileNameLocal)
+	if err!=nil {
+	}
+	fd := Open(fileNameServer, true, master, uint64(len(f)))
+
+	toWrite := new(vector.Vector)
+	for j:=0; j<len(f) ; j++{
+		toWrite.Push(f[j])
+	}
+	//need to open a file and have a bunch of chunks
+	return Write (fd , *toWrite  )
 }
 
 
+func ReadToFile(fileNameLocal string, fileNameServer string, master string)(int){
+//	fd := Open(fileNameServer, true, master, uint64(len(f)))
+// read , create local file, write to local file, close local file
+	return 0;
+}
+
+// methods to convert arguments  from vectors to commonly used types like bytes and
+// strings	since vectors may not be used often.
+
+
+
+/* delete */
+//TODO
+func Delete(fd int) (int){
+	return 1;
+}
 
 /* close */
 //TODO
-
 func Close(fd int) (int){
 	//will have to tell this so that the master can be informed of the new file sizes...
 // also remove from open files list 
@@ -148,7 +209,7 @@ func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
 	//goes to chunk and gets a chunk of memory to read...
 ///*
 	fileInfo := new (sfs.ReadReturn);
-	fileArgs := new (sfs.ReadArgs);
+//	fileArgs := new (sfs.ReadArgs);
 	fdFile, inMap := openFiles[fd]
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
@@ -159,9 +220,9 @@ func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
 		log.Printf("Client: Dial Failed")
 		return fileInfo.Data, -1
 	}
-	fileArgs.ChunkID= fdFile.chunk;
-	fileArgs.Offset = 0;
-	fileArgs.Length = sfs.CHUNK_SIZE;
+//	fileArgs.ChunkIDs= fdFile.chunk;
+//	fileArgs.Offsets = 0;
+//	fileArgs.Lengths = sfs.CHUNK_SIZE;
 	//ChunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
 	//replyCall:= <-chunkCall.Done
 	//this is asynchronous, probably want to change it to synchronous
@@ -173,6 +234,7 @@ func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
 	//log.Printf("Client: Data = %d\n",fileInfo.Data);
 
 	return  fileInfo.Data, fileInfo.Status;
+//*/
 }
 
 /* append - LATER */
