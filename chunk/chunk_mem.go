@@ -6,7 +6,7 @@ import (
 	"rpc"
 	"log"
 	"net"
-	"fmt"
+//	"fmt"
 	"container/vector"
 	"syscall"
 	"time"
@@ -78,24 +78,29 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	data.Data = args.Data.Data
 	chunkTable[args.Info.ChunkID] = data
 
-	if args.Info.Servers.At(1) == nil {
-		return nil
+	for 
+		{
+		if args.Info.Servers.At(1) == nil {
+			return nil
+		}
+		
+		args.Info.Servers.Slice(1,args.Info.Servers.Len())
+
+//		var replicationHostAddr net.TCPAddr = args.Info.Servers.At(0).(net.TCPAddr)
+//		str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
+
+		client, err := rpc.Dial("tcp", args.Info.Servers.At(0).(*net.TCPAddr).String())
+		if err != nil {
+			log.Printf("chunk: dialing:", err)
+			continue
+		}
+		
+		err = client.Call("Server.Write", &args, &ret)
+		if err != nil {
+			log.Fatal("chunk: server error: ", err)
+		}
+		break
 	}
-
-	args.Info.Servers.Slice(1,args.Info.Servers.Len())
-	var replicationHostAddr net.TCPAddr = args.Info.Servers.At(0).(net.TCPAddr)
-
-	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
-	client, err := rpc.Dial("tcp", str)
-	if err != nil {
-		log.Fatal("chunk: dialing:", err)
-	}
-
-	err = client.Call("Server.Write", &args, &ret)
-	if err != nil {
-		log.Fatal("chunk: server error: ", err)
-	}
-
 	return nil	
 }
 
@@ -167,11 +172,11 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		log.Printf("chunk: replication call: nil address.")
 		return nil
 	}
-	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
 
-	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
+//	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
+//	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 	
-	replicationHost, err := rpc.Dial("tcp", str)
+	replicationHost, err := rpc.Dial("tcp", args.Servers.At(0).(*net.TCPAddr).String())
 	if err != nil {
 		log.Fatal("chunk: replication call:", err)
 	}
@@ -181,7 +186,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 	readArgs.ChunkIDs = args.ChunkID
 
 	log.Printf("replication request for site %s and chunk %d\n",
-		replicationHostAddr.IP.String(),args.ChunkID);
+		args.Servers.At(0).(*net.TCPAddr).String(),args.ChunkID);
 
 	err = replicationHost.Call("Server.Write", &readArgs, &readRet)
 	if err != nil {

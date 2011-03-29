@@ -133,11 +133,6 @@ func Write (fd int , data vector.Vector  ) (int){
 		numChunks++
 	}
 	for i := 0; i<int(numChunks); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
-		if err != nil{
-			log.Printf("Client: Dial Failed in write");
-			os.Exit(1);
-		}
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
 			if(index < int(size)){
 				fileArgs.Data.Data[j] = data.At(j).(byte);
@@ -151,14 +146,29 @@ func Write (fd int , data vector.Vector  ) (int){
 		}else{
 			fileArgs.Length =uint(size)% uint(sfs.CHUNK_SIZE)
 		}
-		chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
-		replyCall:= <-chunkCall.Done
-		if replyCall.Error!=nil{
-			log.Printf("Client: error in reply from rpc in write\n");
-			return -1
-		}
-		if(fileInfo.Status!=0){
-			break;
+		
+		for {
+			
+			client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
+			if err != nil{
+				log.Printf("Client: Dial Failed in write");
+				if fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(1).(*net.TCPAddr) == nil {
+					log.Fatal("Client: out of chunk servers to write to.")
+				}
+				fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.Slice(1,fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.Len())
+				continue
+			}
+			
+			chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
+			replyCall:= <-chunkCall.Done
+			
+			if replyCall.Error != nil{
+				log.Fatal("Client: error in reply from rpc in write\n");
+			}
+			if(fileInfo.Status!=0){
+				log.Fatal("Client: Status non zero =",fileInfo.Status)
+			}
+			break
 		}
 	}
 	return fileInfo.Status;
