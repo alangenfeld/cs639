@@ -2,7 +2,7 @@
 use strict;
 use Cwd 'abs_path';
 
-my $master = 'mumble-02.cs.wisc.edu';
+my $master = 'mumble-20.cs.wisc.edu';
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
 my $chunkCount = 1;
 my $testdir;
@@ -23,8 +23,24 @@ sub doKill {
     }
 }
 
+sub superKill {
+    for(my $i = 1; $i < 40; $i++) {
+	my $index = $i;
+	if($i < 10) {
+	   $index = '0'.$index; 
+	}
+	sys("$ssh mumble-$index.cs.wisc.edu 'killall serv'");
+	sys("$ssh mumble-$index.cs.wisc.edu 'killall master'");
+    }
+}
+
 main();
 sub main {
+    if($ARGV[0] eq '-k') {
+	superKill();
+	return;
+    }
+
     $testdir = abs_path($0);
     $testdir =~ s/\/[^\/]*$//;
     print "Test dir: ".$testdir."\n";

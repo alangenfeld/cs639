@@ -22,11 +22,11 @@ import (
 */
 const(
  O_CREATE = 1
- O_RDONLY = 2
- O_WRONLY = 3
- SEEK_SET = 4
- SEEK_CURR = 5
- SEEK_END = 6
+ O_RDONLY
+ O_WRONLY
+ SEEK_SET
+ SEEK_CURR
+ SEEK_END
 )
 
 
@@ -59,19 +59,12 @@ func Open( filename string , write bool, master string,  size uint64  ) (int){
 	fd++
 	var nextFile file
 	nextFile.size = fileInfo.Size
-	nextFile.filePtr = 0;
+	nextFile.filePtr = 0
 	nextFile.chunkInfo = new(vector.Vector)
-//	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
-//		nextFile.chunks.Push(fileInfo.Chunk.At(i).(*sfs.ChunkInfo).ChunkID)
-//		for j:= 0 ; j< sfs.NREPLICAS ; j++ {
-//			nextFile.serverAddresses.servers.At(j).(*net.TCPAddr).Push(fileInfo.Chunk.(*sfs.ChunkInfo).ChunkID)
-//		}
-//	}
+	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
+		nextFile.chunkInfo.Push(fileInfo.Chunk)
+	}
 
-//	nextFile.serverAddresses = new(vector.Vector)
-//	nextFile.serverAddresses = &fileInfo.ServerLocation
-	//nextFile.chunks.Push(fileInfo.Chunks)
-	//nextFile.serverAddresses.Push(fileInfo.ServerLocation)
 	openFiles[fd] = nextFile
 	return fd;
 	}
@@ -79,10 +72,7 @@ func Open( filename string , write bool, master string,  size uint64  ) (int){
 }
 
 /* read */
-//func Read (fd int) (vector.Vector, int ){
-//	return  new(vector.Vector), -1;
-//}
-func Read (fd int) (vector.Vector, int ){
+func Read (fd int, size int) (vector.Vector, int ){
 	//goes to chunk and gets a chunk of memory to read...
 	fileInfo := new (sfs.ReadReturn);
 	fileArgs := new (sfs.ReadArgs);
@@ -198,17 +188,11 @@ func WriteFromFile(fileNameLocal string, fileNameServer string, master string)(i
 	return Write (fd , *toWrite  )
 }
 
-
 func ReadToFile(fileNameLocal string, fileNameServer string, master string)(int){
 //	fd := Open(fileNameServer, true, master, uint64(len(f)))
 // read , create local file, write to local file, close local file
 	return 0;
 }
-
-// methods to convert arguments  from vectors to commonly used types like bytes and
-// strings	since vectors may not be used often.
-
-
 
 /* delete */
 //TODO
@@ -219,23 +203,17 @@ func Delete(filename string) (int){
 /* close */
 //TODO
 func Close(fd int) (int){
-	//will have to tell this so that the master can be informed of the new file sizes...
-// also remove from open files list 
 	return -1;
 }
 
 func ReadDir(path string) (vector.Vector, int){
-
 	var x vector.Vector
 	return x,  -1;
 }
 
 /* seek */
 //TODO
-//TODO
 func Seek (fd int, offset int, whence int) (sfs.Chunk, int){
-	//BASED Off of READ as they should be fairly similar...
-	//goes to chunk and gets a chunk of memory to read...
 
 	fileInfo := new (sfs.ReadReturn);
 //	fileArgs := new (sfs.ReadArgs);
@@ -261,25 +239,7 @@ func Seek (fd int, offset int, whence int) (sfs.Chunk, int){
 	//}
 	//log.Printf("\nClient: Status = %d\n",fileInfo.Status);
 	//log.Printf("Client: Data = %d\n",fileInfo.Data);
-
 	return  fileInfo.Data, fileInfo.Status;
-
 }
 
-/* append - LATER */
-//TODO
-//func Append(fd int, data ???) (int){
-//}
-
-/* remove - LATER */
-//TODO
-func Remove(fd int) (int){
-	return -1
-}
-
-/*create*/
-//TODO
-//func Create(string filename) (int){
-//	return -1
-//}
 
