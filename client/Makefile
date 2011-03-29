@@ -21,5 +21,4 @@ client.$(su): client.go
 #	cp sfs.6 ../include/
 
 clean:
-	rm *.$(su) -f
-
+	rm -f *.$(su)

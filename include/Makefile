@@ -12,4 +12,4 @@ endif
 default: *.go
 	$(gc) sfs.go
 clean:
-	rm *.$(su)
+	rm -f *.$(su)
