@@ -22,8 +22,6 @@ var sHeap *serverHeap
 var servers map[uint64](*server)
 var chunks map[uint64](*chunk)
 
-var nReplicas int = 1
-
 var heartbeatMonitors map[uint64](chan int64)
 
 type inode struct {
@@ -74,6 +72,27 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	info.Chunk = *chunkInfoVec
 
 	return err
+}
+
+func (m *Master) AddChunk(args *sfs.AddChunkArgs, ret *sfs.ChunkInfo) os.Error {
+	file, ok := QueryFile(args.Name)
+	
+	if !ok {
+		return os.NewError("File does not exist! Herp derp")
+	}
+	
+	var err os.Error
+	ret.ChunkID, err = file.AddChunk()
+	
+	if err != nil{
+		return os.NewError("Could not add chunk! Ruh roh")
+	}
+	
+	for i := 0; i < sfs.NREPLICAS; i++ {
+		ret.Servers.Push(sHeap.vec.At(i).(*server).addr)
+	}
+	
+	return nil
 }
 
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
@@ -238,28 +257,28 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	return inter.(*inode), exists
 }
 
-func (i *inode) AddChunk() (chunkID uint64) {
-	var serv *server = heap.Pop(sHeap).(*server)
+func (i *inode) AddChunk() (chunkID uint64, err os.Error) {
+	//var serv *server = heap.Pop(sHeap).(*server)
 	thisChunk := new(chunk)
 	thisChunk.chunkID = nextChunk
 	nextChunk += 1
 
 	thisChunk.servers = new(vector.Vector)
 
-	thisChunk.servers.Push(serv)
-	serv.chunks.Push(thisChunk)
+	//thisChunk.servers.Push(serv)
+	//serv.chunks.Push(thisChunk)
 	i.chunks.Push(thisChunk)
 
-	heap.Push(sHeap, serv)
+	//heap.Push(sHeap, serv)
 
 	chunks[thisChunk.chunkID] = thisChunk
 
-	return thisChunk.chunkID
+	return thisChunk.chunkID, nil
 }
 
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
-		if chunks[cID].servers.Len() < nReplicas {
+		if chunks[cID].servers.Len() < sfs.NREPLICAS {
 			ret += 1
 			replicateChunk(cID)
 		}
