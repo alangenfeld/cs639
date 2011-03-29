@@ -15,6 +15,8 @@ import (
 type Server int
 
 const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
+const NUM_USR_COMMAND = "who"
+const NUM_USR_ARGS = "| awk '{print $1;}'| uniq | wc -l |awk '{print $1;}'"
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
@@ -79,6 +81,26 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	return nil
 }*/
 
+/*func LogStats(){
+	//first, open the daily log file
+	host,_ := os.Hostname()
+	current := time.Seconds()
+	filename := host
+	logFile, err := os.Open(filename, os.O_CREAT | os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatal("chunk: unable to init logging");
+	}
+	
+	//now, enter the happy place of logging all our fun stuff
+	var info syscall.Sysinfo_t
+	var args []string
+	args[0] = NUM_USR_ARGS
+	for {
+		syscall.Sysinfo(&info)
+		p, err := os.StartProcess(NUM_USR_COMMAND, args, nil, nil, nil)
+	}		
+}*/
+
 func SendHeartbeat(masterAddress string){
 	var args sfs.HeartbeatArgs
 	var ret  sfs.HeartbeatReturn
@@ -99,9 +121,11 @@ func SendHeartbeat(masterAddress string){
 		syscall.Sysinfo(&info)
 		var mem_usage float32
 		mem_usage = float32 (info.Freeram) / float32 (info.Totalram)
-		if mem_usage > .8 { 
+		if mem_usage > .8  && capacity > 0{ 
 			capacity --
 			//TODO: This is super sketchy and needs to be fixed, free up current blocks, etc
+		}else if mem_usage < .2{
+			capacity ++
 		}
 		args.Capacity = capacity
 		args.AddedChunks = addedChunks
