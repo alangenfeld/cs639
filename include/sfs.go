@@ -8,7 +8,7 @@ import (
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
-const CHUNK_SIZE = 32 // 32 B
+const CHUNK_SIZE = 32                  // 32 B
 const HEARTBEAT_WAIT = 15 * 1000000000 // 15 seconds
 
 type Chunk struct {
@@ -17,40 +17,39 @@ type Chunk struct {
 
 type ReadArgs struct {
 	ChunkIDs uint64
-	Offsets uint // bytes
-	Lengths uint // bytes
+	Offsets  uint // bytes
+	Lengths  uint // bytes
 }
 
 type ReadReturn struct {
-	Data Chunk
+	Data   Chunk
 	Status int
 }
 
 type ChunkBirthArgs struct {
 	ChunkServerIP net.TCPAddr
-	Capacity uint64
+	Capacity      uint64
 }
 type ChunkBirthReturn struct {
 	ChunkServerID uint64
 }
 
-
 type WriteArgs struct {
-	Info ChunkInfo
-	Data Chunk
+	Info   ChunkInfo
+	Data   Chunk
 	Offset uint // bytes
 	Length uint // bytes
 }
 
-type WriteReturn struct{
+type WriteReturn struct {
 	Status int
 }
 
 type HeartbeatArgs struct {
 	ChunkServerIP net.TCPAddr
 	ChunkServerID uint64
-	Capacity uint64
-	AddedChunks vector.Vector
+	Capacity      uint64
+	AddedChunks   vector.Vector
 }
 
 type HeartbeatReturn struct {
@@ -59,29 +58,33 @@ type HeartbeatReturn struct {
 
 type Status struct {
 	ChunkCount uint
-	ChunkIDs list.List
+	ChunkIDs   list.List
 }
 
-type OpenArgs struct{
+type OpenArgs struct {
 	Name string
 	Size uint64
 }
 
-type OpenReturn struct{
-	New bool
-	Size uint64  // bytes
-	Chunk	vector.Vector  // bytes
+type OpenReturn struct {
+	New   bool
+	Size  uint64        // bytes
+	Chunk vector.Vector // bytes
 }
 
-type ReplicateChunkArgs struct{
+type ReplicateChunkArgs struct {
 	ChunkID uint64
 	Servers vector.Vector
 }
 
-type ReplicateChunkReturn struct{
+type ReplicateChunkReturn struct {
 	Status int
 }
 
+type AddChunkArgs struct {
+	Name string
+	Count uint64
+} // returns a ChunkInfo
 
 type Handle int
 
@@ -89,13 +92,3 @@ type ChunkInfo struct {
 	ChunkID uint64
 	Servers vector.Vector
 }
-
-type server struct {
-	addr net.TCPAddr
-	id uint64
-	capacity uint64
-	chunks *vector.Vector
-}
-
-//func (t *Handle) Read(args *ReadArgs, chunk *Chunk) os.Error
-
