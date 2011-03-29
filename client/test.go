@@ -36,7 +36,7 @@ func main(){
 		log.Printf("Test: writing hello\n");
 		_ =  client.Write(fd,  data );
 		log.Printf("Test: reading hello\n")
-		readFromFile,ret :=  client.Read(fd)
+		readFromFile,ret :=  client.Read(fd, 100)
 		if(ret==-1){
 			log.Printf("Test: Read Failed")
 		}
