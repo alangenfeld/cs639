@@ -20,47 +20,57 @@ import (
 	int size
 
 */
-type file struct {
-	chunk uint64
-	serverAddress net.TCPAddr
+type addresses struct{
+	servers *vector.Vector
 
+}
+
+type file struct {
+	size uint64
+	filePtr  uint64
 	chunks *vector.Vector
-	serverAddresses *vector.Vector
+	serverAddresses addresses
 }
 var fd = 0
 var openFiles = map[int] file{}
 
 //maybe need another one without size for acompletely new file
 /* open */
-func Open(filename string , write bool, master string, size uint64  ) (int){
-	//open the file by the name filename
-	//return an int giving the fd#.  if -1, it was a fail!
-	//read == false  write == true
+//func Open(master string, filename string , flag int  ) (int){
+//	return -1;
+//}
+
+
+func Open( filename string , write bool, master string,  size uint64  ) (int){
 
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		log.Printf("Client: Error", err.String());
-		os.Exit(1);
+		os.Exit(1)
 		return -1
 	}else{
-	fileInfo := new (sfs.OpenReturn);
-	fileArgs := new (sfs.OpenArgs);
-	fileArgs.Name = filename;
-	fileArgs.Size = size;
-	client.Call("Master.ReadOpen", &fileArgs,&fileInfo);
+	fileInfo := new (sfs.OpenReturn)
+	fileArgs := new (sfs.OpenArgs)
+	fileArgs.Name = filename
+	fileArgs.Size = size
+	client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 	if fileInfo.New {
-		log.Printf("\nClient: New file!\n");
+		log.Printf("\nClient: New file!\n")
 	}
 	fd++
 	var nextFile file
+//	var ChInfo  sfs.ChunkInfo
 	nextFile.chunks = new(vector.Vector)
-	nextFile.chunks = &fileInfo.Chunk
-//**************************
-	//CHUNKS AND SERVER LOCATIONS in fileInfo will need to be updated to whatever new structs are.
-	nextFile.serverAddresses = new(vector.Vector)
-	nextFile.serverAddresses = &fileInfo.ServerLocation//.Copy()
-//	nextFile.chunks.Push(fileInfo.Chunks)
-	nextFile.serverAddresses.Push(fileInfo.ServerLocation)
+//	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
+		
+//		nextFile.chunks = &fileInfo.Chunk.(*sfs.ChunkInfo).ChunkID
+//	}
+//	nextFile.size = fileInfo.Size
+
+//	nextFile.serverAddresses = new(vector.Vector)
+//	nextFile.serverAddresses = &fileInfo.ServerLocation
+	//nextFile.chunks.Push(fileInfo.Chunks)
+	//nextFile.serverAddresses.Push(fileInfo.ServerLocation)
 	openFiles[fd] = nextFile
 	return fd;
 	}
@@ -68,6 +78,9 @@ func Open(filename string , write bool, master string, size uint64  ) (int){
 }
 
 /* read */
+//func Read (fd int) (vector.Vector, int ){
+//	return  new(vector.Vector), -1;
+//}
 func Read (fd int) (vector.Vector, int ){
 	//goes to chunk and gets a chunk of memory to read...
 	fileInfo := new (sfs.ReadReturn);
@@ -80,12 +93,12 @@ func Read (fd int) (vector.Vector, int ){
 	}
 	index := 0;
 	for i := 0; i<fdFile.chunks.Len(); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.At(i).(*net.TCPAddr).String())
+		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.servers.At(0).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, -1
 		}
-		fileArgs.ChunkIDs = fdFile.chunks.At(i).(uint64);
+		fileArgs.ChunkIDs= fdFile.chunks.At(i).(uint64);
 		fileArgs.Offsets = 0;
 		fileArgs.Lengths  = sfs.CHUNK_SIZE;
 
@@ -110,10 +123,9 @@ func Read (fd int) (vector.Vector, int ){
 }
 
 /* write */
-func Write (fd int , data vector.Vector  ) (int){
 
-	//we will need to write data to different blocks
-	//the return indicates whether it was successful
+
+func Write (fd int , data vector.Vector  ) (int){
 	fileArgs := new (sfs.WriteArgs);
 	fileInfo := new (sfs.WriteReturn);
 	fdFile, inMap := openFiles[fd]
@@ -130,7 +142,7 @@ func Write (fd int , data vector.Vector  ) (int){
 		numChunks++
 	}
 	for i := 0; i<int(numChunks); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.At(i).(*net.TCPAddr).String())
+		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.servers.At(0).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in write");
 			os.Exit(1);
@@ -141,7 +153,7 @@ func Write (fd int , data vector.Vector  ) (int){
 			}
 			index++;
 		}
-		fileArgs.ChunkID = fdFile.chunks.At(i).(uint64);
+		fileArgs.Info.ChunkID = (fdFile.chunks.At(i).(uint64))
 		fileArgs.Offset = 0;
 		if((i != fdFile.chunks.Len()-1)|| (size%sfs.CHUNK_SIZE==0)){
 			fileArgs.Length = sfs.CHUNK_SIZE;
@@ -189,8 +201,8 @@ func ReadToFile(fileNameLocal string, fileNameServer string, master string)(int)
 
 /* delete */
 //TODO
-func Delete(fd int) (int){
-	return 1;
+func Delete(filename string) (int){
+	return -1;
 }
 
 /* close */
@@ -198,28 +210,34 @@ func Delete(fd int) (int){
 func Close(fd int) (int){
 	//will have to tell this so that the master can be informed of the new file sizes...
 // also remove from open files list 
-	return 1;
+	return -1;
 }
 
+func ReadDir(path string) (vector.Vector, int){
+
+	var x vector.Vector
+	return x,  -1;
+}
 
 /* seek */
 //TODO
-func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
+//TODO
+func Seek (fd int, offset int, whence int) (sfs.Chunk, int){
 	//BASED Off of READ as they should be fairly similar...
 	//goes to chunk and gets a chunk of memory to read...
-///*
+
 	fileInfo := new (sfs.ReadReturn);
 //	fileArgs := new (sfs.ReadArgs);
-	fdFile, inMap := openFiles[fd]
-	if !inMap {
-		log.Printf("Client: File not in open list!\n")
-		return fileInfo.Data, -1
-	}
-	_,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
-	if err != nil{
-		log.Printf("Client: Dial Failed")
-		return fileInfo.Data, -1
-	}
+//	fdFile, inMap := openFiles[fd]
+//	if !inMap {
+//		log.Printf("Client: File not in open list!\n")
+//		return fileInfo.Data, -1
+//	}
+//	_,err :=rpc.Dial("tcp",fdFile.serverAddress.String())
+//	if err != nil{
+//		log.Printf("Client: Dial Failed")
+//		return fileInfo.Data, -1
+//	}
 //	fileArgs.ChunkIDs= fdFile.chunk;
 //	fileArgs.Offsets = 0;
 //	fileArgs.Lengths = sfs.CHUNK_SIZE;
@@ -234,7 +252,7 @@ func Seek (fd int, chunkIndex int) (sfs.Chunk, int){
 	//log.Printf("Client: Data = %d\n",fileInfo.Data);
 
 	return  fileInfo.Data, fileInfo.Status;
-//*/
+
 }
 
 /* append - LATER */
