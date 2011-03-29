@@ -6,7 +6,7 @@ import (
 	"rpc"
 	"os"
 	"log"
-	"io/ioutil"
+//	"io/ioutil"
 	"../include/sfs"
 	"net"
 )
@@ -51,7 +51,7 @@ func Open(master string,  filename string , flag int ) (int){
 	fileInfo := new (sfs.OpenReturn)
 	fileArgs := new (sfs.OpenArgs)
 	fileArgs.Name = filename
-	fileArgs.Size = size
+//	fileArgs.Size = 0;
 	client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 	if fileInfo.New {
 		log.Printf("\nClient: New file!\n")
