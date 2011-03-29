@@ -13,14 +13,6 @@ type server struct {
 	chunks *vector.Vector
 }
 
-//THIS IS HERE BECAUSE.
-type servertest struct {
-	addr net.TCPAddr
-	id uint64
-	capacity uint64
-	chunks *vector.Vector
-}
-
 type heapCommand struct {
 	command uint64
 	server interface {}
@@ -72,13 +64,13 @@ func (s * serverHeap) Handler() {
 			s.serverChan <- &heapCommand{1,s.vec.Pop()}
 		}
 		if(rec.command == 2){
-			server := rec.server.(*server)
+			deadServer := rec.server.(*server)
 			//find the server to remove
 			vecRange := s.vec.Len()
 			for cnt := 0; cnt < vecRange; cnt++{
 			
-				testserv := s.vec.At(cnt).(*servertest)
-				if(testserv.id == server.id){
+				testserv := s.vec.At(cnt).(*server)
+				if(testserv.id == deadServer.id){
 				
 					//find each chunk to modify
 					chunkRange := testserv.chunks.Len()
@@ -88,10 +80,10 @@ func (s * serverHeap) Handler() {
 						
 						//find the server to remove from EACH CHUNK LIST
 						searchRange := tempchunk.servers.Len()
-						for cnt2 := 0; cnt2 < searchRange; cnt2++{
+						for cnt2 := 0; cnt2 < searchRange; cnt2++ {
 						
-							tempserv := tempchunk.servers.At(cnt2).(*servertest)
-							if(tempserv.id == server.id){
+							tempserv := tempchunk.servers.At(cnt2).(*server)
+							if(tempserv.id == deadServer.id){
 								tempchunk.servers.Delete(cnt2)
 							}
 						}	
