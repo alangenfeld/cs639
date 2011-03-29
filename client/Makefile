@@ -9,7 +9,7 @@ gl=8l
 su=8
 endif
 
-client: client.$(su) test.go
+test: client.$(su) test.go
 	$(gc) test.go
 	$(gl) -o test test.$(su)
 
