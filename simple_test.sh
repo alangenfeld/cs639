@@ -2,6 +2,11 @@
 
 ssh='ssh -o StrictHostKeyChecking=no '
 
+echo "##########################################################"
+echo "#           PLEASE RUN CLEANUP.SH WHEN YOURE DONE        #"
+echo "##########################################################"
+sleep 2
+
 pwd=`pwd`
 $ssh mumble-01 "$pwd/master/master"&
 sleep 2
