@@ -16,4 +16,4 @@ default: *.go
 	$(gc) runmaster.go
 	$(gl) -o master runmaster.$(su)
 clean:
-	rm *.$(su) -f
+	rm -f *.$(su)
