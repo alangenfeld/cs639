@@ -19,6 +19,7 @@ var nextChunkServerID uint64 = 0
 var serverIndex uint64 = 0
 var sHeap *serverHeap
 //var sMap map[net.TCPAddr](*server)
+var servers map[uint64](*server)
 var chunks map[uint64](*chunk)
 
 var heartbeatMonitors map[uint64](chan int64)
@@ -109,6 +110,29 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
 	str := fmt.Sprintf("%s:%d", args.ChunkServerIP.IP.String(), args.ChunkServerIP.Port)
 	log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
+	
+	//find the server who's heart is beating
+	server, servOK := servers[args.ChunkServerID]
+	if(servOK == false){
+		log.Printf("BeatHeart: Error server (%s) not in server map\n", str)
+	}
+	
+	//if somethings changed, update the server, heapify
+	if(server.capacity != args.Capacity || args.AddedChunks != nil){
+		server.capacity = args.Capacity
+		//make sure added chunks are valid, add them
+		chunkRange := args.AddedChunks.Len()
+		for cnt := 0; cnt < chunkRange; cnt++ {
+			chunk , chunkOK := chunks[args.AddedChunks.At(cnt).(*chunk).chunkID]
+			if(chunkOK == true){
+				server.chunks.Push(args.AddedChunks.At(cnt))
+				chunk.servers.Push(server)
+			}/*else{
+				log.Printf("BeatHeart: Error chunk %s does not exist\n", (args.AddedChunks.At(cnt).(*chunk)).chunkID)
+			}*/
+		}
+	}
+	
 
 	heartbeatMonitors[args.ChunkServerID] <- time.Nanoseconds()
 
@@ -145,6 +169,7 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	heartbeatMonitors[s.id] = make(chan int64)
 	heap.Push(sHeap, s)
+	servers[s.id] = s
 
 	return s
 }
@@ -275,6 +300,7 @@ func init() {
 	sHeap = new(serverHeap)
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
+	servers = make(map[uint64](*server))
 	heartbeatMonitors = make(map[uint64](chan int64))
 //	sMap = make(map[net.TCPAddr](*server))
 	heap.Init(sHeap)

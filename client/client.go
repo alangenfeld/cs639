@@ -20,25 +20,24 @@ import (
 	int size
 
 */
-type addresses struct{
-	servers *vector.Vector
+const(
+ O_CREATE = 1
+ O_RDONLY = 2
+ O_WRONLY = 3
+ SEEK_SET = 4
+ SEEK_CURR = 5
+ SEEK_END = 6
+)
 
-}
 
 type file struct {
 	size uint64
 	filePtr  uint64
-	chunks *vector.Vector
-	serverAddresses addresses
+	chunkInfo *vector.Vector
 }
+
 var fd = 0
 var openFiles = map[int] file{}
-
-//maybe need another one without size for acompletely new file
-/* open */
-//func Open(master string, filename string , flag int  ) (int){
-//	return -1;
-//}
 
 
 func Open( filename string , write bool, master string,  size uint64  ) (int){
@@ -59,13 +58,15 @@ func Open( filename string , write bool, master string,  size uint64  ) (int){
 	}
 	fd++
 	var nextFile file
-//	var ChInfo  sfs.ChunkInfo
-	nextFile.chunks = new(vector.Vector)
+	nextFile.size = fileInfo.Size
+	nextFile.filePtr = 0;
+	nextFile.chunkInfo = new(vector.Vector)
 //	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
-		
-//		nextFile.chunks = &fileInfo.Chunk.(*sfs.ChunkInfo).ChunkID
+//		nextFile.chunks.Push(fileInfo.Chunk.At(i).(*sfs.ChunkInfo).ChunkID)
+//		for j:= 0 ; j< sfs.NREPLICAS ; j++ {
+//			nextFile.serverAddresses.servers.At(j).(*net.TCPAddr).Push(fileInfo.Chunk.(*sfs.ChunkInfo).ChunkID)
+//		}
 //	}
-//	nextFile.size = fileInfo.Size
 
 //	nextFile.serverAddresses = new(vector.Vector)
 //	nextFile.serverAddresses = &fileInfo.ServerLocation
@@ -92,13 +93,13 @@ func Read (fd int) (vector.Vector, int ){
 		return entireRead, -1
 	}
 	index := 0;
-	for i := 0; i<fdFile.chunks.Len(); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.servers.At(0).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
+	for i := 0; i<fdFile.chunkInfo.Len(); i++ {
+		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, -1
 		}
-		fileArgs.ChunkIDs= fdFile.chunks.At(i).(uint64);
+		fileArgs.ChunkIDs= fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID;
 		fileArgs.Offsets = 0;
 		fileArgs.Lengths  = sfs.CHUNK_SIZE;
 
@@ -142,7 +143,7 @@ func Write (fd int , data vector.Vector  ) (int){
 		numChunks++
 	}
 	for i := 0; i<int(numChunks); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.serverAddresses.servers.At(0).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
+		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in write");
 			os.Exit(1);
@@ -153,9 +154,9 @@ func Write (fd int , data vector.Vector  ) (int){
 			}
 			index++;
 		}
-		fileArgs.Info.ChunkID = (fdFile.chunks.At(i).(uint64))
+		fileArgs.Info.ChunkID = (fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID)
 		fileArgs.Offset = 0;
-		if((i != fdFile.chunks.Len()-1)|| (size%sfs.CHUNK_SIZE==0)){
+		if((i != fdFile.chunkInfo.Len()-1)|| (size%sfs.CHUNK_SIZE==0)){
 			fileArgs.Length = sfs.CHUNK_SIZE;
 		}else{
 			fileArgs.Length =uint(size)% uint(sfs.CHUNK_SIZE)
