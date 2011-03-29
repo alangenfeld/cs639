@@ -36,11 +36,10 @@ type ChunkBirthReturn struct {
 
 
 type WriteArgs struct {
-	ChunkID uint64
+	Info ChunkInfo
 	Data Chunk
 	Offset uint // bytes
 	Length uint // bytes
-
 }
 
 type WriteReturn struct{
