@@ -28,10 +28,10 @@ func main(){
 		log.Printf("Test: creating hello\n");
 		if len(os.Args) != 2 {
 			//log.Printf("Test: correct usage is: client c masterMachine\n");
-			fd = client.Open("hello", true, "127.0.0.1",uint64(data.Len()) )
+			fd = client.Open("127.0.0.1", "hello", 1) )
 		} else{
 			log.Printf("os.args[1] = " +  os.Args[1])
-			fd = client.Open("hello", true, os.Args[1],uint64(data.Len()))
+			fd = client.Open(os.Args[1], "hello", 1))
 		}
 		log.Printf("Test: writing hello\n");
 		_ =  client.Write(fd,  data );
