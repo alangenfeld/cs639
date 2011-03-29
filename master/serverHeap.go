@@ -3,9 +3,18 @@ package master
 import (
 	"net"
 	"container/vector"
+	"container/heap"
 )
 
 type server struct {
+	addr net.TCPAddr
+	id uint64
+	capacity uint64
+	chunks *vector.Vector
+}
+
+//THIS IS HERE BECAUSE.
+type servertest struct {
 	addr net.TCPAddr
 	id uint64
 	capacity uint64
@@ -63,14 +72,15 @@ func (s * serverHeap) Handler() {
 			s.serverChan <- &heapCommand{1,s.vec.Pop()}
 		}
 		if(rec.command == 2){
-			/*server := rec.server.(*server)
+			server := rec.server.(*server)
 			vecRange := s.vec.Len()
 			for cnt := 0; cnt < vecRange; cnt++{
-				var testserv *server = s.vec.At(cnt).(*server)
-				if(testserv.addr == server.addr){
+				testserv := s.vec.At(cnt).(*servertest)
+				if(testserv.id == server.id){
 					s.vec.Delete(cnt)
 				}
-			}*/
+			}
+			heap.Init(s)
 		}
 	}
 }

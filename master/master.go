@@ -45,16 +45,16 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		err := os.NewError("No chunk servers!")
 		return err
 	}
-	i, newFile, err := OpenFile(args.Name)
+	file, newFile, err := OpenFile(args.Name)
 
 	info.New = newFile
-	info.Size = i.size
+	info.Size = file.size
 	
 	chunkInfoVec := new(vector.Vector)
 	
 	//for each chunk in the server, make a replication call.
-	for i := 0; i < i.chunks.Len(); i++ {
-		chunk := i.chunks.At(i).(*chunk)
+	for i := 0; i < file.chunks.Len(); i++ {
+		chunk := file.chunks.At(i).(*chunk)
 		
 		//populate chunk location vector
 		servList := new(vector.Vector)
@@ -70,7 +70,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		chunkInfoVec.Push(chunkInfo)
 	}
 	
-	info.Chunks = *chunkInfoVec
+	info.Chunk = *chunkInfoVec
 
 	return err
 }
@@ -112,8 +112,30 @@ func (s *server) monitorServerBeats(beats chan int64) int {
 	return 0
 }
 
+func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
+	str := fmt.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
+	log.Printf("AddServer: adding %s\n", str)
+
+	s := new(server)
+
+	s.id = nextChunkServerID
+	nextChunkServerID += 1
+	s.addr = servAddr
+	s.capacity = capacity
+	s.chunks = new(vector.Vector)
+
+	heartbeatMonitors[s.id] = make(chan int64)
+	heap.Push(sHeap, s)
+
+	return s
+}
+
 func RemoveServer(serv *server) os.Error {
-	str1 := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
+
+	//Remove the Server
+	sHeap.Remove(serv)
+	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
+	
 	
 	otherserver := sHeap.vec.At(0).(*server)
 	
@@ -210,28 +232,6 @@ func (i *inode) AddChunk() (chunkID uint64) {
 	return thisChunk.chunkID
 }
 
-func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
-	str := fmt.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
-	log.Printf("AddServer: adding %s\n", str)
-
-	s := new(server)
-
-	s.id = nextChunkServerID
-	nextChunkServerID += 1
-	s.addr = servAddr
-	s.capacity = capacity
-	s.chunks = new(vector.Vector)
-
-	heartbeatMonitors[s.id] = make(chan int64)
-	heap.Push(sHeap, s)
-
-	return s
-}
-
-/*func RemoveServer(servAddr net.TCPAddr) os.Error {
-
-
-}*/
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
 		if chunks[cID].servers.Len() < nReplicas {

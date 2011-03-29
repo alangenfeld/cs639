@@ -70,8 +70,7 @@ type OpenArgs struct{
 
 type OpenReturn struct{
 	New bool
-	Size uint64
-	ServerLocation vector.Vector  // bytes
+	Size uint64  // bytes
 	Chunk	vector.Vector  // bytes
 }
 
@@ -86,6 +85,11 @@ type ReplicateChunkReturn struct{
 
 
 type Handle int
+
+type ChunkInfo struct {
+	ChunkID uint64
+	Servers vector.Vector
+}
 
 type server struct {
 	addr net.TCPAddr
