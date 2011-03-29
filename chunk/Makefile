@@ -25,4 +25,4 @@ fs: chunk_fs.go
 
 
 clean:
-	rm *.$(su) -f
+	rm -f chunk *.$(su) 

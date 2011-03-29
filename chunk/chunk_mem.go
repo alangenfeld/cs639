@@ -48,12 +48,12 @@ func Init(masterAddress string) {
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
-	data,present := chunkTable[args.ChunkID]
+	data,present := chunkTable[args.ChunkIDs]
 	if !present{
 		ret.Status = -1
 		return nil
 	}
-	log.Println("chunk: Reading from chunk ", args.ChunkID)
+	log.Println("chunk: Reading from chunk ", args.ChunkIDs)
 
 	ret.Data.Data = data.Data
 
@@ -63,16 +63,38 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 
-	data,present := chunkTable[args.ChunkID]
+	if args.Info.Servers.At(0) == nil {
+		return nil
+	}
+
+	data,present := chunkTable[args.Info.ChunkID]
 	if !present{
-		addedChunks.Push(args.ChunkID)
+		addedChunks.Push(args.Info.ChunkID)
 		capacity --
 	}
 
-	log.Println("chunk: Writing to chunk ", args.ChunkID)
+	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
 
 	data.Data = args.Data.Data
-	chunkTable[args.ChunkID] = data
+	chunkTable[args.Info.ChunkID] = data
+
+	if args.Info.Servers.At(1) == nil {
+		return nil
+	}
+
+	args.Info.Servers.Slice(1,args.Info.Servers.Len())
+	var replicationHostAddr net.TCPAddr = args.Info.Servers.At(0).(net.TCPAddr)
+
+	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
+	client, err := rpc.Dial("tcp", str)
+	if err != nil {
+		log.Fatal("chunk: dialing:", err)
+	}
+
+	err = client.Call("Server.Write", &args, &ret)
+	if err != nil {
+		log.Fatal("chunk: server error: ", err)
+	}
 
 	return nil	
 }
@@ -156,7 +178,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 
 	var readArgs sfs.ReadArgs
 	var readRet sfs.ReadReturn
-	readArgs.ChunkID = args.ChunkID
+	readArgs.ChunkIDs = args.ChunkID
 
 	log.Printf("replication request for site %s and chunk %d\n",
 		replicationHostAddr.IP.String(),args.ChunkID);

@@ -3,9 +3,18 @@ package master
 import (
 	"net"
 	"container/vector"
+	"container/heap"
 )
 
 type server struct {
+	addr net.TCPAddr
+	id uint64
+	capacity uint64
+	chunks *vector.Vector
+}
+
+//THIS IS HERE BECAUSE.
+type servertest struct {
 	addr net.TCPAddr
 	id uint64
 	capacity uint64
@@ -49,6 +58,9 @@ func (s * serverHeap) Pop() interface {} {
 	return command.server
 	//return s.vec.Pop()
 }
+func (s * serverHeap) Remove(serv interface{}) {
+    s.serverChan <- &heapCommand{2,serv}
+}
 func (s * serverHeap) Handler() {
 
 	for rec := range s.serverChan {
@@ -59,6 +71,37 @@ func (s * serverHeap) Handler() {
 		if(rec.command == 1){
 			s.serverChan <- &heapCommand{1,s.vec.Pop()}
 		}
+		if(rec.command == 2){
+			server := rec.server.(*server)
+			//find the server to remove
+			vecRange := s.vec.Len()
+			for cnt := 0; cnt < vecRange; cnt++{
+			
+				testserv := s.vec.At(cnt).(*servertest)
+				if(testserv.id == server.id){
+				
+					//find each chunk to modify
+					chunkRange := testserv.chunks.Len()
+					for cnt1 := 0; cnt1 < chunkRange; cnt1++{
+					
+						tempchunk := testserv.chunks.At(cnt1).(*chunk)
+						
+						//find the server to remove from EACH CHUNK LIST
+						searchRange := tempchunk.servers.Len()
+						for cnt2 := 0; cnt2 < searchRange; cnt2++{
+						
+							tempserv := tempchunk.servers.At(cnt2).(*servertest)
+							if(tempserv.id == server.id){
+								tempchunk.servers.Delete(cnt2)
+							}
+						}	
+					}
+					s.vec.Delete(cnt)
+				}
+			}
+			heap.Init(s)
+		}
 	}
 }
+
 

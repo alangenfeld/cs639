@@ -1,12 +1,11 @@
 #!/bin/bash
 ################################################################################
 # Spawns chunk servers on mumble-01 through mumble-N
-#
-# If you havent already, use login.sh to ensure this script works properly
 ################################################################################
 
 pwd=`pwd`
 num=0
+ssh='ssh -o StrictHostKeyChecking=no '
 
 if [ "$#" != "2" ]
 then
@@ -29,6 +28,6 @@ else
 	else
 	    num="$c"
 	fi
-	ssh mumble-$num "$pwd/serv $1"&
+	$ssh mumble-$num "$pwd/serv $1"&
     done
 fi
