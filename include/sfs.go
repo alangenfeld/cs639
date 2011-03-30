@@ -85,7 +85,11 @@ type ReplicateChunkReturn struct {
 type AddChunkArgs struct {
 	Name string
 	Count uint64
-} // returns a ChunkInfo
+}
+
+type AddChunkReturn struct {
+	Info ChunkInfo
+}
 
 type Handle int
 
