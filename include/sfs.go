@@ -50,7 +50,7 @@ type HeartbeatArgs struct {
 	ChunkServerIP net.TCPAddr
 	ChunkServerID uint64
 	Capacity      uint64
-	AddedChunks   vector.Vector
+	AddedChunks   []ChunkInfo
 }
 
 type HeartbeatReturn struct {

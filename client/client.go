@@ -38,11 +38,15 @@ type file struct {
 	chunkInfo *vector.Vector
 }
 
+var master string
 var fd = 0
 var openFiles = map[int] file{}
 
+func Initialize(masterAddr string){
+	master = masterAddr
+}
 
-func Open(master string,  filename string , flag int ) (int){
+func Open(filename string , flag int ) (int){
 
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
@@ -118,6 +122,8 @@ func Read (fd int, size int) (vector.Vector, int ){
 
 /* write */
 func Write (fd int , data vector.Vector  ) (int){
+
+/*
 	fileArgs := new (sfs.WriteArgs);
 	fileInfo := new (sfs.WriteReturn);
 	fdFile, inMap := openFiles[fd]
@@ -126,26 +132,38 @@ func Write (fd int , data vector.Vector  ) (int){
 		return FAIL
 	}
 	index:=  0
-	var size uint64
+
+	var sizeToWrite uint64
 	var numChunks uint64
-	size = uint64(data.Len());
-	numChunks = size / sfs.CHUNK_SIZE
-	if((size %sfs.CHUNK_SIZE)!= 0){
+	sizeToWrite = uint64(data.Len());
+	//find capacity and add section of write to fill up remaining capacity
+	capacity := fdFile.ChunkInfo.Len()* sfs.CHUNK_SIZE - fdFile.size
+
+	for(int i := 0 ;i < capacity; i++ ){
+
+
+	}
+	if(sizeToWrite < capacity ){
+
+
+	}
+	numChunks = sizeToWrite / sfs.CHUNK_SIZE
+	if((sizeToWrite %sfs.CHUNK_SIZE)!= 0){
 		numChunks++
 	}
 	for i := 0; i<int(numChunks); i++ {
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
-			if(index < int(size)){
+			if(index < int(sizeToWrite)){
 				fileArgs.Data.Data[j] = data.At(j).(byte);
 			}
 			index++;
 		}
 		fileArgs.Info.ChunkID = (fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID)
 		fileArgs.Offset = 0;
-		if((i != fdFile.chunkInfo.Len()-1)|| (size%sfs.CHUNK_SIZE==0)){
+		if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
 			fileArgs.Length = sfs.CHUNK_SIZE;
 		}else{
-			fileArgs.Length =uint(size)% uint(sfs.CHUNK_SIZE)
+			fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
 		}
 		for {
 			client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
@@ -168,7 +186,9 @@ func Write (fd int , data vector.Vector  ) (int){
 			break
 		}
 	}
-	return fileInfo.Status;
+*/
+//	return fileInfo.Status
+	return 0
 }
 
 /* delete */
@@ -203,7 +223,30 @@ func Seek (fd int, offset int, whence int) (int){
 	return  status;
 }
 
+func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
+	var args sfs.AddChunkArgs
+	var returnVal sfs.ChunkInfo
+
+	args.Name = fileName
+	args.Count = numChunks
+
+	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	if(err != nil){
+		log.Printf("Error Dialing Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+	
+	err = masterConn.Call("Master.AddChunk",&args,&returnVal)
+	if(err != nil){
+		log.Printf("Error Calling Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+
+	return returnVal
+	
+
+}
 /// no idea if this works at all
 /*
 func WriteFromFile(fileNameLocal string, fileNameServer string, master string)(int){
