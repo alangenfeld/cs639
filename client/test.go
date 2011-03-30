@@ -28,11 +28,12 @@ func main(){
 		log.Printf("Test: creating hello\n");
 		if len(os.Args) != 2 {
 			//log.Printf("Test: correct usage is: client c masterMachine\n");
-			fd = client.Open("127.0.0.1", "hello", 4) 
+			client.Initialize("127.0.0.1") 
 		} else{
 			log.Printf("os.args[1] = " +  os.Args[1])
-			fd = client.Open(os.Args[1], "hello", 1)
+			client.Initialize(os.Args[1])
 		}
+		fd = client.Open("hello", 1)
 		log.Printf("Test: writing hello\n");
 		_ =  client.Write(fd,  data );
 		log.Printf("Test: reading hello\n")
