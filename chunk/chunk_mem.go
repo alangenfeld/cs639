@@ -10,13 +10,14 @@ import (
 	"container/vector"
 	"syscall"
 	"time"
+	"exec"
 )
 
 type Server int
 
 const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
-const NUM_USR_COMMAND = "who"
-const NUM_USR_ARGS = "| awk '{print $1;}'| uniq | wc -l |awk '{print $1;}'"
+const STATUS_CMD = ""
+const STATUS_ARGS = ""
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
@@ -108,25 +109,32 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	return nil
 }*/
 
-/*func LogStats(){
+func LogStats(){
 	//first, open the daily log file
 	host,_ := os.Hostname()
 	current := time.Seconds()
-	filename := host
+	filename:= host + string(current)
 	logFile, err := os.Open(filename, os.O_CREAT | os.O_WRONLY, 0666)
 	if err != nil {
-		log.Fatal("chunk: unable to init logging");
+		log.Fatal("chunk: unable to init logging")
 	}
-	
 	//now, enter the happy place of logging all our fun stuff
 	var info syscall.Sysinfo_t
 	var args []string
-	args[0] = NUM_USR_ARGS
+	var result []byte
+	args[0] = STATUS_ARGS
 	for {
 		syscall.Sysinfo(&info)
-		p, err := os.StartProcess(NUM_USR_COMMAND, args, nil, nil, nil)
+		command, err2 := exec.Run(STATUS_CMD, args, nil, "", exec.DevNull, exec.Pipe, exec.MergeWithStdout)
+		if err2 != nil{
+			log.Fatal("chunk: unable to obtain remote command")
+		}
+		command.Stdout.Read(result)
+		logFile.Write(result);
+		logFile.WriteString(string(result));
+		time.Sleep(2000000000);
 	}		
-}*/
+}
 
 func SendHeartbeat(masterAddress string){
 	var args sfs.HeartbeatArgs
