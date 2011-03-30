@@ -196,7 +196,30 @@ func Seek (fd int, offset int, whence int) (int){
 	return  status;
 }
 
+func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
+	var args sfs.AddChunkArgs
+	var returnVal sfs.ChunkInfo
+
+	args.Name = fileName
+	args.Count = numChunks
+
+	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	if(err != nil){
+		log.Printf("Error Dialing Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+	
+	err = masterConn.Call("Master.AddChunk",&args,&returnVal)
+	if(err != nil){
+		log.Printf("Error Calling Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+
+	return returnVal
+	
+
+}
 /// no idea if this works at all
 /*
 func WriteFromFile(fileNameLocal string, fileNameServer string, master string)(int){
