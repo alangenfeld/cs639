@@ -63,13 +63,10 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 
-	if args.Info.Servers.At(0) == nil {
-		return nil
-	}
-
+	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
 	data,present := chunkTable[args.Info.ChunkID]
 	if !present{
-		addedChunks.Push(args.Info.ChunkID)
+		addedChunks.Push(args.Info)
 		capacity --
 	}
 
@@ -78,8 +75,11 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	data.Data = args.Data.Data
 	chunkTable[args.Info.ChunkID] = data
 
-	for 
-		{
+	if args.Info.Servers == nil || args.Info.Servers.At(0) == nil {
+		return nil
+	}
+
+	for {
 		if args.Info.Servers.At(1) == nil {
 			return nil
 		}
@@ -155,7 +155,11 @@ func SendHeartbeat(masterAddress string){
 			capacity ++
 		}
 		args.Capacity = capacity
-		args.AddedChunks = addedChunks
+		addedChunkSlice := make([]sfs.ChunkInfo, addedChunks.Len())
+		for i := 0; i < addedChunks.Len(); i++ {
+			addedChunkSlice[i] = addedChunks.At(i).(sfs.ChunkInfo)
+		}
+		args.AddedChunks = addedChunkSlice
 		err = master.Call("Master.BeatHeart", &args, &ret)
 		if err != nil {
 			log.Fatal("chunk: heartbeat error: ", err)
