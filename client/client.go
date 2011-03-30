@@ -21,7 +21,9 @@ import (
 
 */
 const(
- O_CREATE = 1
+ FAIL = -1
+ WIN
+ O_CREATE
  O_RDONLY
  O_WRONLY
  SEEK_SET
@@ -46,7 +48,7 @@ func Open(master string,  filename string , flag int ) (int){
 	if err != nil{
 		log.Printf("Client: Error", err.String());
 		os.Exit(1)
-		return -1
+		return FAIL
 	}else{
 	fileInfo := new (sfs.OpenReturn)
 	fileArgs := new (sfs.OpenArgs)
@@ -55,6 +57,8 @@ func Open(master string,  filename string , flag int ) (int){
 	client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 	if fileInfo.New {
 		log.Printf("\nClient: New file!\n")
+	}else{
+		log.Printf("\nClient: Old file!\n")
 	}
 	fd++
 	var nextFile file
@@ -64,11 +68,10 @@ func Open(master string,  filename string , flag int ) (int){
 	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
 		nextFile.chunkInfo.Push(fileInfo.Chunk)
 	}
-
 	openFiles[fd] = nextFile
 	return fd;
 	}
-	return -1
+	return FAIL
 }
 
 /* read */
@@ -80,14 +83,14 @@ func Read (fd int, size int) (vector.Vector, int ){
 	var entireRead vector.Vector
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
-		return entireRead, -1
+		return entireRead, FAIL
 	}
 	index := 0;
 	for i := 0; i<fdFile.chunkInfo.Len(); i++ {
 		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in Read")
-			return entireRead, -1
+			return entireRead, FAIL
 		}
 		fileArgs.ChunkIDs= fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID;
 		fileArgs.Offsets = 0;
@@ -97,7 +100,7 @@ func Read (fd int, size int) (vector.Vector, int ){
 		replyCall:= <-chunkCall.Done
 		if replyCall.Error!=nil{
 			log.Printf("Client: error in reply from rpc in read\n");
-			return entireRead, -1
+			return entireRead, FAIL
 		}
 		log.Printf("\nClient: Status = %d\n",fileInfo.Status);
 		log.Printf("Client: Data = %d\n",fileInfo.Data);
@@ -120,7 +123,7 @@ func Write (fd int , data vector.Vector  ) (int){
 	fdFile, inMap := openFiles[fd]
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
-		return -1
+		return FAIL
 	}
 	index:=  0
 	var size uint64
@@ -171,19 +174,23 @@ func Write (fd int , data vector.Vector  ) (int){
 /* delete */
 //TODO
 func Delete(filename string) (int){
-	return -1;
+	return FAIL
 }
 
-/* close */
-//TODO
 func Close(fd int) (int){
-	return -1;
+	_ , present := openFiles[fd]
+	if (!present ){
+		return FAIL
+	}
+	var x file
+	openFiles[fd] = x,false
+	return WIN
 }
 
 //TODO
 func ReadDir(path string) (vector.Vector, int){
 	var x vector.Vector
-	return x,  -1;
+	return x,  FAIL
 }
 
 /* seek */
