@@ -124,8 +124,8 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 		chunkRange := args.AddedChunks.Len()
 		for cnt := 0; cnt < chunkRange; cnt++ {
 			//chunk , chunkOK := chunks[args.AddedChunks.At(cnt).(*chunk).chunkID]
-			chunk , chunkOK := chunks[args.AddedChunks.At(cnt).(sfs.ChunkInfo).ChunkID]
-			log.Printf("Herp dDerp %d\n", args.AddedChunks.At(cnt).(sfs.ChunkInfo).ChunkID)
+			chunk , chunkOK := chunks[args.AddedChunks[0].ChunkID]
+			log.Printf("Herp dDerp %d\n", args.AddedChunks[0].ChunkID)
 			if(chunkOK == true){
 				server.chunks.Push(args.AddedChunks.At(cnt))
 				chunk.servers.Push(server)
