@@ -244,11 +244,12 @@ func RemoveServer(serv *server) os.Error {
 	
 	if err != nil {
 		log.Printf("master: RemoveServer: unable to dial %s\n", str)
+	} else {
+		log.Printf("master: RemoveServer: dial %s succeeded\n", str)
 	}
 
 	//for each chunk in the server, make a replication call.
-	chunkRange := serv.chunks.Len()
-	for cnt := 0; cnt < chunkRange; cnt++ {
+	for cnt := 0; cnt < serv.chunks.Len(); cnt++ {
 
 		chunk := serv.chunks.At(cnt).(*chunk)
 
