@@ -101,10 +101,10 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	ret.Info.Servers = make([]net.TCPAddr, len(inRet.Info.Servers) + 1)
 	
 	for i:=0;i<len(ret.Info.Servers);i++ {
-		if(i > len(inRet.Info.Servers)) {
-			ret.Info.Servers[i] = tempServ
+		if(i < len(inRet.Info.Servers)) {
+			ret.Info.Servers[i] = inRet.Info.Servers[i]		
 		} else {
-			ret.Info.Servers[i] = inRet.Info.Servers[i]
+			ret.Info.Servers[i] = tempServ		
 		}
 	}
 	
