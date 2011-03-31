@@ -1,15 +1,11 @@
 package main
 
 import (
-//	"rpc"
-//	"net"
-//	"../include/sfs"
 	"./client"
 	"log"
 	"bufio"
 	"os"
 	"fmt"
-	"container/vector"
 )
 
 func main(){
@@ -17,20 +13,19 @@ func main(){
 		log.Printf("Error: Run as \"client [masters ip]\"");
 	}else {
 		var fd int
-		var data vector.Vector
+		var data []byte
 		var fromIn string
 		log.Printf("Test: Enter text to write to file:\n")
 		in := bufio.NewReader(os.Stdin)
 		fromIn, _ = in.ReadString('\n')
+		data = make([]byte,len(fromIn))
 		for i := 0; i < len(fromIn); i++{
-			data.Push(fromIn[i])
+			data[i] = fromIn[i]
 		}
 		log.Printf("Test: creating hello\n");
 		if len(os.Args) != 2 {
-			//log.Printf("Test: correct usage is: client c masterMachine\n");
-			client.Initialize("127.0.0.1") 
+			client.Initialize("127.0.0.1")
 		} else{
-			log.Printf("os.args[1] = " +  os.Args[1])
 			client.Initialize(os.Args[1])
 		}
 		fd = client.Open("hello", 1)
@@ -46,11 +41,11 @@ func main(){
 	}
 }
 
-func printChunk ( toPrint vector.Vector ){
+func printChunk ( toPrint []byte ){
 	fmt.Printf("Test: Chunk Read: ")
 	fmt.Printf("\n")
-	for i := 0; i < toPrint.Len(); i++{
-		fmt.Printf("%c", toPrint.At(i).(byte))
+	for i := 0; i < len(toPrint); i++{
+		fmt.Printf("%c", toPrint[i])
 	}
 	fmt.Printf("\n")
 }
