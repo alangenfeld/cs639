@@ -8,7 +8,7 @@ import (
 	"net"
 //	"fmt"
 	"container/vector"
-	"syscall"
+	//"syscall"
 	"time"
 	"exec"
 )
@@ -115,12 +115,11 @@ func LogStats(){
 		log.Fatal("chunk: unable to init logging")
 	}
 	//now, enter the happy place of logging all our fun stuff
-	var info syscall.Sysinfo_t
+	//var info syscall.Sysinfo_t
 	var args []string
 	var result []byte
 	args[0] = STATUS_ARGS
 	for {
-		syscall.Sysinfo(&info)
 		command, err2 := exec.Run(STATUS_CMD, args, nil, "", exec.DevNull, exec.Pipe, exec.MergeWithStdout)
 		if err2 != nil{
 			log.Fatal("chunk: unable to obtain remote command")
@@ -148,16 +147,6 @@ func SendHeartbeat(masterAddress string){
 	args.ChunkServerID = chunkServerID
 
 	for {
-		var info syscall.Sysinfo_t
-		syscall.Sysinfo(&info)
-		var mem_usage float32
-		mem_usage = float32 (info.Freeram) / float32 (info.Totalram)
-		if mem_usage > .8  && capacity > 0{ 
-			capacity --
-			//TODO: This is super sketchy and needs to be fixed, free up current blocks, etc
-		}else if mem_usage < .2{
-			capacity ++
-		}
 		args.Capacity = capacity
 		addedChunkSlice := make([]sfs.ChunkInfo, addedChunks.Len())
 		for i := 0; i < addedChunks.Len(); i++ {
