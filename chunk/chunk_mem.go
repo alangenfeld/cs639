@@ -71,8 +71,6 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		capacity --
 	}
 
-	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
-
 	data.Data = args.Data.Data
 	chunkTable[args.Info.ChunkID] = data
 
