@@ -51,7 +51,7 @@ type HeartbeatArgs struct {
 }
 
 type HeartbeatReturn struct {
-	notUsed bool
+	ChunksToGet []ChunkInfo
 }
 
 type Status struct {
