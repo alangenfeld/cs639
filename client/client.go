@@ -76,8 +76,8 @@ func Open(filename string , flag int ) (int){
 	for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
 		nextFile.chunkInfo.Push(fileInfo.Chunk[i])
 	}
-	log.Printf("servers %v", nextFile.chunkInfo)
-	log.Printf("servers %v", fileInfo.Chunk[0])
+
+
 	openFiles[fd] = nextFile
 	return fd;
 	}
