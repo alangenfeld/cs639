@@ -20,7 +20,7 @@ sleep 1
 $ssh mumble-37 "$pwd/chunk/serv mumble-01"&
 sleep 1
 $ssh mumble-40 "killall serv"&
-sleep 15
+sleep 12
 ./cleanup.sh
 
 

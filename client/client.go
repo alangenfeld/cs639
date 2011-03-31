@@ -156,7 +156,7 @@ func Write (fd int , data []byte  ) (int){
 		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
 		if (indexWithinChunk == sfs.CHUNK_SIZE || indexWithinChunk == len(data)-3 ){
-			if(fdFile.chunkInfo.Len() < 1) {
+			if(fdFile.chunkInfo.Len() < chunkOffset+1) {
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
 			}
 			if(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID ==0  ){
@@ -187,10 +187,12 @@ func Write (fd int , data []byte  ) (int){
 			}
 			
 			// reply to master
+			fileInfo.Info.ChunkID = fileArgs.Info.ChunkID
 			mapArgs := &sfs.MapChunkToFileArgs{fdFile.name, chunkOffset, fileInfo.Info}
+			log.Println("what is this", mapArgs)
 			var mapRet sfs.MapChunkToFileReturn
 			
-			masterServ,err  := rpc.Dial("tcp",master)
+			masterServ,err  := rpc.Dial("tcp",master + ":1338")
 			if err != nil {
 				log.Fatal("Client: dial fail:", err)
 			}
@@ -198,7 +200,7 @@ func Write (fd int , data []byte  ) (int){
 			if err != nil{
 				log.Fatal("Client: error in reply from rpc in write\n");
 			}
-	
+			
 			chunkOffset++;
 			indexWithinChunk =0
 			if(fdFile.chunkInfo.Len() <  chunkOffset ){
