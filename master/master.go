@@ -223,6 +223,9 @@ func RemoveServer(serv *server) os.Error {
 	
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
 
+	//////////////////////////////////////////////////////////////////////
+	////////////      THIS IS A PROBLEM -- NEED TO SPREAD REPLICATION REQS
+	//////////////////////////////////////////////////////////////////////
 	otherserver := sHeap.vec.At(0).(*server)
 
 	str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
@@ -244,6 +247,7 @@ func RemoveServer(serv *server) os.Error {
 		//send rpc call off
 		args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
 		reply := new(sfs.ReplicateChunkReturn)
+		log.Printf("master: RemoveServer: issuing replication req to %s", str)
 		client.Call("Server.ReplicateChunk", args, reply)
 		log.Printf("%s", reply)
 	}

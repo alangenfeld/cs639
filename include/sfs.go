@@ -8,7 +8,7 @@ import (
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
 const CHUNK_SIZE = 32                  // 32 B
-const HEARTBEAT_WAIT = 15 * 1000000000 // 15 seconds
+const HEARTBEAT_WAIT = 3 * 1000000000 // 15 seconds
 const NREPLICAS = 3
 
 type Chunk struct {
