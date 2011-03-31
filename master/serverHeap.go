@@ -2,6 +2,7 @@ package master
 
 import (
 	"net"
+	"log"
 	"container/vector"
 	"container/heap"
 )
@@ -72,6 +73,7 @@ func (s * serverHeap) Handler() {
 			
 				testserv := s.vec.At(cnt).(*server)
 				if(testserv.id == deadServer.id){
+					log.Printf("master: heap Handler: found server %d to delete\n", deadServer.id)
 				
 					//find each chunk to modify
 					for cnt1 := 0; cnt1 < testserv.chunks.Len(); cnt1++{
@@ -87,7 +89,10 @@ func (s * serverHeap) Handler() {
 							}
 						}	
 					}
+					prevCnt := s.vec.Len()
 					s.vec.Delete(cnt)
+					log.Printf("master: heap Handler: prev vec count %d, now %d\n", prevCnt, s.vec.Len())
+					break
 				}
 			}
 			heap.Init(s)
