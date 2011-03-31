@@ -42,7 +42,9 @@ func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
 func (s * serverHeap) Push(serv interface{}) {
-	s.serverChan <- &heapCommand{0,serv,nil}
+	ch := make(chan *heapCommand)
+	s.serverChan <- &heapCommand{0,serv,ch}
+	<-ch
 	//s.vec.Push(serv)
 }
 func (s * serverHeap) Pop() interface {} {
@@ -54,7 +56,9 @@ func (s * serverHeap) Pop() interface {} {
 	//return s.vec.Pop()
 }
 func (s * serverHeap) Remove(serv interface{}) {
-    s.serverChan <- &heapCommand{2,serv, nil}
+	ch := make(chan *heapCommand)
+    s.serverChan <- &heapCommand{2,serv,ch}
+	<-ch
 }
 func (s * serverHeap) Handler() {
 
@@ -96,6 +100,7 @@ func (s * serverHeap) Handler() {
 				}
 			}
 			heap.Init(s)
+			ch <- heapCommand{}
 		}
 	}
 }
