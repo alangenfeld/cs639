@@ -36,6 +36,7 @@ type file struct {
 	size uint64
 	filePtr  uint64
 	chunkInfo *vector.Vector
+	name string
 }
 
 var master string
@@ -67,6 +68,7 @@ func Open(filename string , flag int ) (int){
 	var nextFile file
 	nextFile.size = fileInfo.Size
 	nextFile.filePtr = 0
+	nextFile.name = filename
 	nextFile.chunkInfo = new(vector.Vector)
 	for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
 		nextFile.chunkInfo.Push(fileInfo.Chunk[i])
@@ -121,8 +123,7 @@ func Read (fd int, size int) (vector.Vector, int ){
 
 /* write */
 func Write (fd int , data vector.Vector  ) (int){
-
-/*
+///*
 	fileArgs := new (sfs.WriteArgs);
 	fileInfo := new (sfs.WriteReturn);
 	fdFile, inMap := openFiles[fd]
@@ -130,50 +131,32 @@ func Write (fd int , data vector.Vector  ) (int){
 		log.Printf("Client: File not in open list!\n")
 		return FAIL
 	}
-	index:=  0
-
-	var sizeToWrite uint64
-	var numChunks uint64
-	sizeToWrite = uint64(data.Len());
+	var indexWithinChunk int 
+	indexWithinChunk = int( fdFile.filePtr)%int(sfs.CHUNK_SIZE)
+	chunkOffset := int(fdFile.filePtr)/int(sfs.CHUNK_SIZE)
+	sizeToWrite := uint64(data.Len());
+//	if((fdFile.size %sfs.CHUNK_SIZE)!= 0){
+//		numChunks++
+//	}
 	//find capacity and add section of write to fill up remaining capacity
-	capacity := fdFile.ChunkInfo.Len()* sfs.CHUNK_SIZE - fdFile.size
+//	for(i:= 0 ; i < indexWithinChunk ; i++){
+//		toWrite.Data
+//	}
 
-	for(int i := 0 ;i < capacity; i++ ){
-
-
-	}
-	if(sizeToWrite < capacity ){
-
-
-	}
-	numChunks = sizeToWrite / sfs.CHUNK_SIZE
-	if((sizeToWrite %sfs.CHUNK_SIZE)!= 0){
-		numChunks++
-	}
-	for i := 0; i<int(numChunks); i++ {
-		for j:=0; j<sfs.CHUNK_SIZE ; j++{
-			if(index < int(sizeToWrite)){
-				fileArgs.Data.Data[j] = data.At(j).(byte);
+	var toWrite sfs.Chunk
+	for i:=0 ; i < data.Len() ; i++  {
+		toWrite.Data[int(indexWithinChunk)] = data.At(i).(byte)
+		indexWithinChunk++
+		if (indexWithinChunk == sfs.CHUNK_SIZE ){
+			if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
+				fileArgs.Length = sfs.CHUNK_SIZE;
+			}else{
+				fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
 			}
-			index++;
-		}
-		fileArgs.Info.ChunkID = (fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID)
-		fileArgs.Offset = 0;
-		if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
-			fileArgs.Length = sfs.CHUNK_SIZE;
-		}else{
-			fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
-		}
-		for {
-			client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
-			if err != nil{
-				log.Printf("Client: Dial Failed in write");
-				if fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(1).(*net.TCPAddr) == nil {
-					log.Fatal("Client: out of chunk servers to write to.")
-				}
-				fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.Slice(1,fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.Len())
-				continue
-			}
+			fileArgs.Info = (fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo))
+			fileArgs.Data = toWrite
+			fileArgs.Offset = 0;
+			client,_  := rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
 			chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
 			replyCall:= <-chunkCall.Done
 			if replyCall.Error != nil{
@@ -182,12 +165,19 @@ func Write (fd int , data vector.Vector  ) (int){
 			if(fileInfo.Status!=0){
 				log.Fatal("Client: Status non zero =",fileInfo.Status)
 			}
-			break
+			chunkOffset++;
+			indexWithinChunk =0
+			if(fdFile.chunkInfo.Len() <  chunkOffset ){
+				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
+				//toWrite = new(sfs.Chunk)
+				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
+					toWrite.Data[c] = 0; 
+				}
+			}
 		}
 	}
-*/
-//	return fileInfo.Status
-	return 0
+//*/
+	return fileInfo.Status
 }
 
 /* delete */
