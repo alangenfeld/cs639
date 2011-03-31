@@ -4,6 +4,7 @@ import (
 	"../client/client"
 	"fmt"
 	"flag"
+	"os"
 )
 
 func main(){
@@ -13,7 +14,11 @@ func main(){
 	client.Initialize(*master)
 
 	fd := client.Open("newfile.txt", client.O_WRONLY|client.O_CREATE)
+	if(fd < 0) {
+		panic("open failed")
+	}
 
-	fmt.Print("Return is %d\n",fd);
+	fmt.Printf("pass\n")
+	os.Exit(0)
 }
 
