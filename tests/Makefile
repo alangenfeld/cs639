@@ -9,9 +9,9 @@ gl=8l
 su=8
 endif
 
-t1: 
+t1:t1.go
 	$(gc) t1.go
 	$(gl) -o t1 t1.$(su)
 
 clean:
-	rm -f *.$(su)
+	rm -f *.$(su) t1
