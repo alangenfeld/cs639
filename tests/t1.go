@@ -2,19 +2,23 @@ package main
 
 import (
 	"../client/client"
-	"log"
-	"os"
 	"fmt"
+	"flag"
+	"os"
 )
 
 func main(){
-	if len(os.Args) < 1 {
-		log.Printf("Error: Run as \"client [masters ip]\"");
-	}
-	
-	fmt.Printf("Hello")
+	master := flag.String("m", "", "specify a master!")
+	flag.Parse();
 
-	ret := client.Open("newfile.txt", true, "mumble-02", 0)
-	fmt.Print("Return is %d\n",ret);
+	client.Initialize(*master)
+
+	fd := client.Open("newfile.txt", client.O_WRONLY|client.O_CREATE)
+	if(fd < 0) {
+		panic("open failed")
+	}
+
+	fmt.Printf("pass\n")
+	os.Exit(0)
 }
 
