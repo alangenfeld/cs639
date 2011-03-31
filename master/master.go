@@ -229,8 +229,14 @@ func RemoveServer(serv *server) os.Error {
 	otherserver := sHeap.vec.At(0).(*server)
 
 	str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
+	
+	log.Printf("master: RemoveServer: dialing %s\n", str)
 
-	client, _ := rpc.Dial("tcp", str)
+	client, err := rpc.Dial("tcp", str)
+	
+	if err != nil {
+		log.Printf("master: RemoveServer: unable to dial %s\n", str)
+	}
 
 	//for each chunk in the server, make a replication call.
 	chunkRange := serv.chunks.Len()
@@ -247,7 +253,7 @@ func RemoveServer(serv *server) os.Error {
 		//send rpc call off
 		args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
 		reply := new(sfs.ReplicateChunkReturn)
-		log.Printf("master: RemoveServer: issuing replication req to %s", str)
+		log.Printf("master: RemoveServer: issuing replication req to %s\n", str)
 		client.Call("Server.ReplicateChunk", args, reply)
 		log.Printf("%s", reply)
 	}
