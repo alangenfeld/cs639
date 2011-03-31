@@ -16,9 +16,7 @@ type Chunk struct {
 }
 
 type ReadArgs struct {
-	ChunkIDs uint64
-	Offsets  uint // bytes
-	Lengths  uint // bytes
+	ChunkID uint64
 }
 
 type ReadReturn struct {
@@ -53,7 +51,7 @@ type HeartbeatArgs struct {
 }
 
 type HeartbeatReturn struct {
-	ChunksToGet []ChunkInfo
+	notUsed bool
 }
 
 type Status struct {
@@ -88,6 +86,14 @@ type AddChunkArgs struct {
 
 type AddChunkReturn struct {
 	Info ChunkInfo
+}
+
+type RemoveArgs struct {
+	Name string
+}
+
+type RemoveReturn struct {
+	Success bool
 }
 
 type Handle int

@@ -9,10 +9,16 @@ my $testdir;
 
 
 sub doLaunch {
-    sys("ssh $master -o StrictHostKeyChecking=no $testdir/../master/master &");
+    sys("ssh $master ".
+	"'$testdir/../master/master ".
+	"&> $testdir/output/master.log' &");
+
+    sleep(1);
 
     for(my $i = 3; $i < 3+$chunkCount; $i++) {
-	sys("$ssh mumble-1$i.cs.wisc.edu $testdir/../chunk/serv $master &");
+	sys("$ssh mumble-1$i.cs.wisc.edu ".
+	    "'$testdir/../chunk/serv $master ".
+	    "&> $testdir/output/chunk$i.log' &");
     }
 }
 
@@ -23,41 +29,150 @@ sub doKill {
     }
 }
 
+
+sub killOne {
+    $#_ == 0 or die;
+    my ($num) = @_;
+    if($num < 10) {
+	$num = '0'.$num;
+    }
+    sys("$ssh mumble-$num.cs.wisc.edu 'killall serv'");
+    sys("$ssh mumble-$num.cs.wisc.edu 'killall master'");
+}
+
+
+
 sub superKill {
     for(my $i = 1; $i < 40; $i++) {
-	my $index = $i;
-	if($i < 10) {
-	   $index = '0'.$index; 
-	}
-	sys("$ssh mumble-$index.cs.wisc.edu 'killall serv'");
-	sys("$ssh mumble-$index.cs.wisc.edu 'killall master'");
+	killOne($i);
     }
 }
 
+
+sub runTest {
+    $#_ == 0 or die "Bad args to runTest";
+    my ($test) = @_;
+
+    print "\n*** Running test $test... ***\n\n";
+
+    #setup output directory
+    sys("rm -rf $testdir/output; mkdir $testdir/output");
+
+    #start servers
+    doLaunch();
+    sleep(1);
+
+    #run client with timeout
+    print "Running test $test\n";
+    if(fork() == 0) {
+	sys("sleep 5; killall $test");
+	exit(0);
+    }
+    sys("$testdir/$test -m $master &> $testdir/output/$test.out");
+    print "Done running test $test\n";
+
+    #stop servers
+    sleep(1);
+    doKill();
+
+    #check if output is success
+    my $results = '';
+    open RESULT, "$testdir/output/$test.out" or die "Could not read result: $!";
+    while(<RESULT>) {
+	$results .= $_;
+    }
+    close RESULT;
+    if($results eq "pass\n") {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+
 main();
 sub main {
-    if($ARGV[0] eq '-k') {
-	superKill();
-	return;
-    }
-
     $testdir = abs_path($0);
     $testdir =~ s/\/[^\/]*$//;
-    print "Test dir: ".$testdir."\n";
-    doLaunch();
-    sleep(2);
 
-    system("$testdir/t1");
+    my $killNum = '';
+    my $testName = '';
 
-    sleep(2);
-    doKill();
+    ($#ARGV+1) % 2 == 0 or die "Bad usage";
+
+    for(my $i = 0; $i <= $#ARGV; $i+=2) {
+	if($ARGV[$i] eq '-k') {
+	    $killNum = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-t') {
+	    $testName = $ARGV[$i+1];
+	} else {
+	    die "Bad usage";
+	}
+    }
+
+    #does this do nothing
+    if($testName eq '' and $killNum eq '') {
+	die ("No test num or kill num\n");
+    }
+
+
+    #administrative job, not testing
+    if($killNum ne '') {
+	if($killNum eq 'all') {
+	    superKill();
+	} else {
+	    print "Kill $killNum\n";
+	    killOne($killNum);
+	}
+    }
+
+
+    #run the test
+    if($testName ne '') {
+	my $passCount = 0;
+	my $failCount = 0;
+
+	if($testName eq 'all') {
+	    opendir(my $dh, $testdir) || 
+		die "can't opendir $testdir: $!";
+	    while(my $file = readdir($dh)) {
+		if($file =~ /^t\d+$/) {
+		    if(runTest($file)) {
+			$passCount++;
+		    } else {
+			$failCount++;
+		    }
+		}
+	    }
+	    closedir $dh;
+
+	    if($passCount + $failCount > 0) {
+		my $rate = (100 * $passCount / ($passCount + $failCount)) . '%';
+		print "\n\nPass=$passCount, Fail=$failCount, Rate=$rate\n";
+		if($failCount == 0) {
+		    print "T-shirt time!";
+		} else {
+		    print "Close, but no t-shirt!";
+		}
+	    } else {
+		print "No tests to run...\n";
+	    }
+	} else {
+	    if(runTest($testName)) {
+		print "\n\nPASS\n";
+	    } else {
+		print "\n\nFAIL\n";
+	    }
+	}
+	print "\n\n\n";
+    }
 }
 
 
 
 sub sys {
     my ($cmd) = @_;
-    print("Running $cmd\n");
+    print("Running:{\n$cmd\n}\n\n");
     my $ret = system($cmd);
     return $ret;
 }
