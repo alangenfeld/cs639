@@ -76,9 +76,11 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 	file, ok := QueryFile(args.Name)
 
 	if !ok {
+		log.Printf("master: MapChunkToFile: File %s does not exist\n", args.Name)
 		return os.NewError("File does not exist! Herp derp")
 	}
 
+	log.Printf("master: MapChunkToFile: ChunkID: %d  Offset %d  nservers: %d\n", args.Chunk.ChunkID, args.Offset, len(args.Chunk.Servers))
 	var newChunk chunk
 	
 	newChunk.chunkID = args.Chunk.ChunkID
@@ -367,12 +369,18 @@ func (i *inode) AddChunk() (chunkID uint64, err os.Error) {
 }
 
 func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Error) {
-	var oldID uint64 = i.chunks.At(offset).(*chunk).chunkID
+	var oldID uint64
 	
-	chunks[oldID] = &chunk{}, false
-	
-	i.chunks.Set(offset, newChunk)
-	
+	if offset < i.chunks.Len() {
+		oldID = i.chunks.At(offset).(*chunk).chunkID
+		chunks[oldID] = &chunk{}, false
+		i.chunks.Set(offset, newChunk)
+	} else if offset == i.chunks.Len() {
+		i.chunks.Push(newChunk)
+	} else {
+		return 0, os.NewError("Fucking A.")
+	}
+		
 	for i := 0; i < newChunk.servers.Len(); i++ {
 		newChunk.servers.At(i).(*server).chunks.Push(newChunk)
 	}
