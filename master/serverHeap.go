@@ -66,6 +66,7 @@ func (s * serverHeap) Handler() {
 	
 		if(rec.command == 0){
 			s.vec.Push(rec.server)
+			rec.retChan <- &heapCommand{}
 		}
 		if(rec.command == 1){
 			rec.retChan <- &heapCommand{1,s.vec.Pop(),nil}
