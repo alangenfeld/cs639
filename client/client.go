@@ -90,7 +90,11 @@ func Read (fd int, size int) (vector.Vector, int ){
 	}
 	index := 0;
 	for i := 0; i<fdFile.chunkInfo.Len(); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers[0].String())
+		
+		if (len(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers) < 1) {
+			log.Fatal("Client: No servers listed")
+		}
+		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers[0].String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, FAIL
