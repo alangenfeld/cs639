@@ -12,3 +12,7 @@ endif
 default:
 	$(gc) chunkTest.go
 	$(gl) -o test chunkTest.$(su)
+
+stats:
+	$(gc) statusTest.go
+	$(gl) -o testStatus statusTest.$(su)
