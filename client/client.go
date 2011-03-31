@@ -8,7 +8,7 @@ import (
 	"log"
 //	"io/ioutil"
 	"../include/sfs"
-	"net"
+	//"net"
 )
 
 //NEED TO MAKE A TYPE FOR FILE
@@ -47,7 +47,6 @@ func Initialize(masterAddr string){
 }
 
 func Open(filename string , flag int ) (int){
-
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		log.Printf("Client: Error", err.String());
@@ -69,8 +68,8 @@ func Open(filename string , flag int ) (int){
 	nextFile.size = fileInfo.Size
 	nextFile.filePtr = 0
 	nextFile.chunkInfo = new(vector.Vector)
-	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
-		nextFile.chunkInfo.Push(fileInfo.Chunk)
+	for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
+		nextFile.chunkInfo.Push(fileInfo.Chunk[i])
 	}
 	openFiles[fd] = nextFile
 	return fd;
@@ -91,7 +90,7 @@ func Read (fd int, size int) (vector.Vector, int ){
 	}
 	index := 0;
 	for i := 0; i<fdFile.chunkInfo.Len(); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
+		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers[0].String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, FAIL
