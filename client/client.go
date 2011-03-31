@@ -101,9 +101,7 @@ func Read (fd int, size int) (vector.Vector, int ){
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, FAIL
 		}
-		fileArgs.ChunkIDs= fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID;
-		fileArgs.Offsets = 0;
-		fileArgs.Lengths  = sfs.CHUNK_SIZE;
+		fileArgs.ChunkID= fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID;
 
 		chunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
 		replyCall:= <-chunkCall.Done
