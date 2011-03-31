@@ -49,27 +49,24 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	info.New = newFile
 	info.Size = file.size
 	
-	chunkInfoVec := new(vector.Vector)
-	
+	info.Chunk = make([]sfs.ChunkInfo, file.chunks.Len())
+
 	//for each chunk in the server, make a replication call.
 	for i := 0; i < file.chunks.Len(); i++ {
-		chunk := file.chunks.At(i).(*chunk)
-		
-		//populate chunk location vector
-		servList := new(vector.Vector)
-		
-		for j := 0; j < chunk.servers.Len(); j++ {
-			servList.Push(chunk.servers.At(j).(*server).addr)
-		}
-		
 		var chunkInfo sfs.ChunkInfo
+		chunk := file.chunks.At(i).(*chunk)
+
+		//populate chunk location vector
+		chunkInfo.Servers = make([]net.TCPAddr, chunk.servers.Len())
+
+		for j := 0; j < chunk.servers.Len(); j++ {
+			chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
+		}	
+
 		chunkInfo.ChunkID = chunk.chunkID
-		chunkInfo.Servers = *servList
-		
-		chunkInfoVec.Push(chunkInfo)
+
+		info.Chunk[i] = chunkInfo
 	}
-	
-	info.Chunk = *chunkInfoVec
 
 	return err
 }
@@ -87,9 +84,10 @@ func (m *Master) AddChunk(args *sfs.AddChunkArgs, ret *sfs.ChunkInfo) os.Error {
 	if err != nil{
 		return os.NewError("Could not add chunk! Ruh roh")
 	}
-	
+
+	ret.Servers = make([]net.TCPAddr, sfs.NREPLICAS)
 	for i := 0; i < sfs.NREPLICAS; i++ {
-		ret.Servers.Push(sHeap.vec.At(i).(*server).addr)
+		ret.Servers[i] = sHeap.vec.At(i).(*server).addr
 	}
 	
 	return nil
@@ -219,14 +217,13 @@ func RemoveServer(serv *server) os.Error {
 		chunk := serv.chunks.At(cnt).(*chunk)
 		
 		//populate chunk location vector
-		chunklist := new(vector.Vector)
-		locRange := chunk.servers.Len()
-		for cnt1 := 0; cnt1 < locRange; cnt1++ {
-			chunklist.Push(chunk.servers.At(cnt1).(*server).addr)
+		chunklist := make([]net.TCPAddr, chunk.servers.Len())
+		for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
+			chunklist[cnt1] = chunk.servers.At(cnt1).(*server).addr
 		}
 		
 		//send rpc call off
-		args := &sfs.ReplicateChunkArgs{chunk.chunkID,*chunklist}
+		args := &sfs.ReplicateChunkArgs{chunk.chunkID,chunklist}
 		reply := new(sfs.ReplicateChunkReturn)
 		client.Call("Server.ReplicateChunk", args, reply)
 		log.Printf("%s", reply)
