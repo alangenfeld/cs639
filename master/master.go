@@ -49,24 +49,27 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	info.New = newFile
 	info.Size = file.size
 	
-	info.Chunk = make([]sfs.ChunkInfo, file.chunks.Len())
+	chunkInfoVec := new(vector.Vector)
 	
 	//for each chunk in the server, make a replication call.
 	for i := 0; i < file.chunks.Len(); i++ {
-		var chunkInfo sfs.ChunkInfo
 		chunk := file.chunks.At(i).(*chunk)
 		
 		//populate chunk location vector
-		chunkInfo.Servers = make([]net.TCPAddr, chunk.servers.Len())
+		servList := new(vector.Vector)
 		
 		for j := 0; j < chunk.servers.Len(); j++ {
-			chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
-		}	
+			servList.Push(chunk.servers.At(j).(*server).addr)
+		}
 		
+		var chunkInfo sfs.ChunkInfo
 		chunkInfo.ChunkID = chunk.chunkID
+		chunkInfo.Servers = *servList
 		
-		info.Chunk[i] = chunkInfo
+		chunkInfoVec.Push(chunkInfo)
 	}
+	
+	info.Chunk = *chunkInfoVec
 
 	return err
 }
@@ -86,10 +89,33 @@ func (m *Master) AddChunk(args *sfs.AddChunkArgs, ret *sfs.ChunkInfo) os.Error {
 	}
 	
 	for i := 0; i < sfs.NREPLICAS; i++ {
-		ret.Servers[i] = sHeap.vec.At(i).(*server).addr
+		ret.Servers.Push(sHeap.vec.At(i).(*server).addr)
 	}
 	
 	return nil
+}
+
+func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
+  result.Success = true
+  name := args.Name
+
+  i, exists := QueryFile(name)
+  if !exists {
+    log.Printf("RemoveFile: file %s does not exist\n", name)
+    err := os.NewError("You are trying to delete a file that doesn't exist.")
+    result.Success = false
+    return err
+  } else {
+	  for j := 0; j < i.chunks.Len(); j++ {
+      chunks[i.chunks.At(j).(*chunk).chunkID] = nil, false
+    }
+    empty := t.Remove(name)
+
+    if empty {
+      log.Printf("There are no more files in the trie\n")
+    }
+  }
+  return nil
 }
 
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
@@ -193,15 +219,14 @@ func RemoveServer(serv *server) os.Error {
 		chunk := serv.chunks.At(cnt).(*chunk)
 		
 		//populate chunk location vector
-		chunklist := make([]net.TCPAddr, chunk.servers.Len())
-		for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
-			chunklist[cnt1] = chunk.servers.At(cnt1).(*server).addr
+		chunklist := new(vector.Vector)
+		locRange := chunk.servers.Len()
+		for cnt1 := 0; cnt1 < locRange; cnt1++ {
+			chunklist.Push(chunk.servers.At(cnt1).(*server).addr)
 		}
 		
 		//send rpc call off
-		args := &sfs.ReplicateChunkArgs{chunk.chunkID,chunklist}
-		
-		
+		args := &sfs.ReplicateChunkArgs{chunk.chunkID,*chunklist}
 		reply := new(sfs.ReplicateChunkReturn)
 		client.Call("Server.ReplicateChunk", args, reply)
 		log.Printf("%s", reply)

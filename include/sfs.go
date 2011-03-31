@@ -91,11 +91,11 @@ type AddChunkReturn struct {
 }
 
 type RemoveArgs struct {
-	name string
+	Name string
 }
 
 type RemoveReturn struct {
-	success bool
+	Success bool
 }
 
 type Handle int
