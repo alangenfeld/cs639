@@ -74,28 +74,40 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	data.Data = args.Data.Data
 	chunkTable[args.Info.ChunkID] = data
 
+	tempServ := args.Info.Servers[0]
+	var inRet sfs.WriteReturn
+
 	for {
 		if len(args.Info.Servers) < 2 {
-			return nil
+			break
 		}
 		
-		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 
-//		var replicationHostAddr net.TCPAddr = args.Info.Servers.At(0).(net.TCPAddr)
-//		str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
+		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		if err != nil {
 			log.Printf("chunk: dialing:", err)
 			continue
 		}
-		
-		err = client.Call("Server.Write", &args, &ret)
+
+		err = client.Call("Server.Write", &args, &inRet)
 		if err != nil {
 			log.Fatal("chunk: server error: ", err)
 		}
 		break
 	}
+
+	ret.Info.Servers = make([]net.TCPAddr, len(inRet.Info.Servers) + 1)
+	
+	for i:=0;i<len(ret.Info.Servers);i++ {
+		if(i > len(inRet.Info.Servers)) {
+			ret.Info.Servers[i] = tempServ
+		} else {
+			ret.Info.Servers[i] = inRet.Info.Servers[i]
+		}
+	}
+	
 	return nil	
 }
 
@@ -167,13 +179,14 @@ func SendHeartbeat(masterAddress string){
 
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
 
-	log.Printf("replication request for site %s and chunk %d\n",
-		args.Servers[0].String(),args.ChunkID);
-
 	if args.Servers == nil {
 		log.Printf("chunk: replication call: nil address.")
 		return nil
 	}
+
+	log.Printf("replication request for site %s and chunk %d\n",
+		args.Servers[0].String(),args.ChunkID);
+
 
 	for i := 0; i < len(args.Servers); i++ {
 		replicationHost, err := rpc.Dial("tcp", args.Servers[i].String())

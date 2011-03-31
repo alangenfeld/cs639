@@ -163,26 +163,42 @@ func Write (fd int , data []byte  ) (int){
 				fdFile.chunkInfo.Set(chunkOffset, AddChunks(fdFile.name, 1))
 			}
 			if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
-				fileArgs.Length = sfs.CHUNK_SIZE;
+				//fileArgs.Length = sfs.CHUNK_SIZE;
 			}else{
-				fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
+				//fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
 			}
 			fileArgs.Info = (fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo))
 			fileArgs.Data = toWrite
-			fileArgs.Offset = 0;
+			//fileArgs.Offset = 0;
 			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
 				log.Fatal("fdFile.chunkInfo ", fdFile.chunkInfo)
 
 			}
-			client,_  := rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
-			chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
-			replyCall:= <-chunkCall.Done
-			if replyCall.Error != nil{
+			client,err  := rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
+			if err != nil {
+				log.Fatal("Client: dial fail:", err)
+			}
+			err = client.Call("Server.Write", &fileArgs,&fileInfo);
+			if err != nil{
 				log.Fatal("Client: error in reply from rpc in write\n");
 			}
 			if(fileInfo.Status!=0){
 				log.Fatal("Client: Status non zero =",fileInfo.Status)
 			}
+			
+			// reply to master
+			mapArgs := &sfs.MapChunkToFileArgs{fdFile.name, chunkOffset, fileInfo.Info}
+			var mapRet sfs.MapChunkToFileReturn
+			
+			masterServ,err  := rpc.Dial("tcp",master)
+			if err != nil {
+				log.Fatal("Client: dial fail:", err)
+			}
+			err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
+			if err != nil{
+				log.Fatal("Client: error in reply from rpc in write\n");
+			}
+	
 			chunkOffset++;
 			indexWithinChunk =0
 			if(fdFile.chunkInfo.Len() <  chunkOffset ){

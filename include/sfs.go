@@ -35,12 +35,11 @@ type ChunkBirthReturn struct {
 type WriteArgs struct {
 	Info   ChunkInfo
 	Data   Chunk
-	Offset uint // bytes
-	Length uint // bytes
 }
 
 type WriteReturn struct {
 	Status int
+	Info ChunkInfo
 }
 
 type HeartbeatArgs struct {
