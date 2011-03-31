@@ -217,8 +217,8 @@ func Seek (fd int, offset int, whence int) (int){
 
 func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
-	var args sfs.AddChunkArgs
-	var returnVal sfs.ChunkInfo
+	var args sfs.GetNewChunkArgs
+	var returnVal sfs.GetNewChunkReturn
 
 	args.Name = fileName
 	args.Count = numChunks
@@ -235,7 +235,7 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 		os.Exit(1)
 	}
 
-	return returnVal
+	return returnVal.Info
 	
 
 }
