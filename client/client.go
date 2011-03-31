@@ -155,8 +155,8 @@ func Write (fd int , data []byte  ) (int){
 	for i:=0 ; i < len(data) ; i++  {
 		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
-		if (indexWithinChunk == sfs.CHUNK_SIZE || indexWithinChunk == len(data)-3 ){
-			if(fdFile.chunkInfo.Len() < chunkOffset+1) {
+		if (indexWithinChunk == sfs.CHUNK_SIZE || i == len(data)-1 ){
+			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
 			}
 			if(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID ==0  ){

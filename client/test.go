@@ -43,9 +43,12 @@ func main(){
 
 func printChunk ( toPrint []byte ){
 	fmt.Printf("Test: Chunk Read: ")
+	log.Printf("Test: Chunk Read: ")
 	fmt.Printf("\n")
+	log.Printf("\n")
 	for i := 0; i < len(toPrint); i++{
 		fmt.Printf("%c", toPrint[i])
+		log.Printf("%c %d", toPrint[i], i)
 	}
 	fmt.Printf("\n")
 }
