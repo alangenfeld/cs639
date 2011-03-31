@@ -100,7 +100,7 @@ func (s * serverHeap) Handler() {
 				}
 			}
 			heap.Init(s)
-			ch <- heapCommand{}
+			rec.retChan <- heapCommand{}
 		}
 	}
 }
