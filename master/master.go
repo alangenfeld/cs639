@@ -14,7 +14,7 @@ import (
 )
 
 var t *trie.Trie
-var nextChunk uint64 = 0
+var nextChunk uint64 = 1
 var nextChunkServerID uint64 = 0
 var serverIndex uint64 = 0
 var sHeap *serverHeap
@@ -102,7 +102,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 	nextChunk++
 
 	ret.Info.Servers = make([]net.TCPAddr, sfs.NREPLICAS)
-	for i := 0; i < sfs.NREPLICAS; i++ {
+	for i := 0; i < sfs.NREPLICAS && i < sHeap.vec.Len(); i++ {
 		ret.Info.Servers[i] = sHeap.vec.At(i).(*server).addr
 	}
 
@@ -167,7 +167,8 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 				server.chunks.Push(args.AddedChunks[cnt])
 				chunk.servers.Push(server)
 			} /*else{
-				log.Printf("BeatHeart: Error chunk %s does not exist\n", chunks[args.AddedChunks[0].ChunkID)
+				log.Printf("BeatHeart: Error chunk %s does not exist\n",
+				chunks[args.AddedChunks[0].ChunkID)
 			}*/
 		}
 	}
@@ -271,13 +272,13 @@ func AddFile(name string) (i *inode, err os.Error) {
 
 	log.Printf("AddFile: nextChunk %d, len(servers) %d\n", nextChunk, sHeap.Len())
 
-	i.size = 1
+	i.size = 0
 	//i.addr = *(servers.At(int(nextChunk) % servers.Len()).(*net.TCPAddr))
 	//i.addr = servers[0]
 
 	i.chunks = new(vector.Vector)
 
-	i.AddChunk()
+	//i.AddChunk()
 
 	t.AddValue(name, i) // trie insert
 
@@ -321,6 +322,11 @@ func (i *inode) AddChunk() (chunkID uint64, err os.Error) {
 	nextChunk += 1
 
 	thisChunk.servers = new(vector.Vector)
+	
+	/*
+	for i := 0; i < sfs.NREPLICAS; i++ {
+		thisChunk.servers.Push(sHeap.vec.At(i).(*server))
+	}*/
 
 	//thisChunk.servers.Push(serv)
 	//serv.chunks.Push(thisChunk)
