@@ -199,7 +199,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		var readRet sfs.ReadReturn
 		readArgs.ChunkID = args.ChunkID
 		
-		err = replicationHost.Call("Server.Write", &readArgs, &readRet)
+		err = replicationHost.Call("Server.Read", &readArgs, &readRet)
 		if err != nil {
 			log.Println("chunk: replication call:", err)
 			continue
