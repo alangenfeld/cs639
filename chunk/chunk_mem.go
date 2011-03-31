@@ -76,21 +76,17 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	data.Data = args.Data.Data
 	chunkTable[args.Info.ChunkID] = data
 
-	if args.Info.Servers == nil || args.Info.Servers.At(0) == nil {
-		return nil
-	}
-
 	for {
-		if args.Info.Servers.At(1) == nil {
+		if len(args.Info.Servers) < 2 {
 			return nil
 		}
 		
-		args.Info.Servers.Slice(1,args.Info.Servers.Len())
+		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 
 //		var replicationHostAddr net.TCPAddr = args.Info.Servers.At(0).(net.TCPAddr)
 //		str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 
-		client, err := rpc.Dial("tcp", args.Info.Servers.At(0).(*net.TCPAddr).String())
+		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		if err != nil {
 			log.Printf("chunk: dialing:", err)
 			continue
@@ -149,7 +145,7 @@ func SendHeartbeat(masterAddress string){
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
-	args.ChunkServerID = chunkServerID 
+	args.ChunkServerID = chunkServerID
 
 	for {
 		var info syscall.Sysinfo_t
@@ -173,7 +169,7 @@ func SendHeartbeat(masterAddress string){
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
 		addedChunks.Resize(0, 0)
-		time.Sleep(sfs.HEARTBEAT_WAIT)		
+		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
 	return
 }
@@ -188,7 +184,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 //	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
 //	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 	
-	replicationHost, err := rpc.Dial("tcp", args.Servers.At(0).(*net.TCPAddr).String())
+	replicationHost, err := rpc.Dial("tcp", args.Servers[0].String())
 	if err != nil {
 		log.Fatal("chunk: replication call:", err)
 	}
@@ -198,7 +194,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 	readArgs.ChunkIDs = args.ChunkID
 
 	log.Printf("replication request for site %s and chunk %d\n",
-		args.Servers.At(0).(*net.TCPAddr).String(),args.ChunkID);
+		args.Servers[0].String(),args.ChunkID);
 
 	err = replicationHost.Call("Server.Write", &readArgs, &readRet)
 	if err != nil {
