@@ -48,7 +48,7 @@ func printChunk ( toPrint []byte ){
 	log.Printf("\n")
 	for i := 0; i < len(toPrint); i++{
 		fmt.Printf("%c", toPrint[i])
-		log.Printf("%c %d", toPrint[i], i)
+//		log.Printf("%c %d", toPrint[i], i)
 	}
 	fmt.Printf("\n")
 }
