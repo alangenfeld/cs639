@@ -170,27 +170,28 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		return nil
 	}
 
-//	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
-//	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
-	
-	replicationHost, err := rpc.Dial("tcp", args.Servers[0].String())
-	if err != nil {
-		log.Fatal("chunk: replication call:", err)
+	for i := 0; i < len(args.Servers); i++ {
+		replicationHost, err := rpc.Dial("tcp", args.Servers[i].String())
+		if err != nil {
+			log.Println("chunk: replication call:", err)
+			continue
+		}
+		
+		var readArgs sfs.ReadArgs
+		var readRet sfs.ReadReturn
+		readArgs.ChunkIDs = args.ChunkID
+		
+		log.Printf("replication request for site %s and chunk %d\n",
+			args.Servers[0].String(),args.ChunkID);
+		
+		err = replicationHost.Call("Server.Write", &readArgs, &readRet)
+		if err != nil {
+			log.Println("chunk: replication call:", err)
+			continue
+		}
+		
+		chunkTable[args.ChunkID] = readRet.Data
+		break
 	}
-
-	var readArgs sfs.ReadArgs
-	var readRet sfs.ReadReturn
-	readArgs.ChunkIDs = args.ChunkID
-
-	log.Printf("replication request for site %s and chunk %d\n",
-		args.Servers[0].String(),args.ChunkID);
-
-	err = replicationHost.Call("Server.Write", &readArgs, &readRet)
-	if err != nil {
-		log.Fatal("chunk: replication call:", err)
-	}
-
-	chunkTable[args.ChunkID] = readRet.Data
-
 	return nil
 }
