@@ -236,7 +236,7 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 		os.Exit(1)
 	}
 	
-	err = masterConn.Call("Master.AddChunk",&args,&returnVal)
+	err = masterConn.Call("Master.GetNewChunk",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(AddChunks):", err.String())
 		os.Exit(1)
