@@ -121,7 +121,7 @@ func Read (fd int, size int) ([]byte, int ){
 			break;
 		}
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
-			entireRead[j] = fileInfo.Data.Data[j];
+			entireRead[index] = fileInfo.Data.Data[j];
 			index++;
 		}
 	}
@@ -203,7 +203,7 @@ func Write (fd int , data []byte  ) (int){
 			
 			chunkOffset++;
 			indexWithinChunk =0
-			if(fdFile.chunkInfo.Len() <  chunkOffset ){
+			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
 				//toWrite = new(sfs.Chunk)
 				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
