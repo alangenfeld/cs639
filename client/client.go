@@ -107,7 +107,7 @@ func Read (fd int, size int) ([]byte, int ){
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, FAIL
 		}
-		fileArgs.ChunkID= fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).ChunkID;
+		fileArgs.ChunkID= fdFile.chunkInfo.At(i).(sfs.ChunkInfo).ChunkID;
 
 		chunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
 		replyCall:= <-chunkCall.Done
@@ -157,7 +157,7 @@ func Write (fd int , data []byte  ) (int){
 		indexWithinChunk++
 		if (indexWithinChunk == sfs.CHUNK_SIZE || indexWithinChunk == len(data)-3 ){
 			if(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID ==0  ){
-                 fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
+				fdFile.chunkInfo.Set(chunkOffset, AddChunks(fdFile.name, 1))
             }
 			if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
 				fileArgs.Length = sfs.CHUNK_SIZE;
