@@ -60,9 +60,9 @@ func Open(filename string , flag int ) (int){
 //	fileArgs.Size = 0;
 	client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 	if fileInfo.New {
-		log.Printf("\nClient: New file!\n")
+		log.Printf("Client: New file!\n")
 	}else{
-		log.Printf("\nClient: Old file!\n")
+		log.Printf("Client: Old file!\n")
 	}
 	fd++
 	var nextFile file
