@@ -16,6 +16,7 @@ type server struct {
 type heapCommand struct {
 	command uint64
 	server interface {}
+	retChan chan * heapCommand
 }
 type serverHeap struct {
 	serverChan chan * heapCommand
@@ -40,18 +41,19 @@ func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
 func (s * serverHeap) Push(serv interface {}) {
-	s.serverChan <- &heapCommand{0,serv}
+	s.serverChan <- &heapCommand{0,serv,nil}
 	//s.vec.Push(serv)
 }
 func (s * serverHeap) Pop() interface {} {
-	s.serverChan <- &heapCommand{1,nil}
+	ch := make(chan *heapCommand)
+	s.serverChan <- &heapCommand{1,nil,ch}
 	//command := new(heapCommand)
-	command := <- s.serverChan
+	command := <- ch
 	return command.server
 	//return s.vec.Pop()
 }
 func (s * serverHeap) Remove(serv interface{}) {
-    s.serverChan <- &heapCommand{2,serv}
+    s.serverChan <- &heapCommand{2,serv, nil}
 }
 func (s * serverHeap) Handler() {
 
@@ -61,26 +63,23 @@ func (s * serverHeap) Handler() {
 			s.vec.Push(rec.server)
 		}
 		if(rec.command == 1){
-			s.serverChan <- &heapCommand{1,s.vec.Pop()}
+			rec.retChan <- &heapCommand{1,s.vec.Pop(),nil}
 		}
 		if(rec.command == 2){
 			deadServer := rec.server.(*server)
 			//find the server to remove
-			vecRange := s.vec.Len()
-			for cnt := 0; cnt < vecRange; cnt++{
+			for cnt := 0; cnt < s.vec.Len(); cnt++ {
 			
 				testserv := s.vec.At(cnt).(*server)
 				if(testserv.id == deadServer.id){
 				
 					//find each chunk to modify
-					chunkRange := testserv.chunks.Len()
-					for cnt1 := 0; cnt1 < chunkRange; cnt1++{
+					for cnt1 := 0; cnt1 < testserv.chunks.Len(); cnt1++{
 					
 						tempchunk := testserv.chunks.At(cnt1).(*chunk)
 						
 						//find the server to remove from EACH CHUNK LIST
-						searchRange := tempchunk.servers.Len()
-						for cnt2 := 0; cnt2 < searchRange; cnt2++ {
+						for cnt2 := 0; cnt2 < tempchunk.servers.Len(); cnt2++ {
 						
 							tempserv := tempchunk.servers.At(cnt2).(*server)
 							if(tempserv.id == deadServer.id){
