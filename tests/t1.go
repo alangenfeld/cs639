@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"flag"
 	"os"
+//	"../include/sfs"
 )
 
 func main(){
@@ -18,7 +19,7 @@ func main(){
 		panic("open failed")
 	}
 
-	fmt.Printf("pass\n")
+	fmt.Printf("\n{{{{{pass}}}}}\n")
 	os.Exit(0)
 }
 
