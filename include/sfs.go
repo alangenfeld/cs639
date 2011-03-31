@@ -97,6 +97,14 @@ type MapChunkToFileReturn struct {
 	Status int
 }
 
+type ReportWriteArgs struct {
+	Chunk ChunkInfo
+}
+
+type ReportWriteReturn struct {
+	Status int
+}
+
 type RemoveArgs struct {
 	Name string
 }

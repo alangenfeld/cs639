@@ -109,6 +109,11 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 	return nil
 }
 
+func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteReturn) os.Error {
+
+	return nil
+}
+
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
 	result.Success = true
 	name := args.Name
