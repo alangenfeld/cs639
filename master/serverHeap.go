@@ -15,7 +15,7 @@ type server struct {
 
 type heapCommand struct {
 	command uint64
-	server interface {}
+	server interface{}
 	retChan chan * heapCommand
 }
 type serverHeap struct {
@@ -40,7 +40,7 @@ func (s * serverHeap) Less(i, j int) bool {
 func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
 }
-func (s * serverHeap) Push(serv interface {}) {
+func (s * serverHeap) Push(serv interface{}) {
 	s.serverChan <- &heapCommand{0,serv,nil}
 	//s.vec.Push(serv)
 }

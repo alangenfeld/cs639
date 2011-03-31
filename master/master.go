@@ -218,6 +218,14 @@ func RemoveServer(serv *server) os.Error {
 
 	//Remove the Server
 	sHeap.Remove(serv)
+	
+	for i := 0; i < sHeap.vec.Len(); i++ {
+		if sHeap.vec.At(i).(*server).id == serv.id {
+			log.Printf("master: RemoveServer: remove didn't actually remove server %d! Busto Rhymes\n", serv.id)
+			return nil
+		}
+	}
+	
 	servers[serv.id] = &server{}, false
 	addrToServerMap[serv.addr.String()] = &server{}, false
 	
@@ -254,7 +262,10 @@ func RemoveServer(serv *server) os.Error {
 		args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
 		reply := new(sfs.ReplicateChunkReturn)
 		log.Printf("master: RemoveServer: issuing replication req to %s\n", str)
-		client.Call("Server.ReplicateChunk", args, reply)
+		err = client.Call("Server.ReplicateChunk", args, reply)
+		if err != nil {
+			log.Printf("master: RemoveServer: unable to call %s\n", str)
+		}
 		log.Printf("%s", reply)
 	}
 
