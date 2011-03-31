@@ -167,6 +167,9 @@ func SendHeartbeat(masterAddress string){
 
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
 
+	log.Printf("replication request for site %s and chunk %d\n",
+		args.Servers[0].String(),args.ChunkID);
+
 	if args.Servers == nil {
 		log.Printf("chunk: replication call: nil address.")
 		return nil
@@ -182,9 +185,6 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		var readArgs sfs.ReadArgs
 		var readRet sfs.ReadReturn
 		readArgs.ChunkID = args.ChunkID
-		
-		log.Printf("replication request for site %s and chunk %d\n",
-			args.Servers[0].String(),args.ChunkID);
 		
 		err = replicationHost.Call("Server.Write", &readArgs, &readRet)
 		if err != nil {
