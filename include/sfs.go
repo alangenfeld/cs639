@@ -90,6 +90,14 @@ type AddChunkReturn struct {
 	Info ChunkInfo
 }
 
+type RemoveArgs struct {
+	name string
+}
+
+type RemoveReturn struct {
+	success bool
+}
+
 type Handle int
 
 type ChunkInfo struct {
