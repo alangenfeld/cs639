@@ -49,6 +49,29 @@ sub superKill {
 }
 
 
+sub printFailSummary {
+    my (@failList) = @_;
+    my %descriptions;
+
+    if($#failList == -1) {
+	return;
+    }
+
+    open SUMMARY, "$testdir/summary.txt" or die;
+    while(<SUMMARY>) {
+	if($_ =~ /(.*):(.*)/) {
+	    $descriptions{$1} = $2;
+	}
+    }
+    close SUMMARY;
+
+    print "\n\nFailures:\n";
+    foreach my $name (@failList) {
+	print "$name: $descriptions{$name}\n";
+    }
+}
+
+
 sub runTest {
     $#_ == 0 or die "Bad args to runTest";
     my ($test) = @_;
@@ -65,7 +88,7 @@ sub runTest {
     #run client with timeout
     print "Running test $test\n";
     if(fork() == 0) {
-	sys("sleep 5; killall $test");
+	sys("sleep 10; killall $test");
 	exit(0);
     }
     sys("$testdir/$test -m $master &> $testdir/output/$test.out");
@@ -82,7 +105,7 @@ sub runTest {
 	$results .= $_;
     }
     close RESULT;
-    if($results eq "pass\n") {
+    if($results =~ "{{{{{pass}}}}}") {
 	return 1;
     } else {
 	return 0;
@@ -129,8 +152,8 @@ sub main {
 
     #run the test
     if($testName ne '') {
-	my $passCount = 0;
-	my $failCount = 0;
+	my @passCases;
+	my @failCases;
 
 	if($testName eq 'all') {
 	    opendir(my $dh, $testdir) || 
@@ -138,15 +161,20 @@ sub main {
 	    while(my $file = readdir($dh)) {
 		if($file =~ /^t\d+$/) {
 		    if(runTest($file)) {
-			$passCount++;
+			push(@passCases, $file);
 		    } else {
-			$failCount++;
+			push(@failCases, $file);
 		    }
 		}
 	    }
 	    closedir $dh;
 
+	    my $passCount = $#passCases + 1;
+	    my $failCount = $#failCases + 1;
+
 	    if($passCount + $failCount > 0) {
+		printFailSummary(@failCases);
+
 		my $rate = (100 * $passCount / ($passCount + $failCount)) . '%';
 		print "\n\nPass=$passCount, Fail=$failCount, Rate=$rate\n";
 		if($failCount == 0) {
