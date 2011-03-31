@@ -8,15 +8,16 @@ import (
 	"net"
 //	"fmt"
 	"container/vector"
-	"syscall"
+	//"syscall"
 	"time"
+	"exec"
 )
 
 type Server int
 
 const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
-const NUM_USR_COMMAND = "who"
-const NUM_USR_ARGS = "| awk '{print $1;}'| uniq | wc -l |awk '{print $1;}'"
+const STATUS_CMD = ""
+const STATUS_ARGS = ""
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
@@ -63,13 +64,10 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 
-	if args.Info.Servers.At(0) == nil {
-		return nil
-	}
-
+	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
 	data,present := chunkTable[args.Info.ChunkID]
 	if !present{
-		addedChunks.Push(args.Info.ChunkID)
+		addedChunks.Push(args.Info)
 		capacity --
 	}
 
@@ -78,18 +76,17 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	data.Data = args.Data.Data
 	chunkTable[args.Info.ChunkID] = data
 
-	for 
-		{
-		if args.Info.Servers.At(1) == nil {
+	for {
+		if len(args.Info.Servers) < 2 {
 			return nil
 		}
 		
-		args.Info.Servers.Slice(1,args.Info.Servers.Len())
+		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 
 //		var replicationHostAddr net.TCPAddr = args.Info.Servers.At(0).(net.TCPAddr)
 //		str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 
-		client, err := rpc.Dial("tcp", args.Info.Servers.At(0).(*net.TCPAddr).String())
+		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		if err != nil {
 			log.Printf("chunk: dialing:", err)
 			continue
@@ -108,25 +105,31 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	return nil
 }*/
 
-/*func LogStats(){
+func LogStats(){
 	//first, open the daily log file
 	host,_ := os.Hostname()
 	current := time.Seconds()
-	filename := host
+	filename:= host + string(current)
 	logFile, err := os.Open(filename, os.O_CREAT | os.O_WRONLY, 0666)
 	if err != nil {
-		log.Fatal("chunk: unable to init logging");
+		log.Fatal("chunk: unable to init logging")
 	}
-	
 	//now, enter the happy place of logging all our fun stuff
-	var info syscall.Sysinfo_t
+	//var info syscall.Sysinfo_t
 	var args []string
-	args[0] = NUM_USR_ARGS
+	var result []byte
+	args[0] = STATUS_ARGS
 	for {
-		syscall.Sysinfo(&info)
-		p, err := os.StartProcess(NUM_USR_COMMAND, args, nil, nil, nil)
+		command, err2 := exec.Run(STATUS_CMD, args, nil, "", exec.DevNull, exec.Pipe, exec.MergeWithStdout)
+		if err2 != nil{
+			log.Fatal("chunk: unable to obtain remote command")
+		}
+		command.Stdout.Read(result)
+		logFile.Write(result);
+		logFile.WriteString(string(result));
+		time.Sleep(2000000000);
 	}		
-}*/
+}
 
 func SendHeartbeat(masterAddress string){
 	var args sfs.HeartbeatArgs
@@ -141,27 +144,21 @@ func SendHeartbeat(masterAddress string){
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
-	args.ChunkServerID = chunkServerID 
+	args.ChunkServerID = chunkServerID
 
 	for {
-		var info syscall.Sysinfo_t
-		syscall.Sysinfo(&info)
-		var mem_usage float32
-		mem_usage = float32 (info.Freeram) / float32 (info.Totalram)
-		if mem_usage > .8  && capacity > 0{ 
-			capacity --
-			//TODO: This is super sketchy and needs to be fixed, free up current blocks, etc
-		}else if mem_usage < .2{
-			capacity ++
-		}
 		args.Capacity = capacity
-		args.AddedChunks = addedChunks
+		addedChunkSlice := make([]sfs.ChunkInfo, addedChunks.Len())
+		for i := 0; i < addedChunks.Len(); i++ {
+			addedChunkSlice[i] = addedChunks.At(i).(sfs.ChunkInfo)
+		}
+		args.AddedChunks = addedChunkSlice
 		err = master.Call("Master.BeatHeart", &args, &ret)
 		if err != nil {
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
 		addedChunks.Resize(0, 0)
-		time.Sleep(sfs.HEARTBEAT_WAIT)		
+		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
 	return
 }
@@ -176,7 +173,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 //	var replicationHostAddr net.TCPAddr = args.Servers.At(0).(net.TCPAddr)
 //	str := fmt.Sprintf("%s:%d", replicationHostAddr.IP, replicationHostAddr.Port)
 	
-	replicationHost, err := rpc.Dial("tcp", args.Servers.At(0).(*net.TCPAddr).String())
+	replicationHost, err := rpc.Dial("tcp", args.Servers[0].String())
 	if err != nil {
 		log.Fatal("chunk: replication call:", err)
 	}
@@ -186,7 +183,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 	readArgs.ChunkIDs = args.ChunkID
 
 	log.Printf("replication request for site %s and chunk %d\n",
-		args.Servers.At(0).(*net.TCPAddr).String(),args.ChunkID);
+		args.Servers[0].String(),args.ChunkID);
 
 	err = replicationHost.Call("Server.Write", &readArgs, &readRet)
 	if err != nil {

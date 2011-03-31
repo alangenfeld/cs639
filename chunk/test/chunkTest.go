@@ -20,7 +20,7 @@ func main() {
 
 	var ret sfs.WriteReturn
 	var args sfs.WriteArgs
-	args.ChunkID = 12
+	args.Info.ChunkID = 12
 	args.Data.Data[0] = 'a'
 
 	err = client.Call("Server.Write", &args, &ret)
@@ -31,7 +31,7 @@ func main() {
 	var rdRet sfs.ReadReturn
 	var rdArgs sfs.ReadArgs
 	
-	rdArgs.ChunkID = 12
+	rdArgs.ChunkIDs = 12
 	
 	err = client.Call("Server.Read", &rdArgs, &rdRet)
 	if err != nil {

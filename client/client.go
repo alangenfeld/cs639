@@ -8,7 +8,7 @@ import (
 	"log"
 //	"io/ioutil"
 	"../include/sfs"
-	"net"
+	//"net"
 )
 
 //NEED TO MAKE A TYPE FOR FILE
@@ -47,7 +47,6 @@ func Initialize(masterAddr string){
 }
 
 func Open(filename string , flag int ) (int){
-
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		log.Printf("Client: Error", err.String());
@@ -69,8 +68,8 @@ func Open(filename string , flag int ) (int){
 	nextFile.size = fileInfo.Size
 	nextFile.filePtr = 0
 	nextFile.chunkInfo = new(vector.Vector)
-	for i := 0 ; i < fileInfo.Chunk.Len(); i ++ {
-		nextFile.chunkInfo.Push(fileInfo.Chunk)
+	for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
+		nextFile.chunkInfo.Push(fileInfo.Chunk[i])
 	}
 	openFiles[fd] = nextFile
 	return fd;
@@ -91,7 +90,11 @@ func Read (fd int, size int) (vector.Vector, int ){
 	}
 	index := 0;
 	for i := 0; i<fdFile.chunkInfo.Len(); i++ {
-		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(*sfs.ChunkInfo).Servers.At(0).(*net.TCPAddr).String())
+		
+		if (len(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers) < 1) {
+			log.Fatal("Client: No servers listed")
+		}
+		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers[0].String())
 		if err != nil{
 			log.Printf("Client: Dial Failed in Read")
 			return entireRead, FAIL
@@ -223,7 +226,30 @@ func Seek (fd int, offset int, whence int) (int){
 	return  status;
 }
 
+func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
+	var args sfs.AddChunkArgs
+	var returnVal sfs.ChunkInfo
+
+	args.Name = fileName
+	args.Count = numChunks
+
+	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	if(err != nil){
+		log.Printf("Error Dialing Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+	
+	err = masterConn.Call("Master.AddChunk",&args,&returnVal)
+	if(err != nil){
+		log.Printf("Error Calling Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+
+	return returnVal
+	
+
+}
 /// no idea if this works at all
 /*
 func WriteFromFile(fileNameLocal string, fileNameServer string, master string)(int){

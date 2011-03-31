@@ -4,7 +4,6 @@ import (
 	//	"os"
 	"container/list"
 	"net"
-	"container/vector"
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
@@ -50,11 +49,11 @@ type HeartbeatArgs struct {
 	ChunkServerIP net.TCPAddr
 	ChunkServerID uint64
 	Capacity      uint64
-	AddedChunks   vector.Vector
+	AddedChunks   []ChunkInfo
 }
 
 type HeartbeatReturn struct {
-	ChunksToGet vector.Vector
+	ChunksToGet []ChunkInfo
 }
 
 type Status struct {
@@ -70,12 +69,12 @@ type OpenArgs struct {
 type OpenReturn struct {
 	New   bool
 	Size  uint64        // bytes
-	Chunk vector.Vector // bytes
+	Chunk []ChunkInfo// bytes
 }
 
 type ReplicateChunkArgs struct {
 	ChunkID uint64
-	Servers vector.Vector
+	Servers []net.TCPAddr
 }
 
 type ReplicateChunkReturn struct {
@@ -91,9 +90,17 @@ type AddChunkReturn struct {
 	Info ChunkInfo
 }
 
+type RemoveArgs struct {
+	name string
+}
+
+type RemoveReturn struct {
+	success bool
+}
+
 type Handle int
 
 type ChunkInfo struct {
 	ChunkID uint64
-	Servers vector.Vector
+	Servers []net.TCPAddr
 }
