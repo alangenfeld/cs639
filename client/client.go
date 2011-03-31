@@ -58,7 +58,10 @@ func Open(filename string , flag int ) (int){
 	fileArgs := new (sfs.OpenArgs)
 	fileArgs.Name = filename
 //	fileArgs.Size = 0;
-	client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
+	err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
+	if(err != nil){
+		log.Fatal("Client: Open fail ", err )
+	}
 	if fileInfo.New {
 		log.Printf("Client: New file!\n")
 	}else{
@@ -73,6 +76,8 @@ func Open(filename string , flag int ) (int){
 	for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
 		nextFile.chunkInfo.Push(fileInfo.Chunk[i])
 	}
+	log.Printf("servers %v", nextFile.chunkInfo)
+	log.Printf("servers %v", fileInfo.Chunk[0])
 	openFiles[fd] = nextFile
 	return fd;
 	}
@@ -150,7 +155,7 @@ func Write (fd int , data []byte  ) (int){
 	for i:=0 ; i < len(data) ; i++  {
 		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
-		if (indexWithinChunk == sfs.CHUNK_SIZE ){
+		if (indexWithinChunk == sfs.CHUNK_SIZE || indexWithinChunk == len(data)-1 ){
 			if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
 				fileArgs.Length = sfs.CHUNK_SIZE;
 			}else{
@@ -159,6 +164,10 @@ func Write (fd int , data []byte  ) (int){
 			fileArgs.Info = (fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo))
 			fileArgs.Data = toWrite
 			fileArgs.Offset = 0;
+			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
+				log.Fatal("fdFile.chunkInfo ", fdFile.chunkInfo)
+
+			}
 			client,_  := rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
 			chunkCall := client.Go("Server.Write", &fileArgs,&fileInfo, nil);
 			replyCall:= <-chunkCall.Done
