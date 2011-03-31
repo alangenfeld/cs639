@@ -80,19 +80,18 @@ func Open(filename string , flag int ) (int){
 }
 
 /* read */
-func Read (fd int, size int) (vector.Vector, int ){
+func Read (fd int, size int) ([]byte, int ){
 	//goes to chunk and gets a chunk of memory to read...
 	fileInfo := new (sfs.ReadReturn);
 	fileArgs := new (sfs.ReadArgs);
 	fdFile, inMap := openFiles[fd]
-	var entireRead vector.Vector
+	var entireRead []byte
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
 		return entireRead, FAIL
 	}
 	index := 0;
 	for i := 0; i<fdFile.chunkInfo.Len(); i++ {
-		
 		if (len(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers) < 1) {
 			log.Fatal("Client: No servers listed")
 		}
@@ -115,7 +114,7 @@ func Read (fd int, size int) (vector.Vector, int ){
 			break;
 		}
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
-			entireRead.Push(fileInfo.Data.Data[j]);
+			entireRead[j] = fileInfo.Data.Data[j];
 			index++;
 		}
 	}
@@ -124,7 +123,7 @@ func Read (fd int, size int) (vector.Vector, int ){
 }
 
 /* write */
-func Write (fd int , data vector.Vector  ) (int){
+func Write (fd int , data []byte  ) (int){
 ///*
 	fileArgs := new (sfs.WriteArgs);
 	fileInfo := new (sfs.WriteReturn);
@@ -136,7 +135,7 @@ func Write (fd int , data vector.Vector  ) (int){
 	var indexWithinChunk int 
 	indexWithinChunk = int( fdFile.filePtr)%int(sfs.CHUNK_SIZE)
 	chunkOffset := int(fdFile.filePtr)/int(sfs.CHUNK_SIZE)
-	sizeToWrite := uint64(data.Len());
+	sizeToWrite := uint64(len(data));
 //	if((fdFile.size %sfs.CHUNK_SIZE)!= 0){
 //		numChunks++
 //	}
@@ -146,8 +145,8 @@ func Write (fd int , data vector.Vector  ) (int){
 //	}
 
 	var toWrite sfs.Chunk
-	for i:=0 ; i < data.Len() ; i++  {
-		toWrite.Data[int(indexWithinChunk)] = data.At(i).(byte)
+	for i:=0 ; i < len(data) ; i++  {
+		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
 		if (indexWithinChunk == sfs.CHUNK_SIZE ){
 			if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
