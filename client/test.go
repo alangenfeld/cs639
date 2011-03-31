@@ -18,6 +18,7 @@ func main(){
 		log.Printf("Test: Enter text to write to file:\n")
 		in := bufio.NewReader(os.Stdin)
 		fromIn, _ = in.ReadString('\n')
+		data = make([]byte,len(fromIn))
 		for i := 0; i < len(fromIn); i++{
 			data[i] = fromIn[i]
 		}

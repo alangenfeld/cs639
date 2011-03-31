@@ -66,8 +66,8 @@ type OpenArgs struct {
 
 type OpenReturn struct {
 	New   bool
-	Size  uint64        // bytes
-	Chunk []ChunkInfo// bytes
+	Size  uint64      // bytes
+	Chunk []ChunkInfo // bytes
 }
 
 type ReplicateChunkArgs struct {
@@ -79,13 +79,23 @@ type ReplicateChunkReturn struct {
 	Status int
 }
 
-type AddChunkArgs struct {
-	Name string
+type GetNewChunkArgs struct {
+	Name  string
 	Count uint64
 }
 
-type AddChunkReturn struct {
+type GetNewChunkReturn struct {
 	Info ChunkInfo
+}
+
+type MapChunkToFileArgs struct {
+	Name   string
+	Offset int
+	Chunk  ChunkInfo
+}
+
+type MapChunkToFileReturn struct {
+	Status int
 }
 
 type RemoveArgs struct {

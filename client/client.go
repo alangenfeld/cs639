@@ -86,6 +86,8 @@ func Read (fd int, size int) ([]byte, int ){
 	fileArgs := new (sfs.ReadArgs);
 	fdFile, inMap := openFiles[fd]
 	var entireRead []byte
+//this size needs to be fixed
+	entireRead = make([]byte, fdFile.chunkInfo.Len()*sfs.CHUNK_SIZE)
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
 		return entireRead, FAIL
@@ -215,8 +217,8 @@ func Seek (fd int, offset int, whence int) (int){
 
 func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
-	var args sfs.AddChunkArgs
-	var returnVal sfs.ChunkInfo
+	var args sfs.GetNewChunkArgs
+	var returnVal sfs.GetNewChunkReturn
 
 	args.Name = fileName
 	args.Count = numChunks
@@ -233,7 +235,7 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 		os.Exit(1)
 	}
 
-	return returnVal
+	return returnVal.Info
 	
 
 }
