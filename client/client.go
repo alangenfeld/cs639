@@ -86,6 +86,8 @@ func Read (fd int, size int) ([]byte, int ){
 	fileArgs := new (sfs.ReadArgs);
 	fdFile, inMap := openFiles[fd]
 	var entireRead []byte
+//this size needs to be fixed
+	entireRead = make([]byte, fdFile.chunkInfo.Len()*sfs.CHUNK_SIZE)
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
 		return entireRead, FAIL
