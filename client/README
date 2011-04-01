@@ -1,8 +1,8 @@
 Things to do:
 	file struct : add flags
 	open: check for flags, and do the appropriate things
-	write: update size and file ptr, test for appending and overwriting
-	read: update file ptr, read a size instead of the whole file
+	write: update file ptr
+	read: 
 	readDir: need to write still
 	seek: need to write still
 	delete: need to write still
