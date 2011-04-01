@@ -40,6 +40,43 @@ func main(){
 		panic("write failed")
 	}
 
+	//read first character
+	ret = client.Seek(fd, 0, client.SEEK_SET)
+	if(ret != 0) {
+		panic("seek failed")
+	}
+
+	data, err := client.Read(fd, 1)
+	if(err != 0) {
+		panic("read failed")
+	}
+
+	s_ret := string(data)
+	fmt.Printf("Got back: '%s'\n", s_ret)
+
+	if(s_ret != "A") {
+		panic("strings differ")
+	}
+
+	//read second character
+	ret = client.Seek(fd, 2, client.SEEK_SET)
+	if(ret != 0) {
+		panic("seek failed")
+	}
+
+	data, err = client.Read(fd, 1)
+	if(err != 0) {
+		panic("read failed")
+	}
+
+	s_ret = string(data)
+	fmt.Printf("Got back: '%s'\n", s_ret)
+
+	if(s_ret != "C") {
+		panic("strings differ")
+	}
+
+	//close
 	ret = client.Close(fd)
 	if(ret != client.WIN) {
 		panic("close failed")

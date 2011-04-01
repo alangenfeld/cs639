@@ -5,27 +5,29 @@ use Cwd 'abs_path';
 my $master = 'mumble-20.cs.wisc.edu';
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
 my $chunkCount = 1;
+my $timeout = 10;
 my $testdir;
+my $verbose = 1;
 
 
 sub doLaunch {
     sys("ssh $master ".
 	"'$testdir/../master/master ".
-	"&> $testdir/output/master.log' &");
+	"&> $testdir/output/master.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 
     sleep(1);
 
     for(my $i = 3; $i < 3+$chunkCount; $i++) {
 	sys("$ssh mumble-1$i.cs.wisc.edu ".
 	    "'$testdir/../chunk/serv $master ".
-	    "&> $testdir/output/chunk$i.log' &");
+	    "&> $testdir/output/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
     }
 }
 
 sub doKill {
-    sys("$ssh $master 'killall master'");
+    sys("$ssh $master 'killall master'".($verbose != 1 ? " &> /dev/null":""));
     for(my $i = 3; $i < 3+$chunkCount; $i++) {
-	sys("$ssh mumble-1$i.cs.wisc.edu 'killall serv'");
+	killOne($i)
     }
 }
 
@@ -36,8 +38,8 @@ sub killOne {
     if($num < 10) {
 	$num = '0'.$num;
     }
-    sys("$ssh mumble-$num.cs.wisc.edu 'killall serv'");
-    sys("$ssh mumble-$num.cs.wisc.edu 'killall master'");
+    sys("$ssh mumble-$num.cs.wisc.edu 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
+    sys("$ssh mumble-$num.cs.wisc.edu 'killall master'".($verbose != 1 ? " &> /dev/null":""));
 }
 
 
@@ -76,7 +78,16 @@ sub runTest {
     $#_ == 0 or die "Bad args to runTest";
     my ($test) = @_;
 
-    print "\n*** Running test $test... ***\n\n";
+    print "\n*** $test... ***\n";
+
+    print "Compiling...\n";
+    sys("rm -f $test; 6g $test.go; 6l -o $test $test.6");
+    if(! -e "$test") {
+	print "Compile failed!\n";
+	return 0;
+    }
+
+    print "Running...\n";
 
     #setup output directory
     sys("rm -rf $testdir/output; mkdir $testdir/output");
@@ -86,13 +97,17 @@ sub runTest {
     sleep(1);
 
     #run client with timeout
-    print "Running test $test\n";
-    if(fork() == 0) {
-	sys("sleep 10; killall $test");
+    my $pid = fork();
+    if($pid == 0) {
+	sleep($timeout);
+	sys("killall $test".($verbose != 1 ? " &> /dev/null":""));
 	exit(0);
     }
     sys("$testdir/$test -m $master &> $testdir/output/$test.out");
-    print "Done running test $test\n";
+    print "Done running\n";
+
+    #kill the child that was supposed to kill us! (for the timeout)
+    kill 9, $pid;
 
     #stop servers
     sleep(1);
@@ -106,10 +121,17 @@ sub runTest {
     }
     close RESULT;
     if($results =~ "{{{{{pass}}}}}") {
+	print "Result = passed\n";
 	return 1;
     } else {
+	print "Result = failed\n";
 	return 0;
     }
+}
+
+
+sub usage {
+    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n ";
 }
 
 
@@ -121,15 +143,21 @@ sub main {
     my $killNum = '';
     my $testName = '';
 
-    ($#ARGV+1) % 2 == 0 or die "Bad usage";
-
+    #grab test parameters
+    (($#ARGV+1) % 2 == 0 and $#ARGV >= 0) or usage();
     for(my $i = 0; $i <= $#ARGV; $i+=2) {
 	if($ARGV[$i] eq '-k') {
 	    $killNum = $ARGV[$i+1];
 	} elsif($ARGV[$i] eq '-t') {
 	    $testName = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-c') {
+	    $chunkCount = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-v') {
+	    $verbose = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-s') {
+	    $timeout = $ARGV[$i+1];
 	} else {
-	    die "Bad usage";
+	    usage();
 	}
     }
 
@@ -159,11 +187,12 @@ sub main {
 	    opendir(my $dh, $testdir) || 
 		die "can't opendir $testdir: $!";
 	    while(my $file = readdir($dh)) {
-		if($file =~ /^t\d+$/) {
-		    if(runTest($file)) {
-			push(@passCases, $file);
+		if($file =~ /^(t\d+)\.go$/) {
+		    my $name = $1;
+		    if(runTest($name)) {
+			push(@passCases, $name);
 		    } else {
-			push(@failCases, $file);
+			push(@failCases, $name);
 		    }
 		}
 	    }
@@ -175,7 +204,7 @@ sub main {
 	    if($passCount + $failCount > 0) {
 		printFailSummary(@failCases);
 
-		my $rate = (100 * $passCount / ($passCount + $failCount)) . '%';
+		my $rate = int(100 * $passCount / ($passCount + $failCount)) . '%';
 		print "\n\nPass=$passCount, Fail=$failCount, Rate=$rate\n";
 		if($failCount == 0) {
 		    print "T-shirt time!";
@@ -200,7 +229,9 @@ sub main {
 
 sub sys {
     my ($cmd) = @_;
-    print("Running:{\n$cmd\n}\n\n");
+    if($verbose == 1) {
+	print("Running:{\n$cmd\n}\n\n");
+    }
     my $ret = system($cmd);
     return $ret;
 }

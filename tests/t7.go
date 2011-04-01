@@ -6,10 +6,12 @@ import (
 	"flag"
 	"os"
 	"../include/sfs"
+	"rand"
 )
 
 func main(){
-
+	chunkCount := 3
+	rand.Seed(12345)
 
 	master := flag.String("m", "", "specify a master!")
 	flag.Parse();
@@ -22,14 +24,10 @@ func main(){
 	}
 
 	s := ""
-	for i := 0; i < sfs.CHUNK_SIZE; i++ {
-		c := "A"
-		if(i%3 == 1) {
-			c = "B"
-		} else if (i%3 == 2) {
-			c = "C"
-		}
-		s = s + c
+	for i := 0; i < chunkCount*sfs.CHUNK_SIZE; i++ {
+		var c [1]byte
+		c[0] = uint8(65+rand.Intn(25))
+		s = s + string(c[:])
 	}
 
 	fmt.Printf("String: %s\n", s);
@@ -40,6 +38,26 @@ func main(){
 		panic("write failed")
 	}
 
+	//read data
+	ret = client.Seek(fd, 0, client.SEEK_SET)
+	if(ret != 0) {
+		panic("seek failed")
+	}
+
+	data, err := client.Read(fd, chunkCount*sfs.CHUNK_SIZE)
+	if(err != 0) {
+		panic("read failed")
+	}
+
+	s_ret := string(data)
+	fmt.Printf("Got back: '%s'\n", s_ret)
+
+	if(s_ret != s) {
+		panic("strings differ")
+	}
+
+
+	//close
 	ret = client.Close(fd)
 	if(ret != client.WIN) {
 		panic("close failed")

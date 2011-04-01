@@ -1,0 +1,10 @@
+t1: Simple open of new file
+t2: Test of O_CREATE flag
+t3: Basic write of 1 chunk
+t4: Basic write of 1 character
+t5: Basic write/read
+t6: Read individual characters
+t7: Read several chunks with one call
+t8: Read several chunks, one chunk at a time
+t9: Read several chunks, one chunk at a time (reverse order)
+t10: Simple ReadDir call

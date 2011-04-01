@@ -40,6 +40,23 @@ func main(){
 		panic("write failed")
 	}
 
+	ret = client.Seek(fd, 0, client.SEEK_SET)
+	if(ret != 0) {
+		panic("seek failed")
+	}
+
+	data, err := client.Read(fd, sfs.CHUNK_SIZE)
+	if(err != 0) {
+		panic("read failed")
+	}
+
+	s_ret := string(data)
+	fmt.Printf("Got back: '%s'\n", s_ret)
+
+	if(s != s_ret) {
+		panic("strings differ")
+	}
+
 	ret = client.Close(fd)
 	if(ret != client.WIN) {
 		panic("close failed")

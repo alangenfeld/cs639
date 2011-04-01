@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"flag"
 	"os"
-	"../include/sfs"
+//	"../include/sfs"
 )
 
 func main(){
-
-
 	master := flag.String("m", "", "specify a master!")
 	flag.Parse();
 
@@ -21,16 +19,7 @@ func main(){
 		panic("could not create new file")
 	}
 
-	s := ""
-	for i := 0; i < sfs.CHUNK_SIZE; i++ {
-		c := "A"
-		if(i%3 == 1) {
-			c = "B"
-		} else if (i%3 == 2) {
-			c = "C"
-		}
-		s = s + c
-	}
+	s := "A"
 
 	fmt.Printf("String: %s\n", s);
 	buf := []byte(s)
