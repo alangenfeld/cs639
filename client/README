@@ -1,6 +1,9 @@
 Things to do:
-	test read and write 
-	figure out how to store server locations and addresses. Maybe will have to create a file or something for now until we decide what's going on with FUSE.
-	write close
-	
-stealthy...
+	file struct : add flags
+	open: check for flags, and do the appropriate things
+	write: update size and file ptr, test for appending and overwriting
+	read: update file ptr, read a size instead of the whole file
+	readDir: need to write still
+	seek: need to write still
+	delete: need to write still
+
