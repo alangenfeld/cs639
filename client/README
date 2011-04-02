@@ -4,6 +4,8 @@ Things to do:
 	write: update file ptr
 	read: 
 	readDir: need to write still
-	seek: need to write still
+	seek: written, but haven't been able to commit it since changing my shell messed up git.
 	delete: need to write still
 
+passing 8/10 tests
+need to pass readDir  and O_CREATE tests
