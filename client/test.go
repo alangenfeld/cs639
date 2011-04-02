@@ -32,15 +32,20 @@ func main(){
 			master = os.Args[1]
 		}
 		client.Initialize(master)
+
 		fd := client.Open("hello", 1)
+
 		log.Printf("Test: writing hello from file\n");
 		_ = WriteFromFile("client/test.in", fd, master)
-	//	_ =  client.Write(fd,  data );
+		client.Seek(fd, 0, client.SEEK_SET)
+
 		log.Printf("Test: reading hello\n")
 		readFromFile,ret :=  client.Read(fd, 80)
+
 		_ = WriteFromFile("client/test2.in", fd, master)
-	//	_ =  client.Write(fd,  data );
+		client.Seek(fd, 80, client.SEEK_SET)
 		readFromFile2,ret :=  client.Read(fd, 102)
+
 		if(ret==-1){
 			log.Printf("Test: Read Failed")
 		}
@@ -51,19 +56,13 @@ func main(){
 }
 
 func printChunk ( toPrint []byte ){
-//	fmt.Printf("Test: Chunk Read: ")
 	log.Printf("Test: ******************Chunk Read: ")
-//	fmt.Printf("\n")
 	var st string
 	for i := 0; i < len(toPrint); i++{
-//		fmt.Printf("%c", toPrint[i])
 		st += string(toPrint[i])
-//		log.Printf("%c %d", toPrint[i], i)
 	}
 	log.Printf(st)
 	log.Printf("***************** END CHUNK READ")
-//	fmt.Printf(st)
-//	fmt.Printf("\n")
 }
 
 func WriteFromFile( fileNameLocal string, fd int, master string)( int){
@@ -74,7 +73,6 @@ func WriteFromFile( fileNameLocal string, fd int, master string)( int){
 	log.Printf("Test: len f =  %d", len(f))
 	toWrite := make([]byte, len(f))
 	for j := 0 ; j<len(f) ; j++ {
-		//log.Printf("j = %d", j)
 		toWrite[j] = f[j]
 	}
 	return client.Write(fd,toWrite)

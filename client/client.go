@@ -14,13 +14,13 @@ import (
 
 const(
  FAIL = -1
- WIN
- O_CREATE
- O_RDONLY
- O_WRONLY
- SEEK_SET
- SEEK_CURR
- SEEK_END
+ WIN  = 0
+ O_RDONLY = 1
+ O_WRONLY = 2
+ O_CREATE =4
+ SEEK_SET =8
+ SEEK_CURR = 9
+ SEEK_END =10
 )
 
 
@@ -266,10 +266,10 @@ func Write (fd int , data []byte  ) (int){
 	}
 //	fmt.Printf("Client: openFiles = %v\n",openFiles)
 //	fmt.Printf("Client: size = %d\n",openFiles[fd].size)
-//	openFiles[fd].filePtr += uint64(size)
-//	if openFiles[fd].filePtr > fdFile.size {
-//		openFiles[fd].filePtr = fdFile.size
-//	}
+	openFiles[fd].filePtr += uint64(len(data))
+	if openFiles[fd].filePtr > fdFile.size {
+		openFiles[fd].filePtr = fdFile.size
+	}
 	return fileInfo.Status
 }
 
@@ -298,11 +298,25 @@ func ReadDir(path string) (vector.Vector, int){
 /* seek */
 //TODO
 func Seek (fd int, offset int, whence int) (int){
-	status := 0
+	_ , present := openFiles[fd]
+	if !present{
+		return FAIL
+	}
+	if whence == SEEK_SET {
+		openFiles[fd].filePtr = 0 + uint64(offset)
+	}else if whence == SEEK_CURR {
+		openFiles[fd].filePtr = openFiles[fd].filePtr + uint64(offset)
 
-
-
-	return  status;
+	}else if whence == SEEK_END {
+		openFiles[fd].filePtr = openFiles[fd].size-1 - uint64(offset)
+	}
+	if openFiles[fd].filePtr > openFiles[fd].size {
+		openFiles[fd].size = openFiles[fd].size
+	}
+	if openFiles[fd].filePtr < 0 {
+		openFiles[fd].size = 0
+	}
+	return  WIN;
 }
 
 func printByteSlice(toPrint []byte){
