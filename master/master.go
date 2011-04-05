@@ -29,6 +29,7 @@ type inode struct {
 	name        string
 	permissions uint64
 	size        uint64
+  lock        bool
 	chunks      *vector.Vector
 }
 
@@ -46,6 +47,14 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		return err
 	}
 	file, newFile, err := OpenFile(args.Name)
+  if newFile && !args.Lock {
+    file.lock = false
+  } else if file.lock && args.Lock {
+    err := os.NewError("Cannot get lock")
+    return err
+  } else if args.Lock && !file.lock {
+    file.lock = true
+  }
 
 	info.New = newFile
 	info.Size = file.size
@@ -149,6 +158,17 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 	log.Println("Birthed a Chunk Server!\n")
 
 	return nil
+}
+
+func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *int) os.Error {
+  file, exists := QueryFile(args.Name)
+  if !exists {
+    *ret = -1
+		return os.NewError("File does not exist")
+  }
+  file.lock = false;
+  *ret = 0
+  return nil
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
