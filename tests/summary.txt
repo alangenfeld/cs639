@@ -8,3 +8,9 @@ t7: Read several chunks with one call
 t8: Read several chunks, one chunk at a time
 t9: Read several chunks, one chunk at a time (reverse order)
 t10: Simple ReadDir call
+t11: Read/Write across chunks
+t12: Overwrite
+t13: Read past end
+t14: Use O_RDWR, O_RDONLY, and O_WRONLY
+t15: Seek test
+t16: Delete test
