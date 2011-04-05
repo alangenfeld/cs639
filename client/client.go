@@ -50,6 +50,7 @@ func Open(filename string , flag int ) (int){
 	}else{
 		fileInfo := new (sfs.OpenReturn)
 		fileArgs := new (sfs.OpenArgs)
+    fileArgs.Lock = false
 		fileArgs.Name = filename
 	//	fileArgs.Size = 0;
 		err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)

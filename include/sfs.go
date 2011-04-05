@@ -60,6 +60,7 @@ type Status struct {
 
 type OpenArgs struct {
 	Name string
+  Lock bool
 	Size uint64
 }
 
@@ -67,6 +68,10 @@ type OpenReturn struct {
 	New   bool
 	Size  uint64      // bytes
 	Chunk []ChunkInfo // bytes
+}
+
+type LockReleaseArgs struct {
+  Name string
 }
 
 type ReplicateChunkArgs struct {
