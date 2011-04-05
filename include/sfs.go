@@ -122,5 +122,6 @@ type Handle int
 
 type ChunkInfo struct {
 	ChunkID uint64
+	Size    uint64
 	Servers []net.TCPAddr
 }
