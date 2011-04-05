@@ -2,13 +2,13 @@
 use strict;
 use Cwd 'abs_path';
 
-my $master = 'mumble-20.cs.wisc.edu';
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
-my $chunkCount = 1;
+my $chunkCount = 3;
 my $timeout = 10;
 my $testdir;
-my $verbose = 1;
-
+my $verbose = 0;
+my $master = 'mumble-20.cs.wisc.edu';
+my @servers = ($master);
 
 sub doLaunch {
     sys("ssh $master ".
@@ -17,8 +17,8 @@ sub doLaunch {
 
     sleep(1);
 
-    for(my $i = 3; $i < 3+$chunkCount; $i++) {
-	sys("$ssh mumble-1$i.cs.wisc.edu ".
+    for(my $i = 1; $i <= $chunkCount; $i++) {
+	sys("$ssh $servers[$i] ".
 	    "'$testdir/../chunk/serv $master ".
 	    "&> $testdir/output/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
     }
@@ -26,8 +26,9 @@ sub doLaunch {
 
 sub doKill {
     sys("$ssh $master 'killall master'".($verbose != 1 ? " &> /dev/null":""));
-    for(my $i = 3; $i < 3+$chunkCount; $i++) {
-	killOne($i)
+    for(my $i = 1; $i <= $chunkCount; $i++) {
+	sys("$ssh $servers[$i] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
+	sys("$ssh $servers[$i] 'killall master'".($verbose != 1 ? " &> /dev/null":""));
     }
 }
 
@@ -161,7 +162,15 @@ sub main {
 	}
     }
 
-    #does this do nothing
+
+    for(my $i = 0; $i < $chunkCount; $i++) {
+	my $index = $i + 30;
+	$index = ($index < 10) ? "0$index" : $index;
+	push(@servers, "mumble-$index.cs.wisc.edu");
+    }
+
+
+    #does this do nothing?
     if($testName eq '' and $killNum eq '') {
 	die ("No test num or kill num\n");
     }
