@@ -13,6 +13,7 @@ import (
 	"rpc"
 	"rand"
 	"math"
+	"os/signal"
 )
 
 var t *trie.Trie
@@ -31,12 +32,13 @@ type inode struct {
 	name        string
 	permissions uint64
 	size        uint64
-  lock        bool
+	lock        bool
 	chunks      *vector.Vector
 }
 
 type chunk struct {
 	chunkID uint64
+	size    uint64
 	servers *vector.Vector
 }
 
@@ -49,14 +51,15 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		return err
 	}
 	file, newFile, err := OpenFile(args.Name)
-  if newFile && !args.Lock {
-    file.lock = false
-  } else if file.lock && args.Lock {
-    err := os.NewError("Cannot get lock")
-    return err
-  } else if args.Lock && !file.lock {
-    file.lock = true
-  }
+	
+	if newFile && !args.Lock {
+		file.lock = false
+	} else if file.lock && args.Lock {
+		err := os.NewError("Cannot get lock")
+		return err
+	} else if args.Lock && !file.lock {
+		file.lock = true
+	}
 
 	info.New = newFile
 	info.Size = file.size
@@ -76,6 +79,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		}
 
 		chunkInfo.ChunkID = chunk.chunkID
+		chunkInfo.Size = chunk.size
 
 		info.Chunk[i] = chunkInfo
 	}
@@ -93,8 +97,9 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 
 	log.Printf("master: MapChunkToFile: ChunkID: %d  Offset %d  nservers: %d\n", args.Chunk.ChunkID, args.Offset, len(args.Chunk.Servers))
 	var newChunk chunk
-	
+
 	newChunk.chunkID = args.Chunk.ChunkID
+	newChunk.size = args.Chunk.Size
 	newChunk.servers = new(vector.Vector)
 	for i := 0; i < len(args.Chunk.Servers); i++ {
 		newChunk.servers.Push(addrToServerMap[args.Chunk.Servers[i].String()])
@@ -105,7 +110,7 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 	if err != nil {
 		return os.NewError("Could not add chunk! Ruh roh")
 	}
-	
+
 	return nil
 }
 
@@ -163,14 +168,14 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 }
 
 func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *int) os.Error {
-  file, exists := QueryFile(args.Name)
-  if !exists {
-    *ret = -1
+	file, exists := QueryFile(args.Name)
+	if !exists {
+		*ret = -1
 		return os.NewError("File does not exist")
-  }
-  file.lock = false;
-  *ret = 0
-  return nil
+	}
+	file.lock = false
+	*ret = 0
+	return nil
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
@@ -247,17 +252,17 @@ func RemoveServer(serv *server) os.Error {
 
 	//Remove the Server
 	sHeap.Remove(serv)
-	
+
 	for i := 0; i < sHeap.vec.Len(); i++ {
 		if sHeap.vec.At(i).(*server).id == serv.id {
 			log.Printf("master: RemoveServer: remove didn't actually remove server %d! Busto Rhymes\n", serv.id)
 			return nil
 		}
 	}
-	
+
 	servers[serv.id] = &server{}, false
 	addrToServerMap[serv.addr.String()] = &server{}, false
-	
+
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
 
 	//////////////////////////////////////////////////////////////////////
@@ -266,20 +271,20 @@ func RemoveServer(serv *server) os.Error {
 	network_size := float64(sHeap.vec.Len())
 	//chunk_size := serv.chunks.Len()
 	rep_factor := .9
-	
+
 	//map the size of the network to some fraction of that size to replicate to
-	if(network_size < 10){
-		rep_factor = .5;
+	if network_size < 10 {
+		rep_factor = .5
 	} else {
-		rep_factor = .3;
+		rep_factor = .3
 	}
-	
-	rep_size := int(math.Floor(rep_factor*network_size))
+
+	rep_size := int(math.Floor(rep_factor * network_size))
 
 	//for each chunk in the server, make a replication call.
 	for cnt := 0; cnt < serv.chunks.Len(); cnt++ {
 
-		index := rand.Intn(rep_size);
+		index := rand.Intn(rep_size)
 
 		otherserver := sHeap.vec.At(index).(*server)
 
@@ -294,7 +299,7 @@ func RemoveServer(serv *server) os.Error {
 		} else {
 			log.Printf("master: RemoveServer: dial %s succeeded\n", str)
 		}
-		
+
 		chunk := serv.chunks.At(cnt).(*chunk)
 
 		//populate chunk location vector
@@ -313,7 +318,7 @@ func RemoveServer(serv *server) os.Error {
 		}
 		log.Printf("%s", reply)
 	}
-	
+
 	log.Printf("RemoveServer: removing %s\n", str1)
 	return nil
 }
@@ -327,7 +332,7 @@ func OpenFile(name string) (i *inode, newFile bool, err os.Error) {
 		log.Printf("OpenFile: file %s does not exist\n", name)
 		i, err = AddFile(name)
 	}
-	
+
 	newFile = !oldFile
 
 	return i, newFile, err
@@ -388,11 +393,11 @@ func (i *inode) AddChunk() (chunkID uint64, err os.Error) {
 	nextChunk += 1
 
 	thisChunk.servers = new(vector.Vector)
-	
+
 	/*
-	for i := 0; i < sfs.NREPLICAS; i++ {
-		thisChunk.servers.Push(sHeap.vec.At(i).(*server))
-	}*/
+		for i := 0; i < sfs.NREPLICAS; i++ {
+			thisChunk.servers.Push(sHeap.vec.At(i).(*server))
+		}*/
 
 	//thisChunk.servers.Push(serv)
 	//serv.chunks.Push(thisChunk)
@@ -407,7 +412,7 @@ func (i *inode) AddChunk() (chunkID uint64, err os.Error) {
 
 func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Error) {
 	var oldID uint64
-	
+
 	if offset < i.chunks.Len() {
 		oldID = i.chunks.At(offset).(*chunk).chunkID
 		chunks[oldID] = &chunk{}, false
@@ -417,7 +422,7 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 	} else {
 		return 0, os.NewError("Fucking A.")
 	}
-		
+
 	for i := 0; i < newChunk.servers.Len(); i++ {
 		newChunk.servers.At(i).(*server).chunks.Push(newChunk)
 	}
@@ -444,6 +449,22 @@ func replicateChunk(cID uint64) (err os.Error) {
 	return nil
 }
 
+func sigHandler() {
+	for {
+		sig := <- signal.Incoming
+		
+		log.Printf("Signal received: %d!\n", sig)
+		
+		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
+			os.Exit(1337)
+		}
+
+		for s := range servers {
+			fmt.Printf("%+v\n", s)
+		}
+	}
+}
+
 func init() {
 	t = trie.NewTrie()
 	sHeap = new(serverHeap)
@@ -456,6 +477,7 @@ func init() {
 	heap.Init(sHeap)
 	sHeap.serverChan = make(chan *heapCommand)
 	go sHeap.Handler()
+	go sigHandler()
 
 	//missingCh := make(chan uint64)
 
