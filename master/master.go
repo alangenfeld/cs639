@@ -11,6 +11,8 @@ import (
 	"container/heap"
 	"../include/sfs"
 	"rpc"
+	"rand"
+	"math"
 )
 
 var t *trie.Trie
@@ -241,23 +243,38 @@ func RemoveServer(serv *server) os.Error {
 	//////////////////////////////////////////////////////////////////////
 	////////////      THIS IS A PROBLEM -- NEED TO SPREAD REPLICATION REQS
 	//////////////////////////////////////////////////////////////////////
-	otherserver := sHeap.vec.At(0).(*server)
-
-	str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
+	network_size := float64(sHeap.vec.Len())
+	//chunk_size := serv.chunks.Len()
+	rep_factor := .9
 	
-	log.Printf("master: RemoveServer: dialing %s\n", str)
-
-	client, err := rpc.Dial("tcp", str)
-	
-	if err != nil {
-		log.Printf("master: RemoveServer: unable to dial %s\n", str)
+	//map the size of the network to some fraction of that size to replicate to
+	if(network_size < 10){
+		rep_factor = .5;
 	} else {
-		log.Printf("master: RemoveServer: dial %s succeeded\n", str)
+		rep_factor = .3;
 	}
+	
+	rep_size := int(math.Floor(rep_factor*network_size))
 
 	//for each chunk in the server, make a replication call.
 	for cnt := 0; cnt < serv.chunks.Len(); cnt++ {
 
+		index := rand.Intn(rep_size);
+
+		otherserver := sHeap.vec.At(index).(*server)
+
+		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
+
+		log.Printf("master: RemoveServer: dialing %s\n", str)
+
+		client, err := rpc.Dial("tcp", str)
+
+		if err != nil {
+			log.Printf("master: RemoveServer: unable to dial %s\n", str)
+		} else {
+			log.Printf("master: RemoveServer: dial %s succeeded\n", str)
+		}
+		
 		chunk := serv.chunks.At(cnt).(*chunk)
 
 		//populate chunk location vector
@@ -276,7 +293,7 @@ func RemoveServer(serv *server) os.Error {
 		}
 		log.Printf("%s", reply)
 	}
-
+	
 	log.Printf("RemoveServer: removing %s\n", str1)
 	return nil
 }
