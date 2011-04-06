@@ -2,13 +2,14 @@
 use strict;
 use Cwd 'abs_path';
 
+my $mumbleBase = 20;
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
 my $chunkCount = 3;
 my $timeout = 10;
 my $testdir;
 my $verbose = 0;
-my $master = 'mumble-20.cs.wisc.edu';
-my @servers = ($master);
+my $master;
+my @servers;
 
 sub doLaunch {
     sys("ssh $master ".
@@ -132,7 +133,7 @@ sub runTest {
 
 
 sub usage {
-    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n ";
+    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n\t[-b mumbleBase]\n ";
 }
 
 
@@ -157,17 +158,20 @@ sub main {
 	    $verbose = $ARGV[$i+1];
 	} elsif($ARGV[$i] eq '-s') {
 	    $timeout = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-b') {
+	    $mumbleBase = $ARGV[$i+1];
 	} else {
 	    usage();
 	}
     }
 
 
-    for(my $i = 0; $i < $chunkCount; $i++) {
-	my $index = $i + 30;
+    for(my $i = 0; $i < $chunkCount+1; $i++) {
+	my $index = $i + $mumbleBase;
 	$index = ($index < 10) ? "0$index" : $index;
 	push(@servers, "mumble-$index.cs.wisc.edu");
     }
+    $master = $servers[0];
 
 
     #does this do nothing?
