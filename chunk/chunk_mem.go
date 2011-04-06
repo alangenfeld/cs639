@@ -32,7 +32,7 @@ func Init(masterAddress string) {
 
 	args.Capacity = 5
 	host,_ := os.Hostname()
-	_,iparray,_ := net.LookupHost(host)
+	iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	log.Println(args.ChunkServerIP)
@@ -123,7 +123,8 @@ func LogStats(){
 	host,_ := os.Hostname()
 	//current := time.Seconds()
 	filename:= host
-	logFile, err := os.Open(filename, os.O_CREAT | os.O_WRONLY, 0666)
+//	logFile,err := os.Open(filename, os.O_CREATE|os.O_WRONLY, 0666)
+	logFile,err := os.Open(filename)
 	if err != nil {
 		log.Fatal("chunk: unable to init logging")
 		log.Println("chunk fails opening file")
@@ -170,7 +171,7 @@ func SendHeartbeat(masterAddress string){
 	}
 
 	host,_ := os.Hostname()
-	_,iparray,_ := net.LookupHost(host)
+	iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	args.ChunkServerID = chunkServerID

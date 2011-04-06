@@ -11,7 +11,7 @@ endif
 
 default:
 	$(gc) logger.go
-	$(gl) -o logger logger.$(su)
+#	$(gl) -o logger logger.$(su)
 
 clean:
 	rm -f *.$(su)
