@@ -21,7 +21,8 @@ var currTaskId TaskId
 func Init(Filename string){
 	//open the file we've been told
 	var err os.Error
-	logFile, err = os.Open(Filename, os.O_CREAT | os.O_WRONLY, 0666)
+//	logFile, err = os.Open(Filename, os.O_CREATE | os.O_WRONLY, 0666)
+	logFile, err = os.Open(Filename)
 	if err != nil {
 		log.Fatal("logger: unable to init log file: " + err.String());
 	}
