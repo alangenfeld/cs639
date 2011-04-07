@@ -471,7 +471,7 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 	return newChunk.chunkID, nil
 }
 
-func (c)
+//func (c)
 
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
