@@ -12,6 +12,7 @@ type server struct {
 	id uint64
 	capacity uint64
 	chunks *vector.Vector
+	evictedChunks *vector.Vector //uint64s
 }
 
 type heapCommand struct {

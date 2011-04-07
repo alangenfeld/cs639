@@ -3,11 +3,12 @@ package sfs
 import (
 	//	"os"
 	"container/list"
+	"container/vector"
 	"net"
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
-const CHUNK_SIZE = 32                  // 32 B
+const CHUNK_SIZE = 32                 // 32 B
 const HEARTBEAT_WAIT = 3 * 1000000000 // 15 seconds
 const NREPLICAS = 3
 
@@ -33,13 +34,13 @@ type ChunkBirthReturn struct {
 }
 
 type WriteArgs struct {
-	Info   ChunkInfo
-	Data   Chunk
+	Info ChunkInfo
+	Data Chunk
 }
 
 type WriteReturn struct {
 	Status int
-	Info ChunkInfo
+	Info   ChunkInfo
 }
 
 type HeartbeatArgs struct {
@@ -50,7 +51,15 @@ type HeartbeatArgs struct {
 }
 
 type HeartbeatReturn struct {
-	ChunksToRemove []ChunkInfo
+	ChunksToRemove *vector.Vector
+}
+
+type DeleteArgs struct {
+	Name string
+}
+
+type DeleteReturn struct {
+	Status bool
 }
 
 type Status struct {
@@ -60,6 +69,7 @@ type Status struct {
 
 type OpenArgs struct {
 	Name string
+	NewFile bool
 	Lock bool
 	Size uint64
 }
@@ -72,6 +82,10 @@ type OpenReturn struct {
 
 type LockReleaseArgs struct {
 	Name string
+}
+
+type LockReleaseReturn struct {
+	Status int
 }
 
 type ReplicateChunkArgs struct {

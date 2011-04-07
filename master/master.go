@@ -167,15 +167,21 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 	return nil
 }
 
-func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *int) os.Error {
+func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseReturn) os.Error {
 	file, exists := QueryFile(args.Name)
 	if !exists {
-		*ret = -1
+		ret.Status = -1
 		return os.NewError("File does not exist")
 	}
 	file.lock = false
-	*ret = 0
+	ret.Status = -1
 	return nil
+}
+
+func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Error {
+	file, _ := QueryFile(args.Name)
+	err := file.DeleteFile()
+	return err
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
@@ -186,6 +192,7 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 	server, servOK := servers[args.ChunkServerID]
 	if servOK == false {
 		log.Printf("BeatHeart: Error server (%s) not in server map\n", str)
+		return nil
 	}
 
 	//if somethings changed, update the server, heapify
@@ -206,6 +213,10 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 			}*/
 		}
 	}
+	
+	info.ChunksToRemove = server.evictedChunks
+	
+	server.evictedChunks = new(vector.Vector)
 
 	heartbeatMonitors[args.ChunkServerID] <- time.Nanoseconds()
 
@@ -239,6 +250,7 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	s.addr = servAddr
 	s.capacity = capacity
 	s.chunks = new(vector.Vector)
+	s.evictedChunks = new(vector.Vector)
 
 	heartbeatMonitors[s.id] = make(chan int64)
 	heap.Push(sHeap, s)
@@ -367,6 +379,29 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	return inter.(*inode), exists
 }
 
+func (file *inode) DeleteFile() (err os.Error) {
+	ok := t.Remove(file.name)
+
+	if !ok {
+		log.Printf("Delete: file %s does not exist\n", file.name)
+		return os.NewError("file does not exist")
+	}
+	
+	
+	cnt1 := file.chunks.Len()
+	//for each chunk in the server, make a replication call.
+	for i := 0; i < cnt1; i++ {
+		chunk := file.chunks.At(i).(*chunk)
+
+		cnt2 := chunk.servers.Len()
+		for j := 0; j < cnt2; j++ {
+			//chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
+		}
+	}	
+
+	return nil
+}
+
 func (i *inode) AppendChunk() (chunkID uint64, err os.Error) {
 	//var serv *server = heap.Pop(sHeap).(*server)
 	thisChunk := new(chunk)
@@ -415,6 +450,12 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 
 	if offset < i.chunks.Len() {
 		oldID = i.chunks.At(offset).(*chunk).chunkID
+		
+		cnt := chunks[oldID].servers.Len()
+		for j := 0; j < cnt; j++ {
+			chunks[oldID].servers.At(j).(*server).evictedChunks.Push(oldID)
+		}
+		
 		chunks[oldID] = &chunk{}, false
 		i.chunks.Set(offset, newChunk)
 	} else if offset == i.chunks.Len() {
@@ -423,12 +464,14 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		return 0, os.NewError("Fucking A.")
 	}
 
-	for i := 0; i < newChunk.servers.Len(); i++ {
-		newChunk.servers.At(i).(*server).chunks.Push(newChunk)
+	for j := 0; j < newChunk.servers.Len(); j++ {
+		newChunk.servers.At(j).(*server).chunks.Push(newChunk)
 	}
 
 	return newChunk.chunkID, nil
 }
+
+//func (c)
 
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
