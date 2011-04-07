@@ -204,19 +204,22 @@ func Write (fd int, data []byte) (int){
 			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
 				log.Printf("Client: adding chunk x")
-			}
-			if(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID ==0  ){
+			}else{
 				fdFile.chunkInfo.Set(chunkOffset, AddChunks(fdFile.name, 1))
 				log.Printf("Client: adding chunk y")
 			}
+//			if(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID ==0  ){
+//				log.Printf("Client: adding chunk y")
+//			}
 			if((i != fdFile.chunkInfo.Len()-1)|| (sizeToWrite%sfs.CHUNK_SIZE==0)){
 				//fileArgs.Length = sfs.CHUNK_SIZE;
 			}else{
 				//fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
 			}
+
 			fileArgs.Info = (fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo))
 			fileArgs.Data = toWrite
-			//fileArgs.Offset = 0;
+
 			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
 				log.Fatal("fdFile.chunkInfo ", fdFile.chunkInfo)
 
@@ -236,9 +239,7 @@ func Write (fd int, data []byte) (int){
 			// reply to master
 			fileInfo.Info.ChunkID = fileArgs.Info.ChunkID
 			fileInfo.Info.Size = uint64(((indexWithinChunk-1)%int(sfs.CHUNK_SIZE)) +1)
-//			log.Printf("Client: chunk size written sent to master %d", int(fileInfo.Info.Size))
 			mapArgs := &sfs.MapChunkToFileArgs{fdFile.name, chunkOffset, fileInfo.Info}
-//			log.Println("what is this", mapArgs)
 			var mapRet sfs.MapChunkToFileReturn
 
 			masterServ,err  := rpc.Dial("tcp",master + ":1338")
@@ -252,12 +253,15 @@ func Write (fd int, data []byte) (int){
 
 			chunkOffset++;
 			indexWithinChunk =0
+
 			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
+				log.Printf("Client: adding chunk zz")
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
 				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
 					toWrite.Data[c] = 0;
 				}
 			}
+
 		}
 	}
 //*/
@@ -320,7 +324,7 @@ func Seek (fd int, offset int, whence int) (int){
 	if openFiles[fd].filePtr < 0 {
 		openFiles[fd].size = 0
 	}
-	return  WIN;
+	return  int(openFiles[fd].filePtr);
 }
 
 func printByteSlice(toPrint []byte){
