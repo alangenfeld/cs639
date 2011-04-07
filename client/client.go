@@ -254,13 +254,13 @@ func Write (fd int, data []byte) (int){
 			chunkOffset++;
 			indexWithinChunk =0
 
-			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
-				log.Printf("Client: adding chunk zz")
-				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
-				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
-					toWrite.Data[c] = 0;
-				}
-			}
+//			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
+//				log.Printf("Client: adding chunk zz")
+//				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
+//				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
+//					toWrite.Data[c] = 0;
+//				}
+//			}
 
 		}
 	}
@@ -310,20 +310,21 @@ func Seek (fd int, offset int, whence int) (int){
 	if !present{
 		return FAIL
 	}
+	filePointer := int(openFiles[fd].filePtr)
 	if whence == SEEK_SET {
-		openFiles[fd].filePtr = 0 + uint64(offset)
+			filePointer = (0 + offset)
 	}else if whence == SEEK_CURR {
-		openFiles[fd].filePtr = openFiles[fd].filePtr + uint64(offset)
-
+			filePointer = int(openFiles[fd].filePtr) + offset
 	}else if whence == SEEK_END {
-		openFiles[fd].filePtr = openFiles[fd].size-1 - uint64(offset)
+			filePointer = int(openFiles[fd].size) + offset
 	}
-	if openFiles[fd].filePtr > openFiles[fd].size {
-		openFiles[fd].size = openFiles[fd].size
+	if filePointer > int(openFiles[fd].size) {
+		filePointer = int(openFiles[fd].size)
 	}
-	if openFiles[fd].filePtr < 0 {
-		openFiles[fd].size = 0
+	if filePointer < 0 {
+		filePointer = 0
 	}
+	openFiles[fd].filePtr = uint64(filePointer)
 	return  int(openFiles[fd].filePtr);
 }
 
