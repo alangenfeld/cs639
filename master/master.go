@@ -52,6 +52,10 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	}
 	file, newFile, err := OpenFile(args.Name, args.NewFile)
 	
+	if file == nil {
+		return err
+	}
+	
 	if newFile && !args.Lock {
 		file.lock = false
 	} else if file.lock && args.Lock {
