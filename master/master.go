@@ -167,14 +167,14 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 	return nil
 }
 
-func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *int) os.Error {
+func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseRet) os.Error {
 	file, exists := QueryFile(args.Name)
 	if !exists {
-		*ret = -1
+		ret.Status = -1
 		return os.NewError("File does not exist")
 	}
 	file.lock = false
-	*ret = 0
+	ret.Status = -1
 	return nil
 }
 
@@ -186,6 +186,7 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 	server, servOK := servers[args.ChunkServerID]
 	if servOK == false {
 		log.Printf("BeatHeart: Error server (%s) not in server map\n", str)
+		return nil
 	}
 
 	//if somethings changed, update the server, heapify
@@ -239,6 +240,7 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	s.addr = servAddr
 	s.capacity = capacity
 	s.chunks = new(vector.Vector)
+	s.evictedChunks = new(vector.Vector)
 
 	heartbeatMonitors[s.id] = make(chan int64)
 	heap.Push(sHeap, s)
@@ -415,6 +417,12 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 
 	if offset < i.chunks.Len() {
 		oldID = i.chunks.At(offset).(*chunk).chunkID
+		
+		cnt := oldID.servers.Len()
+		for i := 0; i < cnt; i++ {
+			chunks[oldID].servers.At(i).(*server).evictedChunks.Push(oldID)
+		}
+		
 		chunks[oldID] = &chunk{}, false
 		i.chunks.Set(offset, newChunk)
 	} else if offset == i.chunks.Len() {

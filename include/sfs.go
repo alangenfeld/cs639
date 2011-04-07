@@ -71,7 +71,11 @@ type OpenReturn struct {
 }
 
 type LockReleaseArgs struct {
-  Name string
+	Name string
+}
+
+type LockReleaseRet struct {
+	Status int
 }
 
 type ReplicateChunkArgs struct {
