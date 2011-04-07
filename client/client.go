@@ -240,7 +240,7 @@ func Write (fd int, data []byte) (int){
 				//fileArgs.Length =uint(sizeToWrite)% uint(sfs.CHUNK_SIZE)
 			}
 
-			fileArgs.Info = (fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo))
+			fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
 			fileArgs.Data = toWrite
 
 			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
@@ -307,7 +307,25 @@ func Write (fd int, data []byte) (int){
 /* delete */
 //TODO
 func Delete(filename string) (int){
-	return FAIL
+	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
+	if err != nil{
+		log.Printf("Client: Dial Error %s", err.String());
+		return FAIL
+	}else{
+		fileArgs := new (sfs.DeleteArgs)
+		fileInfo := new (sfs.DeleteReturn)
+		fileArgs.Name = filename
+		err := client.Call("Master.DeleteFile", &fileArgs,&fileInfo)
+		if(err != nil || !fileInfo.Status){
+			log.Printf("Client: Delete fail ", fileInfo.Status, err )
+			return FAIL
+		}
+
+	}
+
+
+
+	return WIN
 }
 
 func Close(fd int) (int){
