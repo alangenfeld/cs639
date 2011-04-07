@@ -207,6 +207,10 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 			}*/
 		}
 	}
+	
+	info.ChunksToRemove = server.evictedChunks
+	
+	server.evictedChunks = new(vector.Vector)
 
 	heartbeatMonitors[args.ChunkServerID] <- time.Nanoseconds()
 
@@ -418,7 +422,7 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 	if offset < i.chunks.Len() {
 		oldID = i.chunks.At(offset).(*chunk).chunkID
 		
-		cnt := oldID.servers.Len()
+		cnt := chunks[oldID].servers.Len()
 		for i := 0; i < cnt; i++ {
 			chunks[oldID].servers.At(i).(*server).evictedChunks.Push(oldID)
 		}

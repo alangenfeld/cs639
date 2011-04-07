@@ -50,7 +50,7 @@ type HeartbeatArgs struct {
 }
 
 type HeartbeatReturn struct {
-	ChunksToRemove []ChunkInfo
+	ChunksToRemove *vector.Vector
 }
 
 type Status struct {
