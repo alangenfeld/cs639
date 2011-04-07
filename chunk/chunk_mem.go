@@ -32,7 +32,7 @@ func Init(masterAddress string) {
 
 	args.Capacity = 5
 	host,_ := os.Hostname()
-	iparray,_ := net.LookupHost(host)
+	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	log.Println(args.ChunkServerIP)
@@ -123,8 +123,7 @@ func LogStats(){
 	host,_ := os.Hostname()
 	//current := time.Seconds()
 	filename:= host
-//	logFile,err := os.Open(filename, os.O_CREATE|os.O_WRONLY, 0666)
-	logFile,err := os.Open(filename)
+	logFile,err := os.Open(filename, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal("chunk: unable to init logging")
 		log.Println("chunk fails opening file")
@@ -171,7 +170,7 @@ func SendHeartbeat(masterAddress string){
 	}
 
 	host,_ := os.Hostname()
-	iparray,_ := net.LookupHost(host)
+	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	args.ChunkServerID = chunkServerID
@@ -187,6 +186,7 @@ func SendHeartbeat(masterAddress string){
 		if err != nil {
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
+
 		addedChunks.Resize(0, 0)
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}

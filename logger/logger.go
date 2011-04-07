@@ -18,16 +18,17 @@ var logFile *os.File
 var taskMap = map[TaskId] TaskInfo{}
 var currTaskId TaskId
 
-func Init(Filename string){
+func Init(Filename string) os.Error{
 	//open the file we've been told
 	var err os.Error
-//	logFile, err = os.Open(Filename, os.O_CREATE | os.O_WRONLY, 0666)
-	logFile, err = os.Open(Filename)
+	logFile, err = os.Open(Filename, os.O_CREATE | os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal("logger: unable to init log file: " + err.String());
+		return err;
 	}
 	//initialize task id numbers
 	currTaskId = 0;
+	return nil;
 }
 
 func Start(TaskName string) TaskId{
@@ -42,23 +43,28 @@ func Start(TaskName string) TaskId{
 	return (currTaskId - 1)
 }
 
-func End(thisTask TaskId) {
+func End(thisTask TaskId) string{
 	//get the end time before anything else
 	thisEndTime := time.Nanoseconds()
 	info, present := taskMap[thisTask]
 	if !present{
-		log.Fatal("logger: taskId is not in use");
+		return "logger: taskId is not in use"
 	}
 	info.EndTime = thisEndTime
 	taskMap[thisTask] = info
-	logFile.WriteString(String(thisTask))
+	_, err := logFile.WriteString(String(thisTask))
+	if err != nil {
+		return err.String()
+	}
+	return ""
 }
 
 func String(thisTask TaskId) string {
 	var ret string;
 	info := taskMap[thisTask]
 	timeSpent := info.EndTime - info.StartTime
-	ret = info.TaskName + ": " + fmt.Sprintf("%u", timeSpent) + "\n"
+	timeStamp := time.SecondsToLocalTime(time.Seconds())
+	ret = timeStamp.String() + ": " + info.TaskName + ": " + fmt.Sprintf("%d", timeSpent) + "\n"
 	return ret
 }
 	

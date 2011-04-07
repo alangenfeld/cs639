@@ -50,7 +50,7 @@ type HeartbeatArgs struct {
 }
 
 type HeartbeatReturn struct {
-	ChunksToGet []ChunkInfo
+	ChunksToRemove []ChunkInfo
 }
 
 type Status struct {
@@ -60,7 +60,7 @@ type Status struct {
 
 type OpenArgs struct {
 	Name string
-  Lock bool
+	Lock bool
 	Size uint64
 }
 

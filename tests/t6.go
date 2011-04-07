@@ -60,7 +60,7 @@ func main(){
 
 	//read second character
 	ret = client.Seek(fd, 2, client.SEEK_SET)
-	if(ret != 0) {
+	if(ret != 2) {
 		panic("seek failed")
 	}
 
