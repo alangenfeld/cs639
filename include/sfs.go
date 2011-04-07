@@ -8,7 +8,7 @@ import (
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
-const CHUNK_SIZE = 32                  // 32 B
+const CHUNK_SIZE = 32                 // 32 B
 const HEARTBEAT_WAIT = 3 * 1000000000 // 15 seconds
 const NREPLICAS = 3
 
@@ -34,13 +34,13 @@ type ChunkBirthReturn struct {
 }
 
 type WriteArgs struct {
-	Info   ChunkInfo
-	Data   Chunk
+	Info ChunkInfo
+	Data Chunk
 }
 
 type WriteReturn struct {
 	Status int
-	Info ChunkInfo
+	Info   ChunkInfo
 }
 
 type HeartbeatArgs struct {
@@ -52,6 +52,14 @@ type HeartbeatArgs struct {
 
 type HeartbeatReturn struct {
 	ChunksToRemove *vector.Vector
+}
+
+type DeleteArgs struct {
+	Name string
+}
+
+type DeleteReturn struct {
+	Status bool
 }
 
 type Status struct {
@@ -75,7 +83,7 @@ type LockReleaseArgs struct {
 	Name string
 }
 
-type LockReleaseRet struct {
+type LockReleaseReturn struct {
 	Status int
 }
 
