@@ -187,12 +187,13 @@ func SendHeartbeat(masterAddress string){
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
 		
-		for i := 0; i < ret.ChunksToRemove.Len(); i++ {
-			chunkTable[ret.ChunksToRemove.At(i).(uint64)] = 
-				sfs.Chunk{}, false
-			capacity--
+		if ret.ChunksToRemove != nil {
+			for i := 0; i < ret.ChunksToRemove.Len(); i++ {
+				chunkTable[ret.ChunksToRemove.At(i).(uint64)] = 
+					sfs.Chunk{}, false
+				capacity--
+			}
 		}
-		
 		addedChunks.Resize(0, 0)
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
