@@ -9,7 +9,9 @@ gl=8l
 su=8
 endif
 
-default: *.go
+sfs.$(su): sfs.go
 	$(gc) sfs.go
 clean:
-	rm -f *.$(su)
+	-rm -f *.$(su)
+
+clean-all: clean sfs.$(su)

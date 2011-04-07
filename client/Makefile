@@ -9,16 +9,16 @@ gl=8l
 su=8
 endif
 
-test: client.$(su) test.go
-	$(gc) test.go
+test: client.$(su) test.$(su)
 	$(gl) -o test test.$(su)
 
 client.$(su): client.go
 	$(gc) client.go
-
-#sfs.go:
-#	6g ../include/sfs.go
-#	cp sfs.6 ../include/
+	
+test.$(su): test.go
+	$(gc) test.go
 
 clean:
-	rm -f *.$(su)
+	-rm -f *.$(su)
+	
+clean-all: clean test

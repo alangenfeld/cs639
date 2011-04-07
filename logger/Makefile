@@ -9,9 +9,11 @@ gl=8l
 su=8
 endif
 
-default:
+logger.$(su):
 	$(gc) logger.go
 #	$(gl) -o logger logger.$(su)
 
 clean:
-	rm -f *.$(su)
+	-rm -f *.$(su)
+	
+clean-all: clean logger.$(su)

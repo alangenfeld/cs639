@@ -10,10 +10,19 @@ su=8
 endif
 
 
-default: *.go
-	$(gc) trie.go
-	$(gc) master.go serverHeap.go
-	$(gc) runmaster.go
+master: trie.$(su) master.$(su) runmaster.$(su)
 	$(gl) -o master runmaster.$(su)
+	
+trie.$(su): trie.go
+	$(gc) trie.go
+	
+master.$(su): master.go serverHeap.go
+	$(gc) master.go serverHeap.go
+	
+runmaster.$(su): runmaster.go
+	$(gc) runmaster.go
+	
 clean:
-	rm -f *.$(su)
+	-rm -f *.$(su)
+	
+clean-all: clean master
