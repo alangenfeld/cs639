@@ -397,21 +397,26 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 }
 
 func DeleteFile(name string) (err os.Error) {
-	ok := t.Remove(name)
+	inode, exists := QueryFile(name)
+	if exists {
+		ok := t.Remove(name)
+		
+		if !ok {
+			log.Printf("Delete: file %s does not exist\n", name)
+			return os.NewError("file does not exist")
+		}
 
-	if !ok {
-		log.Printf("Delete: file %s does not exist\n", file.name)
-		return os.NewError("file does not exist")
+		cnt1 := inode.chunks.Len()
+		//for each chunk in the server, make an unmap call.
+		for i := 0; i < cnt1; i++ {
+			chunk := inode.chunks.At(i).(*chunk)
+
+			chunk.unmapChunk()
+		}
 	}
 	
+
 	
-	cnt1 := file.chunks.Len()
-	//for each chunk in the server, make an unmap call.
-	for i := 0; i < cnt1; i++ {
-		chunk := file.chunks.At(i).(*chunk)
-		
-		chunk.unmapChunk()
-	}	
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
 	dumpTheMotherFuckingTrie()
