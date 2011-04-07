@@ -60,7 +60,8 @@ func Open(filename string , flag int ) (int){
 		}
 		err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 		if(err != nil){
-			log.Fatal("Client: Open fail ", err )
+			log.Printf("Client: Open fail ", err )
+			return FAIL
 		}
 		if fileInfo.New {
 			log.Printf("Client: New file!\n")
