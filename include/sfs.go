@@ -68,10 +68,10 @@ type Status struct {
 }
 
 type OpenArgs struct {
-	Name string
+	Name    string
 	NewFile bool
-	Lock bool
-	Size uint64
+	Lock    bool
+	Size    uint64
 }
 
 type OpenReturn struct {

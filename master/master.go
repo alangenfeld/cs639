@@ -50,7 +50,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		err := os.NewError("No chunk servers!")
 		return err
 	}
-	file, newFile, err := OpenFile(args.Name)
+	file, newFile, err := OpenFile(args.Name, args.NewFile)
 	
 	if newFile && !args.Lock {
 		file.lock = false
@@ -335,14 +335,16 @@ func RemoveServer(serv *server) os.Error {
 	return nil
 }
 
-func OpenFile(name string) (i *inode, newFile bool, err os.Error) {
+func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	err = nil
 
 	i, oldFile := QueryFile(name)
 
-	if !oldFile {
+	if !oldFile && create {
 		log.Printf("OpenFile: file %s does not exist\n", name)
 		i, err = AddFile(name)
+	} else if !create {
+		return nil, true, os.NewError("file doesn't exist")
 	}
 
 	newFile = !oldFile
