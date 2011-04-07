@@ -341,17 +341,22 @@ func Close(fd int) (int){
 //TODO
 func ReadDir(path string) ([]string, int){
 
+	readDirArgs := new (sfs.ReadDirArgs)
+	readDirRet := new (sfs.ReadDirReturn)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
-	readDirArgs := new (ReadDirArgs)
-	readDirRet := new (ReadDirReturn)
+	if err != nil{
+		log.Printf("Client: Dial Error %s", err.String());
+		return readDirRet.FileNames,  FAIL
+	}else{
 
-	err := client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
-	if(err != nil){
-		log.Printf("Client: Read Dir fail ", err )
-		return FAIL
+			err = client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
+			if(err != nil){
+				log.Printf("Client: Read Dir fail ", err )
+				return readDirRet.FileNames,  FAIL
+			}
+			
 	}
-	
-	return readDirRet.FileNames,  FAIL
+		return readDirRet.FileNames,  WIN
 }
 
 /* seek */
