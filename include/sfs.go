@@ -61,6 +61,7 @@ type Status struct {
 
 type OpenArgs struct {
 	Name string
+	NewFile bool
 	Lock bool
 	Size uint64
 }
