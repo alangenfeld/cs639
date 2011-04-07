@@ -9,14 +9,14 @@ import(
 )
 
 type TaskId uint64
-type TaskInfo struct{
+type taskInfo struct{
 	TaskName string
 	StartTime int64
 	EndTime int64
 }
 
 var logFile *os.File
-var taskMap = map[TaskId] TaskInfo{}
+var taskMap = map[TaskId] taskInfo{}
 var currTaskId TaskId
 var statusDir string
 
@@ -40,7 +40,7 @@ func Init(Filename string, Directory string) os.Error{
 func Start(TaskName string) TaskId{
 	//get the start time before anything else, for consistency sake
 	thisStartTime := time.Nanoseconds()
-	var info TaskInfo;
+	var info taskInfo;
 	info.StartTime = thisStartTime
 	info.TaskName = TaskName
 	taskMap[currTaskId] = info
@@ -63,12 +63,12 @@ func End(thisTask TaskId, SysStats bool) string{
 		return err.String()
 	}
 	if SysStats {
-		SystemStats()
+		systemStats()
 	}	
 	return ""
 }
 
-func SystemStats() {
+func systemStats() {
         args := make([]string, 1)
         var result []byte
         result = make([]byte, STATUS_LEN)
@@ -90,6 +90,9 @@ func SystemStats() {
 func String(thisTask TaskId) string {
 	var ret string;
 	info := taskMap[thisTask]
+	if info.EndTime == 0 {
+		return ""
+	}
 	timeSpent := info.EndTime - info.StartTime
 	niceTimeSpent := float64(timeSpent) / float64(1000000000)
 	timeStamp := time.SecondsToLocalTime(time.Seconds())
