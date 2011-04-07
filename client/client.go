@@ -339,9 +339,19 @@ func Close(fd int) (int){
 }
 
 //TODO
-func ReadDir(path string) (vector.Vector, int){
-	var x vector.Vector
-	return x,  FAIL
+func ReadDir(path string) ([]string, int){
+
+	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
+	readDirArgs := new (ReadDirArgs)
+	readDirRet := new (ReadDirReturn)
+
+	err := client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
+	if(err != nil){
+		log.Printf("Client: Read Dir fail ", err )
+		return FAIL
+	}
+	
+	return readDirRet.FileNames,  FAIL
 }
 
 /* seek */
