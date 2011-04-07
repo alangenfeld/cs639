@@ -11,6 +11,8 @@ import (
 	//"syscall"
 	"time"
 	"exec"
+//	"flag"
+	"../logger/logger"
 )
 
 type Server int
@@ -24,11 +26,22 @@ var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
 var addedChunks vector.Vector
 var chunkServerID uint64
+//var logging *bool = flag.Bool("log", false, "enables logging")
+var logging bool
 
-func Init(masterAddress string) {
+func Init(masterAddress string, loggingFlag bool) {
 
 	var args sfs.ChunkBirthArgs
 	var ret sfs.ChunkBirthReturn 
+
+	logging = loggingFlag
+	if logging {
+		err := logger.Init("chunk-log.txt", "../logger/")
+		if err != nil {
+			log.Println(err.String())
+			logging = false
+		}
+	}
 
 	args.Capacity = 5
 	host,_ := os.Hostname()
@@ -50,6 +63,10 @@ func Init(masterAddress string) {
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
+	var id logger.TaskId
+	if logging {
+		id = logger.Start("Read")
+	}
 	data,present := chunkTable[args.ChunkID]
 	if !present{
 		ret.Status = -1
@@ -60,11 +77,20 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	ret.Data.Data = data.Data
 
 	ret.Status = 0
+	if logging {
+		errString := logger.End(id, false)
+		if errString != "" {
+			logging = false
+		}
+	}
 	return nil	
 }
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
-
+	var id logger.TaskId
+	if logging {
+		id = logger.Start("Write")
+	}
 	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
 	data,present := chunkTable[args.Info.ChunkID]
 	if !present{
@@ -108,7 +134,12 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 			ret.Info.Servers[i] = tempServ		
 		}
 	}
-	
+	if logging {
+		errString := logger.End(id, false)
+		if errString != "" {
+			logging = false
+		}
+	}
 	return nil	
 }
 
@@ -176,6 +207,11 @@ func SendHeartbeat(masterAddress string){
 	args.ChunkServerID = chunkServerID
 
 	for {
+		var id logger.TaskId	
+		if logging {
+			id = logger.Start("Write")
+		}
+
 		args.Capacity = capacity
 		addedChunkSlice := make([]sfs.ChunkInfo, addedChunks.Len())
 		for i := 0; i < addedChunks.Len(); i++ {
@@ -195,6 +231,12 @@ func SendHeartbeat(masterAddress string){
 			}
 		}
 		addedChunks.Resize(0, 0)
+		if logging {
+			errString := logger.End(id, false)
+			if errString != "" {
+				logging = false
+			}
+		}
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
 	return
