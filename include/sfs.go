@@ -25,6 +25,15 @@ type ReadReturn struct {
 	Status int
 }
 
+type ReadDirArgs struct {
+	Prefix string
+}
+
+type ReadDirReturn struct {
+	FileNames []string
+}
+
+
 type ChunkBirthArgs struct {
 	ChunkServerIP net.TCPAddr
 	Capacity      uint64

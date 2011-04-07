@@ -136,6 +136,22 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 	return nil
 }
 
+func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
+	strVec := t.AllSubstrings(args.Prefix)
+	
+	cnt := strVec.Len()
+	
+	retSlice := make([]string, cnt)
+	
+	for i := 0; i < cnt; i++ {
+		retSlice[i] = strVec.At(i)
+	}
+	
+	ret.FileNames = retSlice
+
+	return nil
+}
+
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
 	result.Success = true
 	name := args.Name
@@ -397,21 +413,23 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 }
 
 func DeleteFile(name string) (err os.Error) {
-	ok := t.Remove(name)
-
-	if !ok {
-		log.Printf("Delete: file %s does not exist\n", file.name)
-		return os.NewError("file does not exist")
-	}
-	
-	
-	cnt1 := file.chunks.Len()
-	//for each chunk in the server, make an unmap call.
-	for i := 0; i < cnt1; i++ {
-		chunk := file.chunks.At(i).(*chunk)
+	inode, exists := QueryFile(name)
+	if exists {
+		ok := t.Remove(name)
 		
-		chunk.unmapChunk()
-	}	
+		if !ok {
+			log.Printf("Delete: file %s does not exist\n", name)
+			return os.NewError("file does not exist")
+		}
+
+		cnt1 := inode.chunks.Len()
+		//for each chunk in the server, make an unmap call.
+		for i := 0; i < cnt1; i++ {
+			chunk := inode.chunks.At(i).(*chunk)
+
+			chunk.unmapChunk()
+		}
+	}
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
 	dumpTheMotherFuckingTrie()
