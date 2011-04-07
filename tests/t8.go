@@ -41,7 +41,7 @@ func main(){
 	//read data
 	for i := 0; i < chunkCount; i++ {
 		ret = client.Seek(fd, i*sfs.CHUNK_SIZE, client.SEEK_SET)
-		if(ret != 0) {
+		if(ret != i*sfs.CHUNK_SIZE) {
 			panic("seek failed")
 		}
 

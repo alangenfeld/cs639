@@ -39,6 +39,7 @@ func main(){
 		panic("could not create new file")
 	}
 	
+
 	if(client.Seek(fd, 0, client.SEEK_CURR) != 0) {
 		panic("bad seek")
 	}
@@ -48,6 +49,7 @@ func main(){
 	if(client.Seek(fd, -100, client.SEEK_CURR) != 0) {
 		panic("bad seek")
 	}
+
 
 	if(client.Seek(fd, 0, client.SEEK_SET) != 0) {
 		panic("bad seek")
@@ -59,10 +61,62 @@ func main(){
 		panic("bad seek")
 	}
 
+
+	if(client.Seek(fd, 0, client.SEEK_END) != 0) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, 100, client.SEEK_END) != 0) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, -100, client.SEEK_END) != 0) {
+		panic("bad seek")
+	}
+
+
+
+	//DO WRITE
 	ret = client.Write(fd, []byte(s))
 	if(ret != 0) {
 		panic("write failed")
 	}
+
+
+
+	if(client.Seek(fd, 0, client.SEEK_CURR) != 1.5*sfs.CHUNK_SIZE) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, 2*sfs.CHUNK_SIZE, client.SEEK_CURR) != 1.5*sfs.CHUNK_SIZE) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, -2*sfs.CHUNK_SIZE, client.SEEK_CURR) != 0) {
+		panic("bad seek")
+	}
+
+
+	if(client.Seek(fd, 0, client.SEEK_SET) != 0) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, 2*sfs.CHUNK_SIZE, client.SEEK_SET) != 1.5*sfs.CHUNK_SIZE) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, -2*sfs.CHUNK_SIZE, client.SEEK_SET) != 0) {
+		panic("bad seek")
+	}
+
+
+	if(client.Seek(fd, 0, client.SEEK_END) != 1.5*sfs.CHUNK_SIZE) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, 2*sfs.CHUNK_SIZE, client.SEEK_END) != 1.5*sfs.CHUNK_SIZE) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, -2*sfs.CHUNK_SIZE, client.SEEK_END) != 0) {
+		panic("bad seek")
+	}
+	if(client.Seek(fd, -10, client.SEEK_END) != 1.5*sfs.CHUNK_SIZE-10) {
+		panic("bad seek")
+	}
+
 
 
 
