@@ -185,6 +185,9 @@ func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseRetu
 func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Error {
 	file, _ := QueryFile(args.Name)
 	err := file.DeleteFile()
+	
+	ret.Status = (err == nil)
+	 
 	return err
 }
 
