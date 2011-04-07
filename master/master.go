@@ -389,14 +389,11 @@ func (file *inode) DeleteFile() (err os.Error) {
 	
 	
 	cnt1 := file.chunks.Len()
-	//for each chunk in the server, make a replication call.
+	//for each chunk in the server, make an unmap call.
 	for i := 0; i < cnt1; i++ {
 		chunk := file.chunks.At(i).(*chunk)
-
-		cnt2 := chunk.servers.Len()
-		for j := 0; j < cnt2; j++ {
-			//chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
-		}
+		
+		chunk.unmapChunk()
 	}	
 
 	return nil
@@ -451,12 +448,12 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 	if offset < i.chunks.Len() {
 		oldID = i.chunks.At(offset).(*chunk).chunkID
 		
-		cnt := chunks[oldID].servers.Len()
-		for j := 0; j < cnt; j++ {
-			chunks[oldID].servers.At(j).(*server).evictedChunks.Push(oldID)
+		c, ok := chunks[oldID]
+		
+		if ok {
+			c.unmapChunk()
 		}
 		
-		chunks[oldID] = &chunk{}, false
 		i.chunks.Set(offset, newChunk)
 	} else if offset == i.chunks.Len() {
 		i.chunks.Push(newChunk)
@@ -471,7 +468,23 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 	return newChunk.chunkID, nil
 }
 
-//func (c)
+func (c *chunk) unmapChunk() (err os.Error){
+	cnt := c.servers.Len()	
+	for j := 0; j < cnt; j++ {
+		c.servers.At(j).(*server).evictedChunks.Push(c.chunkID)
+		
+		cnt2 := c.servers.At(j).(*server).chunks.Len()
+		for k := 0; k < cnt2; k++ {
+			if c.servers.At(j).(*server).chunks.At(k).(*chunk) == c {
+				c.servers.At(j).(*server).chunks.Delete(k)
+			}
+		}
+	}
+	
+	//chunks[c.chunkID] = &chunk{}, false
+	
+	return nil
+}
 
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
