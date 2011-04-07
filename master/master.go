@@ -141,10 +141,27 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	
 	cnt := strVec.Len()
 	
+	tmpVec := new(vector.StringVector)
+	
 	retSlice := make([]string, cnt)
 	
 	for i := 0; i < cnt; i++ {
-		retSlice[i] = strVec.At(i)
+		splitStr := strings.Split(strVec.At(i), "/", 2)
+		
+		cnt2 := tmpVec.Len()
+		for j := 0; j < cnt2; j++ {
+			if tmpVec.At(j) == splitStr[0] {
+				goto Dupe
+			}
+		}
+		tmpVec.Push(splitStr[0])
+		Dupe:
+	}
+	
+	cnt := tmpVec.Len()
+	retSlice := make([]string, cnt)
+	for i := 0; i < cnt; i++ {
+		retSlice[i] = tmpVec.At(i)
 	}
 	
 	ret.FileNames = retSlice
