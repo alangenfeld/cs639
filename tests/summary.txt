@@ -14,3 +14,4 @@ t13: Read past end
 t14: Use O_RDWR, O_RDONLY, and O_WRONLY
 t15: Seek test
 t16: Delete test
+t17: Randomly generated test
