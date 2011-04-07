@@ -140,6 +140,8 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
 	strVec := t.AllSubstrings(args.Prefix)
 	
+	log.Printf("ReadDir: strVec -- %+v\n", strVec)
+	
 	cnt := strVec.Len()
 	
 	tmpVec := new(vector.StringVector)
@@ -164,6 +166,8 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	}
 	
 	ret.FileNames = retSlice
+	
+	log.Printf("ReadDir: retSlice -- %+v\n", retSlice)
 
 	return nil
 }
