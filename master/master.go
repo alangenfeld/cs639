@@ -13,6 +13,7 @@ import (
 	"rpc"
 	"rand"
 	"math"
+	"strings"
 	"os/signal"
 )
 
@@ -143,8 +144,6 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	
 	tmpVec := new(vector.StringVector)
 	
-	retSlice := make([]string, cnt)
-	
 	for i := 0; i < cnt; i++ {
 		splitStr := strings.Split(strVec.At(i), "/", 2)
 		
@@ -158,8 +157,8 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 		Dupe:
 	}
 	
-	cnt := tmpVec.Len()
-	retSlice := make([]string, cnt)
+	cnt3 := tmpVec.Len()
+	retSlice := make([]string, cnt3)
 	for i := 0; i < cnt; i++ {
 		retSlice[i] = tmpVec.At(i)
 	}
