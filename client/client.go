@@ -19,9 +19,9 @@ const(
  O_WRONLY = 2
  O_RDWR = 3
  O_CREATE =4
- SEEK_SET =8
- SEEK_CURR = 9
- SEEK_END =10
+ SEEK_SET = 1
+ SEEK_CURR = 2
+ SEEK_END = 4
 )
 
 
@@ -30,6 +30,7 @@ type file struct {
 	filePtr  uint64
 	chunkInfo *vector.Vector
 	name string
+	permissions int
 }
 
 var master string
@@ -50,14 +51,20 @@ func Open(filename string , flag int ) (int){
 	}else{
 		fileInfo := new (sfs.OpenReturn)
 		fileArgs := new (sfs.OpenArgs)
-    fileArgs.Lock = false
+    	fileArgs.Lock = false
 		fileArgs.Name = filename
+		if((flag & O_CREATE) == O_CREATE){
+			fileArgs.NewFile = true	
+		} else {
+			fileArgs.NewFile = false
+		}
 		err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 		if(err != nil){
 			log.Fatal("Client: Open fail ", err )
 		}
 		if fileInfo.New {
 			log.Printf("Client: New file!\n")
+
 		}else{
 			log.Printf("Client: Old file!\n")
 		}
@@ -65,6 +72,7 @@ func Open(filename string , flag int ) (int){
 		var nextFile file
 		nextFile.size = 0
 		nextFile.filePtr = 0
+		nextFile.permissions = flag
 		nextFile.name = filename
 		nextFile.chunkInfo = new(vector.Vector)
 		for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
@@ -87,7 +95,14 @@ func Read (fd int, size int) ([]byte, int ){
 
 //	log.Printf("Client: READ openFiles = %v",openFiles)
 //	log.Printf("Client: READ FILESTARTING SIZE = %d",fdFile.size)
+
 	var entireRead []byte
+	if((fdFile.permissions & O_RDONLY) != O_RDONLY){ //check if file was opened with Read permissions
+		log.Printf("Client: Cannot read without read permissions\n")
+		return entireRead, FAIL
+	}
+
+
 	if (int(fdFile.filePtr)+(size)) > int(fdFile.size) {
 		entireRead = make([]byte,(fdFile.size - fdFile.filePtr))
 	}else {
@@ -158,7 +173,14 @@ func Read (fd int, size int) ([]byte, int ){
 func Write (fd int, data []byte) (int){
 ///*
 	log.Printf("Client: *************WRITE BEGIN**********\n");
+
 	fdFile, inMap := openFiles[fd]
+
+	if((fdFile.permissions & O_WRONLY) != O_WRONLY){
+		log.Printf("CLient: Cannot write without write permissions\n")
+		return FAIL
+	}
+
 	if !inMap {
 		log.Printf("Client: File not in open list!\n")
 		return FAIL
@@ -254,13 +276,13 @@ func Write (fd int, data []byte) (int){
 			chunkOffset++;
 			indexWithinChunk =0
 
-//			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
-//				log.Printf("Client: adding chunk zz")
-//				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
-//				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
-//					toWrite.Data[c] = 0;
-//				}
-//			}
+			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
+				log.Printf("Client: adding chunk zz")
+				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
+				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
+					toWrite.Data[c] = 0;
+				}
+			}
 
 		}
 	}
@@ -328,21 +350,20 @@ func Seek (fd int, offset int, whence int) (int){
 	if !present{
 		return FAIL
 	}
-	filePointer := int(openFiles[fd].filePtr)
 	if whence == SEEK_SET {
-			filePointer = (0 + offset)
+		openFiles[fd].filePtr = 0 + uint64(offset)
 	}else if whence == SEEK_CURR {
-			filePointer = int(openFiles[fd].filePtr) + offset
+		openFiles[fd].filePtr = openFiles[fd].filePtr + uint64(offset)
+
 	}else if whence == SEEK_END {
-			filePointer = int(openFiles[fd].size) + offset
+		openFiles[fd].filePtr = openFiles[fd].size-1 - uint64(offset)
 	}
-	if filePointer > int(openFiles[fd].size) {
-		filePointer = int(openFiles[fd].size)
+	if openFiles[fd].filePtr > openFiles[fd].size {
+		openFiles[fd].size = openFiles[fd].size
 	}
-	if filePointer < 0 {
-		filePointer = 0
+	if openFiles[fd].filePtr < 0 {
+		openFiles[fd].size = 0
 	}
-	openFiles[fd].filePtr = uint64(filePointer)
 	return  int(openFiles[fd].filePtr);
 }
 
@@ -392,3 +413,4 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 // read , create local file, write to local file, close local file
 //	return 0;
 //}
+
