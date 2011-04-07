@@ -373,6 +373,8 @@ func AddFile(name string) (i *inode, err os.Error) {
 	//i.AddChunk()
 
 	t.AddValue(name, i) // trie insert
+	
+	log.Printf("AddFile: %d nodes in trie\n", t.Size())
 
 	return i, nil
 }
@@ -384,6 +386,8 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 		log.Printf("QueryFile: file %s does not exist\n", name)
 		return nil, exists
 	}
+
+	log.Printf("QueryFile: %d nodes in trie\n", t.Size())
 
 	return inter.(*inode), exists
 }
@@ -404,6 +408,8 @@ func (file *inode) DeleteFile() (err os.Error) {
 		
 		chunk.unmapChunk()
 	}	
+
+	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
 
 	return nil
 }
