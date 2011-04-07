@@ -452,8 +452,8 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		oldID = i.chunks.At(offset).(*chunk).chunkID
 		
 		cnt := chunks[oldID].servers.Len()
-		for i := 0; i < cnt; i++ {
-			chunks[oldID].servers.At(i).(*server).evictedChunks.Push(oldID)
+		for j := 0; j < cnt; j++ {
+			chunks[oldID].servers.At(j).(*server).evictedChunks.Push(oldID)
 		}
 		
 		chunks[oldID] = &chunk{}, false
@@ -464,12 +464,14 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		return 0, os.NewError("Fucking A.")
 	}
 
-	for i := 0; i < newChunk.servers.Len(); i++ {
-		newChunk.servers.At(i).(*server).chunks.Push(newChunk)
+	for j := 0; j < newChunk.servers.Len(); j++ {
+		newChunk.servers.At(j).(*server).chunks.Push(newChunk)
 	}
 
 	return newChunk.chunkID, nil
 }
+
+func (c)
 
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
