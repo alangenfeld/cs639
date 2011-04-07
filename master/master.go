@@ -184,8 +184,7 @@ func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseRetu
 
 func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Error {
 	log.Printf("DeleteFile: args -- %+v\n", args)
-	file, _ := QueryFile(args.Name)
-	err := file.DeleteFile()
+	err := DeleteFile(args.Name)
 	
 	ret.Status = (err == nil)
 	 
@@ -357,7 +356,7 @@ func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 
 	newFile = !exists
 	
-	dumpTheMotherFuckingTree()
+	dumpTheMotherFuckingTrie()
 
 	return i, newFile, err
 }
@@ -378,7 +377,7 @@ func AddFile(name string) (i *inode, err os.Error) {
 	t.AddValue(name, i) // trie insert
 	
 	log.Printf("AddFile: %d nodes in trie\n", t.Size())
-	dumpTheMotherFuckingTree()
+	dumpTheMotherFuckingTrie()
 
 	return i, nil
 }
@@ -392,13 +391,13 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	}
 
 	log.Printf("QueryFile: %d nodes in trie\n", t.Size())
-	dumpTheMotherFuckingTree()
+	dumpTheMotherFuckingTrie()
 
 	return inter.(*inode), exists
 }
 
-func (file *inode) DeleteFile() (err os.Error) {
-	ok := t.Remove(file.name)
+func DeleteFile(name string) (err os.Error) {
+	ok := t.Remove(name)
 
 	if !ok {
 		log.Printf("Delete: file %s does not exist\n", file.name)
@@ -415,7 +414,7 @@ func (file *inode) DeleteFile() (err os.Error) {
 	}	
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
-	dumpTheMotherFuckingTree()
+	dumpTheMotherFuckingTrie()
 
 	return nil
 }
@@ -542,12 +541,12 @@ func sigHandler() {
 	}
 }
 
-func dumpTheMotherFuckingTree(){
+func dumpTheMotherFuckingTrie(){
 	dump := t.Members()
 	
 	cnt := dump.Len()
 	for i := 0; i < cnt; i++ {
-		log.Printf("dumpTheMotherFuckingTree: %d: %s\n", i, dump.At(i))
+		log.Printf("dumpTheMotherFuckingTrie: %d: %s\n", i, dump.At(i))
 	}
 }
 
