@@ -342,16 +342,16 @@ func RemoveServer(serv *server) os.Error {
 func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	err = nil
 
-	i, oldFile := QueryFile(name)
+	i, exists := QueryFile(name)
 
-	if !oldFile && create {
+	if !exists && create {
 		log.Printf("OpenFile: file %s does not exist\n", name)
 		i, err = AddFile(name)
-	} else if !create {
+	} else if !exists && !create {
 		return nil, true, os.NewError("file doesn't exist")
 	}
 
-	newFile = !oldFile
+	newFile = !exists
 
 	return i, newFile, err
 }
