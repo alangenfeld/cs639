@@ -5,23 +5,25 @@ use Cwd 'abs_path';
 my $mumbleBase = 20;
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
 my $chunkCount = 3;
-my $timeout = 10;
+my $timeout = 30;
 my $testdir;
 my $verbose = 0;
 my $master;
+my $divide = 1;
 my @servers;
+my $outputDir = 'output';
 
 sub doLaunch {
     sys("ssh $master ".
 	"'$testdir/../master/master ".
-	"&> $testdir/output/master.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
+	"&> $testdir/$outputDir/master.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 
     sleep(1);
 
     for(my $i = 1; $i <= $chunkCount; $i++) {
 	sys("$ssh $servers[$i] ".
-	    "'$testdir/../chunk/serv $master ".
-	    "&> $testdir/output/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
+	    "'$testdir/../chunk/serv -log $master ".
+	    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
     }
 }
 
@@ -80,19 +82,17 @@ sub runTest {
     $#_ == 0 or die "Bad args to runTest";
     my ($test) = @_;
 
-    print "\n*** $test... ***\n";
-
-    print "Compiling...\n";
+    print "Compiling $test...\n";
     sys("rm -f $test; 6g $test.go; 6l -o $test $test.6");
     if(! -e "$test") {
-	print "Compile failed!\n";
+	print "Compile $test failed!\n";
 	return 0;
     }
 
-    print "Running...\n";
+    print "Running $test...\n";
 
     #setup output directory
-    sys("rm -rf $testdir/output; mkdir $testdir/output");
+    sys("rm -rf $testdir/$outputDir; mkdir $testdir/$outputDir");
 
     #start servers
     doLaunch();
@@ -105,8 +105,8 @@ sub runTest {
 	sys("killall $test".($verbose != 1 ? " &> /dev/null":""));
 	exit(0);
     }
-    sys("$testdir/$test -m $master &> $testdir/output/$test.out");
-    print "Done running\n";
+    sys("$testdir/$test -m $master &> $testdir/$outputDir/$test.out");
+    print "Done running $test\n";
 
     #kill the child that was supposed to kill us! (for the timeout)
     kill 9, $pid;
@@ -117,23 +117,23 @@ sub runTest {
 
     #check if output is success
     my $results = '';
-    open RESULT, "$testdir/output/$test.out" or die "Could not read result: $!";
+    open RESULT, "$testdir/$outputDir/$test.out" or die "Could not read result: $!";
     while(<RESULT>) {
 	$results .= $_;
     }
     close RESULT;
     if($results =~ "{{{{{pass}}}}}") {
-	print "Result = passed\n";
+	print "$test result = passed\n";
 	return 1;
     } else {
-	print "Result = failed\n";
+	print "$test result = failed\n";
 	return 0;
     }
 }
 
 
 sub usage {
-    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n\t[-b mumbleBase]\n ";
+    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n\t[-b mumbleBase]\n\t[-d divide]\n ";
 }
 
 
@@ -143,6 +143,7 @@ sub main {
     $testdir =~ s/\/[^\/]*$//;
 
     my $killNum = '';
+    my @testArr;
     my $testName = '';
 
     #grab test parameters
@@ -160,18 +161,12 @@ sub main {
 	    $timeout = $ARGV[$i+1];
 	} elsif($ARGV[$i] eq '-b') {
 	    $mumbleBase = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-d') {
+	    $divide = $ARGV[$i+1];
 	} else {
 	    usage();
 	}
     }
-
-
-    for(my $i = 0; $i < $chunkCount+1; $i++) {
-	my $index = $i + $mumbleBase;
-	$index = ($index < 10) ? "0$index" : $index;
-	push(@servers, "mumble-$index.cs.wisc.edu");
-    }
-    $master = $servers[0];
 
 
     #does this do nothing?
@@ -180,7 +175,7 @@ sub main {
     }
 
 
-    #administrative job, not testing
+    #kill specified servers
     if($killNum ne '') {
 	if($killNum eq 'all') {
 	    superKill();
@@ -189,27 +184,80 @@ sub main {
 	    killOne($killNum);
 	}
     }
+    if($testName eq '') {
+	exit(0);
+    }
 
 
-    #run the test
-    if($testName ne '') {
-	my @passCases;
-	my @failCases;
+    $testName =~ s/t//gi;
+    my $testLowBound = 0;
+    my $testHighBound = 1000000;
 
-	if($testName eq 'all') {
-	    opendir(my $dh, $testdir) || 
-		die "can't opendir $testdir: $!";
-	    while(my $file = readdir($dh)) {
-		if($file =~ /^(t\d+)\.go$/) {
-		    my $name = $1;
-		    if(runTest($name)) {
-			push(@passCases, $name);
-		    } else {
-			push(@failCases, $name);
-		    }
+    if($testName =~ /^(\d+)$/) {
+	$testLowBound = $testHighBound = $1;
+    } elsif($testName =~ /^(\d+)\-(\d+)$/) {
+	$testLowBound = $1;
+	$testHighBound = $2;
+    } elsif($testName eq '') {
+	$testHighBound = -1;
+    }
+
+    #get list of tests
+    opendir(my $dh, $testdir) || 
+	die "can't opendir $testdir: $!";
+    while(my $file = readdir($dh)) {
+	if($file =~ /^t(\d+)\.go$/) {
+	    my $index = $1;
+	    if($index >= $testLowBound && $index <= $testHighBound) {
+		push(@testArr, "t$index");
+	    }
+	}
+    }
+    closedir $dh;
+
+
+
+    #fork to divide tests among processes
+    sys("rm -rf $testdir/resultDir; mkdir $testdir/resultDir");
+    my @children;
+    my $divSize = ($#testArr+1)/$divide;
+    for(my $i = 0; $i < $divide; $i++) {
+	my @testGroup;
+	for(my $j = 0; $j < $divSize and $#testArr>=0; $j++) {
+	    push(@testGroup, shift(@testArr));
+	}
+
+	my $pid = fork();
+	if($pid == 0) {
+	    $outputDir = "output$i";
+	    @testArr = @testGroup;
+	    $mumbleBase += ($chunkCount+1)*$i;
+	    print "\n\nGROUP: ".join(',',@testArr)."\n";
+	    print "\n\nMUMBLE BASE: $mumbleBase\n";
+	    last; #run this division
+	} #else
+
+	push(@children, $pid);
+
+	if ($i == $divide-1) {
+	    foreach my $child (@children) {
+		waitpid($child,0);
+	    }
+
+	    #all children are done running!  aggregate
+	    #over their results
+
+	    my @passCases;
+	    my @failCases;
+	    opendir(my $resultDir, "$testdir/resultDir") || 
+		die "can't opendir $testdir/resultDir: $!";
+	    while(my $file = readdir($resultDir)) {
+		if($file =~ /(t\d+)pass/) {
+		    push(@passCases, $1);
+		} elsif($file =~ /(t\d+)fail/) {
+		    push(@failCases, $1);
 		}
 	    }
-	    closedir $dh;
 
 	    my $passCount = $#passCases + 1;
 	    my $failCount = $#failCases + 1;
@@ -219,25 +267,51 @@ sub main {
 
 		my $rate = int(100 * $passCount / ($passCount + $failCount)) . '%';
 		print "\n\nPass=$passCount, Fail=$failCount, Rate=$rate\n";
-		if($failCount == 0) {
-		    print "T-shirt time!";
+		if($passCount+$failCount > 1) {
+		    if($failCount == 0) {
+			print "T-shirt time!";
+		    } else {
+			print "Close, but no t-shirt!";
+		    }
 		} else {
-		    print "Close, but no t-shirt!";
+		    print "No tests to run...\n";
 		}
-	    } else {
-		print "No tests to run...\n";
 	    }
-	} else {
-	    if(runTest($testName)) {
-		print "\n\nPASS\n";
+	    
+	    print "\n\n\n";
+
+	    exit(0);
+	}
+    }
+
+
+
+    #generate list of servers
+    for(my $i = 0; $i < $chunkCount+1; $i++) {
+	my $index = $i + $mumbleBase;
+	$index = ($index < 10) ? "0$index" : $index;
+	push(@servers, "mumble-$index.cs.wisc.edu");
+    }
+    $master = $servers[0];
+
+
+
+    #run the test
+    if($testName ne '') {
+	my @passCases;
+	my @failCases;
+
+	foreach my $name (@testArr) {
+	    if(runTest($name)) {
+		sys("touch $testdir/resultDir/$name".'pass');
+		push(@passCases, $name);
 	    } else {
-		print "\n\nFAIL\n";
+		sys("touch $testdir/resultDir/$name".'fail');
+		push(@failCases, $name);
 	    }
 	}
-	print "\n\n\n";
     }
 }
-
 
 
 sub sys {
