@@ -13,13 +13,19 @@ import (
 //	"strconv"
 )
 
+var logging *bool = flag.Bool("log", false, "enables logging")
 
 func main() {
 
+	flag.Parse()
 	masterAddress := flag.Arg(0)
 
 	chunkServ := new(chunk.Server)
-	chunk.Init(masterAddress)
+	if *logging {
+		chunk.Init(masterAddress, true)
+	}else{
+		chunk.Init(masterAddress, false)
+	}
 	go chunk.SendHeartbeat(masterAddress)
 	rpc.Register(chunkServ)
 	
