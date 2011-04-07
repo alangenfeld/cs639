@@ -74,6 +74,10 @@ type LockReleaseArgs struct {
 	Name string
 }
 
+type LockReleaseRet struct {
+	Status int
+}
+
 type ReplicateChunkArgs struct {
 	ChunkID uint64
 	Servers []net.TCPAddr
