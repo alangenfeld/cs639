@@ -3,6 +3,7 @@ package sfs
 import (
 	//	"os"
 	"container/list"
+	"container/vector"
 	"net"
 )
 
