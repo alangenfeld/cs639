@@ -167,7 +167,7 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 	return nil
 }
 
-func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseRet) os.Error {
+func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseReturn) os.Error {
 	file, exists := QueryFile(args.Name)
 	if !exists {
 		ret.Status = -1
@@ -176,6 +176,12 @@ func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseRet)
 	file.lock = false
 	ret.Status = -1
 	return nil
+}
+
+func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Error {
+	file, _ := QueryFile(args.Name)
+	err := file.DeleteFile()
+	return err
 }
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
@@ -371,6 +377,29 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	}
 
 	return inter.(*inode), exists
+}
+
+func (file *inode) DeleteFile() (err os.Error) {
+	ok := t.Remove(file.name)
+
+	if !ok {
+		log.Printf("Delete: file %s does not exist\n", file.name)
+		return os.NewError("file does not exist")
+	}
+	
+	
+	cnt1 := file.chunks.Len()
+	//for each chunk in the server, make a replication call.
+	for i := 0; i < cnt1; i++ {
+		chunk := file.chunks.At(i).(*chunk)
+
+		cnt2 := chunk.servers.Len()
+		for j := 0; j < cnt2; j++ {
+			//chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
+		}
+	}	
+
+	return nil
 }
 
 func (i *inode) AppendChunk() (chunkID uint64, err os.Error) {
