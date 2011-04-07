@@ -136,6 +136,22 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 	return nil
 }
 
+func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
+	strVec := t.AllSubstrings(args.Prefix)
+	
+	cnt := strVec.Len()
+	
+	retSlice := make([]string, cnt)
+	
+	for i := 0; i < cnt; i++ {
+		retSlice[i] = strVec.At(i)
+	}
+	
+	ret.FileNames = retSlice
+
+	return nil
+}
+
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
 	result.Success = true
 	name := args.Name
@@ -414,9 +430,6 @@ func DeleteFile(name string) (err os.Error) {
 			chunk.unmapChunk()
 		}
 	}
-	
-
-	
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
 	dumpTheMotherFuckingTrie()
