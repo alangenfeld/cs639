@@ -74,7 +74,7 @@ func (p *Trie) GetDotString() string {
 	outStr := "digraph Trie {"
 	vec := new(vector.StringVector)
 	
-	p.outputDot(vec, 0)
+	p.outputDot(vec, 0, 0)
 	
 	cnt := vec.Len()
 	for i := 0; i < cnt; i++ {
@@ -84,16 +84,23 @@ func (p *Trie) GetDotString() string {
 	return strings.Join([]string{outStr, "}"}, "\n")
 }
 
-func (p *Trie) outputDot(vec *vector.StringVector, rune int) {
-	thisChar := make([]byte, 10)
-	childChar := make([]byte, 10)
+func (p *Trie) outputDot(vec *vector.StringVector, rune int, depth int) {
+	this := make([]byte, 10)
+	child := make([]byte, 10)
 
-	utf8.EncodeRune(thisChar, rune)
+	utf8.EncodeRune(this, rune)
+	
+	thisChar := string(this[0])
+	
+	if depth == 0 {
+		thisChar = "[root]"
+	}
+	
 	
 	for childRune, childNode := range p.children {
-		utf8.EncodeRune(childChar, childRune)
-		vec.Push(fmt.Sprintf("\t%s -> %s", string(thisChar[0]), string(childChar[0])))
-		childNode.outputDot(vec, childRune)
+		utf8.EncodeRune(child, childRune)
+		vec.Push(fmt.Sprintf("\t%s-%d -> %s-%d", thisChar, depth, string(child[0]), depth+1))
+		childNode.outputDot(vec, childRune, depth + 1)
 	}
 }
 
