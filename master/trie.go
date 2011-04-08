@@ -92,7 +92,7 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int) {
 	
 	for childRune, childNode := range p.children {
 		utf8.EncodeRune(childChar, childRune)
-		vec.Push(fmt.Sprintf("%s -> %s", thisChar[0], childChar[0]))
+		vec.Push(fmt.Sprintf("\t%s -> %s", string(thisChar[0]), string(childChar[0])))
 		childNode.outputDot(vec, childRune)
 	}
 }
