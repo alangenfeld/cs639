@@ -33,7 +33,7 @@ func main(){
 		}
 		client.Initialize(master)
 
-		fd := client.Open("hello", 1)
+		fd := client.Open("hello", client.O_CREATE | client.O_RDWR)
 
 		log.Printf("Test: writing hello from file\n");
 		_ = WriteFromFile("client/test.in", fd, master)
