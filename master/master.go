@@ -586,7 +586,7 @@ func dumpTrie(){
 	for i := 0; i < cnt; i++ {
 		log.Printf("dumpTrie: %d: %s\n", i, dump.At(i))
 	}
-	log.Printf("dumpTrie: DOT file follows\n%s", t.GetDotString())
+	log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
 }
 
 func init() {

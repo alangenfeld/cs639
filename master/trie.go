@@ -93,13 +93,13 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, depth int) {
 	thisChar := string(this[0])
 	
 	if depth == 0 {
-		thisChar = "[root]"
+		thisChar = "root"
 	}
 	
 	
 	for childRune, childNode := range p.children {
 		utf8.EncodeRune(child, childRune)
-		vec.Push(fmt.Sprintf("\t%s-%d -> %s-%d", thisChar, depth, string(child[0]), depth+1))
+		vec.Push(fmt.Sprintf("\t\"%s(%d)\" -> \"%s(%d)\"", thisChar, depth, string(child[0]), depth+1))
 		childNode.outputDot(vec, childRune, depth + 1)
 	}
 }
