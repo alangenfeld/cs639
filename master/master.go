@@ -392,7 +392,7 @@ func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 
 	newFile = !exists
 	
-	dumpTheMotherFuckingTrie()
+	dumpTrie()
 
 	return i, newFile, err
 }
@@ -413,7 +413,7 @@ func AddFile(name string) (i *inode, err os.Error) {
 	t.AddValue(name, i) // trie insert
 	
 	log.Printf("AddFile: %d nodes in trie\n", t.Size())
-	dumpTheMotherFuckingTrie()
+	dumpTrie()
 
 	return i, nil
 }
@@ -427,7 +427,7 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	}
 
 	log.Printf("QueryFile: %d nodes in trie\n", t.Size())
-	dumpTheMotherFuckingTrie()
+	dumpTrie()
 
 	return inter.(*inode), exists
 }
@@ -452,7 +452,7 @@ func DeleteFile(name string) (err os.Error) {
 	}
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
-	dumpTheMotherFuckingTrie()
+	dumpTrie()
 
 	return nil
 }
@@ -579,13 +579,14 @@ func sigHandler() {
 	}
 }
 
-func dumpTheMotherFuckingTrie(){
+func dumpTrie(){
 	dump := t.Members()
 	
 	cnt := dump.Len()
 	for i := 0; i < cnt; i++ {
-		log.Printf("dumpTheMotherFuckingTrie: %d: %s\n", i, dump.At(i))
+		log.Printf("dumpTrie: %d: %s\n", i, dump.At(i))
 	}
+	log.Printf("dumpTrie: DOT file follows\n%s", t.GetDotString())
 }
 
 func init() {

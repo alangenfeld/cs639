@@ -51,6 +51,7 @@ import (
 	"container/vector"
 	"utf8"
 	"sort"
+	"fmt"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
@@ -67,6 +68,33 @@ func NewTrie() *Trie {
 	t.value = nil
 	t.children = make(map[int]*Trie)
 	return t
+}
+
+func (p *Trie) GetDotString() string {
+	outStr := "digraph Trie {"
+	vec := new(vector.StringVector)
+	
+	p.outputDot(vec, 0)
+	
+	cnt := vec.Len()
+	for i := 0; i < cnt; i++ {
+		outStr = strings.Join([]string{outStr, vec.At(i)}, "\n")
+	}
+	
+	return strings.Join([]string{outStr, "}"}, "\n")
+}
+
+func (p *Trie) outputDot(vec *vector.StringVector, rune int) {
+	thisChar := make([]byte, 10)
+	childChar := make([]byte, 10)
+
+	utf8.EncodeRune(thisChar, rune)
+	
+	for childRune, childNode := range p.children {
+		utf8.EncodeRune(childChar, childRune)
+		vec.Push(fmt.Sprintf("%s -> %s", thisChar[0], childChar[0]))
+		childNode.outputDot(vec, childRune)
+	}
 }
 
 // Internal function: adds items to the trie, reading runes from a strings.Reader.  It returns
