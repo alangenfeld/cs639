@@ -39,18 +39,6 @@ func Init(masterAddress string, loggingFlag bool) {
 
 	requestLoad = 0
 	logging = loggingFlag
-	/*if logging {
-		err := os.Mkdir("log", 0666);
-		if err != nil {
-			log.Println(err.String())
-			logging = false
-		}
-		err = logger.Init("log/chunk-log.txt", "../logger/")
-		if err != nil {
-			log.Println(err.String())
-			logging = false
-		}
-	}*/
 
 	args.Capacity = 5
 	host,_ := os.Hostname()
@@ -59,9 +47,8 @@ func Init(masterAddress string, loggingFlag bool) {
 	args.ChunkServerIP = *tcpAddr
 	log.Println(args.ChunkServerIP)
 	
-	logging = loggingFlag
 	if logging {
-		err := os.Mkdir("log", 0666);
+		err := os.Mkdir("log", 0777);
 		if err != nil {
 			log.Println(err.String())
 			logging = false
