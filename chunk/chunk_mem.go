@@ -62,7 +62,7 @@ func Init(masterAddress string, loggingFlag bool) {
 			log.Println(err.String())
 			logging = false
 		}
-		err := logger.Init("log/chunk-log-" + host + ".txt", "../logger/")
+		err = logger.Init("log/chunk-log-" + host + ".txt", "../logger/")
 		if err != nil {
 			log.Println(err.String())
 			logging = false
