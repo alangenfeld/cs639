@@ -1,10 +1,11 @@
 Things to do:
-	file struct : add flags
-	open: check for flags, and do the appropriate things
-	write: update file ptr
+	file struct: 
+	open:
+	write:
 	read: 
-	readDir: need to write still
-	delete: need to write still
+	readDir: need to finish 
+	delete: 
+***	implement redials, and dials to the next server on fails
 
-passing 8/10 tests
-need to pass readDir  and O_CREATE tests
+passing 16/17 tests
+need to pass readDir  
