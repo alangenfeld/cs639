@@ -110,7 +110,7 @@ func Read (fd int, size int) ([]byte, int ){
 	}
 	index := 0
 	startIndex :=int( fdFile.filePtr % sfs.CHUNK_SIZE)
-	endIndex := int(int(size) + startIndex)
+	endIndex := int(cap(entireRead) + startIndex)
 	if endIndex > int(fdFile.size) {
 		endIndex = int(fdFile.size)
 	}
@@ -148,8 +148,12 @@ func Read (fd int, size int) ([]byte, int ){
 			log.Printf("Client: CHUNK RETURNED BAD STATUS = %d\n",fileInfo.Status);
 			break;
 		}
+//		log.Printf("Client: READ endindex = %d  \n", endIndex);
+//		log.Printf("Client: READ startindex = %d  \n", startIndex);
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
+//			log.Printf("Client: READ index = %d  j = %d  \n", index, j);
 			if (index< endIndex && index>= startIndex ) {
+//				log.Printf("Client: READ  adding to entire read slice \n");
 				entireRead[index-startIndex] = fileInfo.Data.Data[j];
 			}
 			index++;
