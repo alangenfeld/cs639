@@ -14,7 +14,8 @@ const NREPLICAS = 3
 const FAIL = -1;
 const SUCCESS = 0;
 const BUSY = 2;
-
+const NICE = 1;
+const FORCE = 0;
 
 type Chunk struct {
 	Data [CHUNK_SIZE]byte
