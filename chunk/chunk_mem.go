@@ -36,7 +36,7 @@ func Init(masterAddress string, loggingFlag bool) {
 
 	logging = loggingFlag
 	if logging {
-		err := logger.Init("chunk-log.txt", "../logger/")
+		err := logger.Init("log/chunk-log.txt", "../logger/")
 		if err != nil {
 			log.Println(err.String())
 			logging = false
