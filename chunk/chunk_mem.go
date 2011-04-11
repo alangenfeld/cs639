@@ -34,7 +34,7 @@ func Init(masterAddress string, loggingFlag bool) {
 	var args sfs.ChunkBirthArgs
 	var ret sfs.ChunkBirthReturn 
 
-	logging = loggingFlag
+	/*logging = loggingFlag
 	if logging {
 		err := os.Mkdir("log", 0666);
 		if err != nil {
@@ -46,7 +46,7 @@ func Init(masterAddress string, loggingFlag bool) {
 			log.Println(err.String())
 			logging = false
 		}
-	}
+	}*/
 
 	args.Capacity = 5
 	host,_ := os.Hostname()
@@ -57,7 +57,12 @@ func Init(masterAddress string, loggingFlag bool) {
 	
 	logging = loggingFlag
 	if logging {
-		err := logger.Init("chunk-log-" + host + ".txt", "../logger/")
+		err := os.Mkdir("log", 0666);
+		if err != nil {
+			log.Println(err.String())
+			logging = false
+		}
+		err := logger.Init("log/chunk-log-" + host + ".txt", "../logger/")
 		if err != nil {
 			log.Println(err.String())
 			logging = false
