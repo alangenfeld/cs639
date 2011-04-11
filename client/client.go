@@ -148,12 +148,8 @@ func Read (fd int, size int) ([]byte, int ){
 			log.Printf("Client: CHUNK RETURNED BAD STATUS = %d\n",fileInfo.Status);
 			break;
 		}
-//		log.Printf("Client: READ endindex = %d  \n", endIndex);
-//		log.Printf("Client: READ startindex = %d  \n", startIndex);
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
-//			log.Printf("Client: READ index = %d  j = %d  \n", index, j);
 			if (index< endIndex && index>= startIndex ) {
-//				log.Printf("Client: READ  adding to entire read slice \n");
 				entireRead[index-startIndex] = fileInfo.Data.Data[j];
 			}
 			index++;
@@ -229,11 +225,19 @@ func Write (fd int, data []byte) (int){
 
 			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
 				log.Fatal("fdFile.chunkInfo ", fdFile.chunkInfo)
-
 			}
-			client,err  := rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
+			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
+			client,err  := rpc.Dial("tcp",servers[0].String())
 			if err != nil {
-				log.Fatal("Client: dial fail:", err)
+				for j:=1 ; j<len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers) ; j++ {
+					client,err  = rpc.Dial("tcp",servers[j].String())
+					if (err == nil){
+						break
+					}
+				}
+				if err != nil {
+					log.Fatal("Client: dial fail:", err)
+				}
 			}
 			err = client.Call("Server.Write", &fileArgs,&fileInfo);
 			if err != nil{

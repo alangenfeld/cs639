@@ -21,6 +21,7 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 const STATUS_CMD = "../stats.sh"
 const STATUS_ARGS = ""
 const STATUS_LEN = 17
+const THRESHOLD = 100 //arbitrary as fuck
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
@@ -28,12 +29,15 @@ var addedChunks vector.Vector
 var chunkServerID uint64
 //var logging *bool = flag.Bool("log", false, "enables logging")
 var logging bool
+var requestLoad int
+
 
 func Init(masterAddress string, loggingFlag bool) {
 
 	var args sfs.ChunkBirthArgs
 	var ret sfs.ChunkBirthReturn 
 
+	requestLoad = 0
 	/*logging = loggingFlag
 	if logging {
 		err := os.Mkdir("log", 0666);
@@ -82,20 +86,25 @@ func Init(masterAddress string, loggingFlag bool) {
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
+	requestLoad++
 	var id logger.TaskId
 	if logging {
 		id = logger.Start("Read")
 	}
 	data,present := chunkTable[args.ChunkID]
 	if !present{
-		ret.Status = -1
+		ret.Status = sfs.FAIL
 		return nil
 	}
 	log.Println("chunk: Reading from chunk ", args.ChunkID)
 
+	if args.Nice == sfs.NICE && ServerBusy() {
+		ret.Status = sfs.BUSY
+		return nil
+	}
+	
 	ret.Data.Data = data.Data
-
-	ret.Status = 0
+	ret.Status = sfs.SUCCESS
 	if logging {
 		errString := logger.End(id, false)
 		if errString != "" {
@@ -106,6 +115,7 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 }
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
+	requestLoad++
 	var id logger.TaskId
 	if logging {
 		id = logger.Start("Write")
@@ -256,13 +266,14 @@ func SendHeartbeat(masterAddress string){
 				logging = false
 			}
 		}
+		requestLoad = 0
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
 	return
 }
 
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
-
+	requestLoad++
 	if args.Servers == nil {
 		log.Printf("chunk: replication call: nil address.")
 		return nil
@@ -293,4 +304,9 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		break
 	}
 	return nil
+}
+
+func ServerBusy() bool {
+//	return logger.GetLoad() + requestLoad > THRESHOLD
+	return requestLoad > THRESHOLD
 }
