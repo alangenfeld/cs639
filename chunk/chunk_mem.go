@@ -38,8 +38,8 @@ func Init(masterAddress string, loggingFlag bool) {
 	var ret sfs.ChunkBirthReturn 
 
 	requestLoad = 0
-	/*logging = loggingFlag
-	if logging {
+	logging = loggingFlag
+	/*if logging {
 		err := os.Mkdir("log", 0666);
 		if err != nil {
 			log.Println(err.String())
