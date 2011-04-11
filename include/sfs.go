@@ -11,6 +11,10 @@ import (
 const CHUNK_SIZE = 32                 // 32 B
 const HEARTBEAT_WAIT = 3 * 1000000000 // 15 seconds
 const NREPLICAS = 3
+const FAIL = -1;
+const SUCCESS = 0;
+const BUSY = 2;
+
 
 type Chunk struct {
 	Data [CHUNK_SIZE]byte
@@ -18,6 +22,7 @@ type Chunk struct {
 
 type ReadArgs struct {
 	ChunkID uint64
+	Nice int
 }
 
 type ReadReturn struct {
