@@ -49,6 +49,15 @@ func Init(masterAddress string, loggingFlag bool) {
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	log.Println(args.ChunkServerIP)
+	
+	logging = loggingFlag
+	if logging {
+		err := logger.Init("chunk-log-" + host + ".txt", "../logger/")
+		if err != nil {
+			log.Println(err.String())
+			logging = false
+		}
+	}
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	if err != nil {
