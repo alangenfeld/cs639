@@ -294,6 +294,5 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 }
 
 func ServerBusy() bool {
-//	return logger.GetLoad() + requestLoad > THRESHOLD
-	return requestLoad > THRESHOLD
+	return logger.GetLoad() + requestLoad > THRESHOLD
 }
