@@ -520,7 +520,14 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 	}
 
 	for j := 0; j < newChunk.servers.Len(); j++ {
-		newChunk.servers.At(j).(*server).chunks.Push(newChunk)
+		s := newChunk.servers.At(j).(*server)
+		
+		//if the server dies after right replication but before dying..
+		if s != nil {
+			s.chunks.Push(newChunk)
+		}else {
+			newChunk.servers.Delete(j)
+		}
 	}
 
 	return newChunk.chunkID, nil
