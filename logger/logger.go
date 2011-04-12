@@ -22,6 +22,8 @@ var statusDir string
 
 const STATUS_LEN = 82
 const STATUS_CMD = "./stats.sh"
+const WHO = "who | awk '{print $1;}'| uniq | wc -l |awk '{print $1;}'"
+const WHO_LEN = 2
 
 func Init(Filename string, Directory string) os.Error{
 	//open the file we've been told
@@ -96,7 +98,26 @@ func String(thisTask TaskId) string {
 	timeSpent := info.EndTime - info.StartTime
 	niceTimeSpent := float64(timeSpent) / float64(1000000000)
 	timeStamp := time.SecondsToLocalTime(time.Seconds())
-	ret = timeStamp.String() + ": " + info.TaskName + ": " + fmt.Sprintf("%f", niceTimeSpent) + " seconds\n"
+	ret = "\n" + timeStamp.String() + ": " + info.TaskName + ": " + fmt.Sprintf("%f", niceTimeSpent) + " seconds\n"
 	return ret
+}
+
+/********************************************************
+ * Load score:
+ * +.25 points per user up to 3 pts
+ * x/5pts for memory usage, so it would be usage % * 5
+ * x/2pts for cpu usage, so it would be available cpu * 2
+*********************************************************/
+
+func GetLoad() int {
+	result := make([]byte, WHO_LEN)
+        args := make([]string, 1)
+	command, err := exec.Run(WHO, args, nil, ".", exec.PassThrough, exec.Pipe, exec.PassThrough)
+        if err != nil{
+                 log.Println("chunk fails in command:" + err.String())
+                 log.Fatal("chunk: unable to obtain remote command")
+        }
+        _,err =command.Stdout.Read(result)
+	return 0
 }
 	
