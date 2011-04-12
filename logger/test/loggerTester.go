@@ -1,9 +1,10 @@
 package loggerTester
 
 import(
+	"fmt"
 	"log"
 	"../logger"
-	"time"
+//	"time"
 )
 
 func main () {
@@ -11,7 +12,9 @@ func main () {
 	if err != nil {
 		log.Println("Error in logger.Init: " + err.String())
 	}
-	totalId := logger.Start("TotalTest");
+	val := logger.GetLoad()
+	log.Println("Val = " + fmt.Sprintf("%d", val))
+	/*totalId := logger.Start("TotalTest");
 	id := logger.Start("2 seconds")
 	time.Sleep(2000000000)
 	errString := logger.End(id, true)
@@ -27,5 +30,5 @@ func main () {
 	errString = logger.End(totalId, false)
 	if errString != "" {
 		log.Println("Error in logger.End: " + errString)
-	}
+	}*/
 }

@@ -1,10 +1,13 @@
 package logger
 
 import(
+	"bytes"
 	"exec"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+//	"strings"
 	"time"
 )
 
@@ -22,8 +25,11 @@ var statusDir string
 
 const STATUS_LEN = 82
 const STATUS_CMD = "./stats.sh"
-const WHO = "who | awk '{print $1;}'| uniq | wc -l |awk '{print $1;}'"
-const WHO_LEN = 2
+const WHO = "./who.sh"
+const WHO_LEN = 3
+const MEM_FREE = "./mem.sh"
+const MEM_LEN = 5
+const MEM_TOTAL = "./mem_total.sh"
 
 func Init(Filename string, Directory string) os.Error{
 	//open the file we've been told
@@ -110,14 +116,66 @@ func String(thisTask TaskId) string {
 *********************************************************/
 
 func GetLoad() int {
+/*****************************************************************************************************************
+ ***DISCLAIMER***
+ *This is the most horrible code I've ever written, attempts to read may result in blindness, constipation, or death.
+******************************************************************************************************************/
+
 	result := make([]byte, WHO_LEN)
         args := make([]string, 1)
-	command, err := exec.Run(WHO, args, nil, ".", exec.PassThrough, exec.Pipe, exec.PassThrough)
+	command, err := exec.Run(WHO, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
-                 log.Println("chunk fails in command:" + err.String())
-                 log.Fatal("chunk: unable to obtain remote command")
+                 log.Println("logger fails in command:" + err.String())
+                 log.Fatal("logger: unable to obtain remote command")
         }
         _,err =command.Stdout.Read(result)
-	return 0
+	index := bytes.IndexRune(result, 10)
+	result2 := result[0:index]
+	//fmt.Print(result2)
+	who := string(result2)
+	whoInt,err2 := strconv.Atoi(who)
+	if err2 != nil {
+		log.Print(err2.String())
+	}
+	//users := float32(whoInt) * .25
+	//fmt.Print(result)
+	result = make([]byte, MEM_LEN)
+	command, err = exec.Run(MEM_FREE, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
+        if err != nil{
+                 log.Println("logger fails in command:" + err.String())
+                 log.Fatal("logger: unable to obtain remote command")
+        }
+        _,err =command.Stdout.Read(result)
+	if err != nil{
+        	log.Println("chunk fails read from command: " + err.String())
+	}
+	//fmt.Print(result)
+	index = bytes.IndexRune(result, 10)
+	result3 := result[0:index]
+	free := string(result3)
+	freeInt,err3 := strconv.Atoi(free)
+	if err3 != nil {
+		log.Print(err3.String())
+	}
+	result = make([]byte, MEM_LEN)
+	command, err = exec.Run(MEM_TOTAL, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
+        if err != nil{
+                 log.Println("logger fails in command:" + err.String())
+                 log.Fatal("logger: unable to obtain remote command")
+        }
+        _,err =command.Stdout.Read(result)
+	if err != nil{
+        	log.Println("chunk fails read from command: " + err.String())
+	}
+	//fmt.Print(result)
+	index = bytes.IndexRune(result, 10)
+	result4 := result[0:index]
+	total := string(result4)
+	totalInt,err3 := strconv.Atoi(total)
+	if err3 != nil {
+		log.Print(err3.String())
+	}
+	mem_usage := (1 - (float32(freeInt) / float32(totalInt))) * 5
+	return whoInt + int(mem_usage)
 }
 	
