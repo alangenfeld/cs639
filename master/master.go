@@ -319,11 +319,11 @@ func RemoveServer(serv *server) os.Error {
 	addrToServerMap[serv.addr.String()] = &server{}, false
 
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
-
-	//////////////////////////////////////////////////////////////////////
-	////////////      THIS IS A PROBLEM -- NEED TO SPREAD REPLICATION REQS
-	//////////////////////////////////////////////////////////////////////
+	
 	network_size := float64(sHeap.vec.Len())
+	if network_size <= 0 { 
+		return nil
+	}
 	//chunk_size := serv.chunks.Len()
 	rep_factor := .9
 
