@@ -58,7 +58,9 @@ import (
 type Trie struct {
 	leaf     bool          // whether the node is a leaf (the end of an input string).
 	value    interface{}   // the value associated with the string up to this leaf node.
-	children map[int]*Trie // a map of sub-tries for each child rune value.
+	files map[string] string
+	dirs  * vector.Vector
+	children map[int]*Trie // a map if len(s) == 0 {
 }
 
 // Creates and returns a new Trie instance.
@@ -66,6 +68,8 @@ func NewTrie() *Trie {
 	t := new(Trie)
 	t.leaf = false
 	t.value = nil
+	t.files = make(map[string]string)
+	t.dirs = new(vector.Vector)
 	t.children = make(map[int]*Trie)
 	return t
 }
@@ -144,7 +148,17 @@ func (p *Trie) AddValue(s string, v interface{}) {
 	leaf := p.addRunes(strings.NewReader(s))
 	leaf.value = v
 }
+func (p *Trie) AddFile(s string, i string) {
+	if len(s) == 0 {
+		return
+	}
 
+	// append the runes to the trie
+	leaf := p.addRunes(strings.NewReader(s))
+	leaf.files[i] = i;
+
+
+}
 // Internal string removal function.  Returns true if this node is empty following the removal.
 func (p *Trie) removeRunes(r *strings.Reader) bool {
 	rune, _, err := r.ReadRune()
