@@ -3,9 +3,11 @@ Things to do:
 	open:
 	write:
 	read: 
+	seek: reimplement, so it supports sparse files
 	readDir: need to finish 
 	delete: 
 ***	implement redials, and dials to the next server on fails
 
-passing 16/17 tests
+passing 16/18 tests
 need to pass readDir  
+85% passing on t18, might not be our fault

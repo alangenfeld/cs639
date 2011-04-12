@@ -22,18 +22,23 @@ const(
  SEEK_END = 4
 )
 
+type nameAndPtr struct {
+	name  string
+	filePtr uint64
+	permissions int
+}
 
 type file struct {
 	size uint64
-	filePtr  uint64
+//	filePtr  uint64
 	chunkInfo *vector.Vector
 	name string
-	permissions int
 }
 
 var master string
 var fd int
-var openFiles = map[int] (*file){}
+var openFiles = map[string] (*file){}
+var openDescriptors = map[int] (*nameAndPtr){}
 
 func Initialize(masterAddr string){
 	fd = 0
@@ -42,43 +47,63 @@ func Initialize(masterAddr string){
 }
 
 func Open(filename string , flag int ) (int){
+	log.Printf("Client: opening %s!!\n", filename)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	if err != nil{
 		log.Printf("Client: Dial Error %s", err.String());
 		return FAIL
 	}else{
-		fileInfo := new (sfs.OpenReturn)
-		fileArgs := new (sfs.OpenArgs)
-		fileArgs.Lock = false
-		fileArgs.Name = filename
-		if((flag & O_CREATE) == O_CREATE){
-			fileArgs.NewFile = true	
-		} else {
-			fileArgs.NewFile = false
-		}
-		err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
-		if(err != nil){
-			log.Printf("Client: Open fail ", err )
-			return FAIL
-		}
-		if fileInfo.New {
-			log.Printf("Client: New file!\n")
+		_,openF :=  openFiles[filename]
 
+		if !openF {
+			fileInfo := new (sfs.OpenReturn)
+			fileArgs := new (sfs.OpenArgs)
+			fileArgs.Lock = false
+			fileArgs.Name = filename
+			if((flag & O_CREATE) == O_CREATE){
+				log.Printf("Client: Permissions for New file!\n")
+				fileArgs.NewFile = true
+			} else {
+				fileArgs.NewFile = false
+			}
+			err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
+			if(err != nil){
+				log.Printf("Client: Open fail ", err )
+				return FAIL
+			}
+			if fileInfo.New {
+				log.Printf("Client: New file!\n")
+
+			}else{
+				log.Printf("Client: Old file!\n")
+			}
+			fd++
+			var nextFile file
+			nextFile.size = 0
+		//	nextFile.filePtr = 0
+			nextFile.name = filename
+
+			nextFile.chunkInfo = new(vector.Vector)
+			for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
+				nextFile.chunkInfo.Push(fileInfo.Chunk[i])
+				nextFile.size +=fileInfo.Chunk[i].Size
+			}
+			openFiles[filename] = &nextFile
+			var d nameAndPtr
+			d.name = filename
+			d.filePtr = 0
+			d.permissions = flag
+			openDescriptors[fd] = &d
 		}else{
-			log.Printf("Client: Old file!\n")
+			log.Printf("Client: else of open!\n")
+			fd++
+			var d nameAndPtr
+			d.name = filename
+			d.permissions = flag
+			d.filePtr = 0
+			openDescriptors[fd] = &d
+//			openFiles[filename].filePtr = 0;
 		}
-		fd++
-		var nextFile file
-		nextFile.size = 0
-		nextFile.filePtr = 0
-		nextFile.permissions = flag
-		nextFile.name = filename
-		nextFile.chunkInfo = new(vector.Vector)
-		for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
-			nextFile.chunkInfo.Push(fileInfo.Chunk[i])
-			nextFile.size +=fileInfo.Chunk[i].Size
-		}
-		openFiles[fd] = &nextFile
 		return fd;
 	}
 	return FAIL
@@ -90,17 +115,24 @@ func Read (fd int, size int) ([]byte, int ){
 	log.Printf("Client: **********READ BEGIN***********\n");
 	fileInfo := new (sfs.ReadReturn)
 	fileArgs := new (sfs.ReadArgs)
-	fdFile, inMap := openFiles[fd]
-
+	nameAndPointer, inMap :=  openDescriptors[fd]
 	var entireRead []byte
-	if((fdFile.permissions & O_RDONLY) != O_RDONLY){ //check if file was opened with Read permissions
+	if !inMap {
+		log.Printf("Client: fd does not exist\n");
+		return entireRead, FAIL
+	}
+	filename := nameAndPointer.name
+	filePtr := nameAndPointer.filePtr
+	fdFile, inMap := openFiles[filename]
+
+	if((nameAndPointer.permissions & O_RDONLY) != O_RDONLY){ //check if file was opened with Read permissions
 		log.Printf("Client: Cannot read without read permissions\n")
 		return entireRead, FAIL
 	}
 
 
-	if (int(fdFile.filePtr)+(size)) > int(fdFile.size) {
-		entireRead = make([]byte,(fdFile.size - fdFile.filePtr))
+	if (int(filePtr)+(size)) > int(fdFile.size) {
+		entireRead = make([]byte,(fdFile.size - filePtr))
 	}else {
 		entireRead = make([]byte,size)
 	}
@@ -109,12 +141,14 @@ func Read (fd int, size int) ([]byte, int ){
 		return entireRead, FAIL
 	}
 	index := 0
-	startIndex :=int( fdFile.filePtr % sfs.CHUNK_SIZE)
+	startIndex :=int( filePtr % sfs.CHUNK_SIZE)
 	endIndex := int(cap(entireRead) + startIndex)
 	if endIndex > int(fdFile.size) {
 		endIndex = int(fdFile.size)
 	}
-	endChunk := int(math.Ceil((float64(fdFile.filePtr)+float64(size))/sfs.CHUNK_SIZE))
+	endChunk := int(math.Ceil((float64(filePtr)+float64(size))/sfs.CHUNK_SIZE))
+	log.Printf("Client: size = %d\n", size)
+	log.Printf("Client: openFiles = %v  openDescriptors = %v\n", openFiles, openDescriptors)
 	log.Printf("Client: index = %d, startIndex = %d", index, startIndex)
 	log.Printf("Client: endIndex = %d, endChunk = %d", endIndex, endChunk)
 	log.Printf("Client: filestarting size = %d",fdFile.size)
@@ -123,7 +157,8 @@ func Read (fd int, size int) ([]byte, int ){
 		endChunk = int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE)))
 		log.Printf("Client: file was smaller than read size")
 	}
-	for i := int(fdFile.filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
+	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
+	log.Printf("Client: I = %d\n", i)
 		if (len(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers) < 1) {
 			log.Fatal("Client: No servers listed")
 		}
@@ -148,6 +183,7 @@ func Read (fd int, size int) ([]byte, int ){
 			log.Printf("Client: CHUNK RETURNED BAD STATUS = %d\n",fileInfo.Status);
 			break;
 		}
+		log.Printf("Client: data returned %v", fileInfo.Data.Data)
 		for j:=0; j<sfs.CHUNK_SIZE ; j++{
 			if (index< endIndex && index>= startIndex ) {
 				entireRead[index-startIndex] = fileInfo.Data.Data[j];
@@ -155,9 +191,9 @@ func Read (fd int, size int) ([]byte, int ){
 			index++;
 		}
 	}
-	openFiles[fd].filePtr += uint64(size)
-	if openFiles[fd].filePtr > fdFile.size {
-		openFiles[fd].filePtr =openFiles[fd].size
+	openDescriptors[fd].filePtr += uint64(size)
+	if openDescriptors[fd].filePtr > fdFile.size {
+		openDescriptors[fd].filePtr	=openFiles[filename].size
 	}
 	printByteSlice(entireRead)
 	log.Printf("Client: *********READ END*************\n");
@@ -169,10 +205,22 @@ func Write (fd int, data []byte) (int){
 
 	log.Printf("Client: *************WRITE BEGIN**********\n");
 
-	fdFile, inMap := openFiles[fd]
 
-	if((fdFile.permissions & O_WRONLY) != O_WRONLY){
-		log.Printf("CLient: Cannot write without write permissions\n")
+	nameAndPointer, inMap :=  openDescriptors[fd]
+	if !inMap {
+		log.Printf("Client: fd does not exist\n");
+		return FAIL
+	}
+	filename := nameAndPointer.name
+	filePtr := nameAndPointer.filePtr
+
+
+	fdFile, inMap := openFiles[filename]
+
+	log.Printf("Client: filestarting size = %d",fdFile.size)
+	log.Printf("Client: fileName   %s",fdFile.name)
+	if((nameAndPointer.permissions & O_WRONLY) != O_WRONLY){
+		log.Printf("Client: Cannot write without write permissions\n")
 		return FAIL
 	}
 
@@ -181,8 +229,8 @@ func Write (fd int, data []byte) (int){
 		return FAIL
 	}
 	var indexWithinChunk int
-	indexWithinChunk = int( fdFile.filePtr)%int(sfs.CHUNK_SIZE)
-	chunkOffset := int(fdFile.filePtr)/int(sfs.CHUNK_SIZE)
+	indexWithinChunk = int( filePtr)%int(sfs.CHUNK_SIZE)
+	chunkOffset := int(filePtr)/int(sfs.CHUNK_SIZE)
 	var toWrite sfs.Chunk
 
 	if  indexWithinChunk  > 0 {
@@ -213,6 +261,39 @@ func Write (fd int, data []byte) (int){
 		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
 		if (indexWithinChunk == sfs.CHUNK_SIZE || i == len(data)-1 ){
+
+
+
+
+			if  i == len(data)-1  && fdFile.size > filePtr && indexWithinChunk != sfs.CHUNK_SIZE {
+				fileArgsRead := new (sfs.ReadArgs)
+				fileInfoRead := new (sfs.ReadReturn)
+				client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
+				if err != nil{
+					log.Printf("Client: Dial Failed in Write 2")
+					return FAIL
+				}
+				fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
+				if fileArgsRead.ChunkID == 0 {
+					log.Printf("Client: ChunkID = 0, this shouldn't happen")
+				}
+				chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
+				replyCall:= <-chunkCall.Done
+				if replyCall.Error!=nil{
+					log.Printf("Client: error in reply from rpc in read\n");
+					return FAIL
+				}
+				log.Printf("data returned in write for special case %v ", fileInfoRead.Data.Data)
+				for i:= indexWithinChunk ; i < sfs.CHUNK_SIZE ; i++ {
+					toWrite.Data[i] = fileInfoRead.Data.Data[i]
+				}
+			}
+
+
+
+
+
+
 			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
 				log.Printf("Client: adding chunk x")
@@ -239,6 +320,10 @@ func Write (fd int, data []byte) (int){
 					log.Fatal("Client: dial fail:", err)
 				}
 			}
+
+
+
+
 			err = client.Call("Server.Write", &fileArgs,&fileInfo);
 			if err != nil{
 				log.Fatal("Client: error in reply from rpc in write\n");
@@ -275,16 +360,23 @@ func Write (fd int, data []byte) (int){
 
 		}
 	}
-	if fileInfo.Status !=FAIL {
-		openFiles[fd].size = openFiles[fd].filePtr + uint64(len(data))
+
+
+
+
+
+
+	if fileInfo.Status !=FAIL && (openDescriptors[fd].filePtr+uint64(len(data)) > openFiles[filename].size) {
+		openFiles[filename].size = openDescriptors[fd].filePtr + uint64(len(data))
 	}
-	if openFiles[fd].size > fdFile.size {
-		openFiles[fd].size = fdFile.size
+	if openFiles[filename].size > fdFile.size {
+		openFiles[filename].size = fdFile.size
 	}
-	openFiles[fd].filePtr += uint64(len(data))
-	if openFiles[fd].filePtr > fdFile.size {
-		openFiles[fd].filePtr = fdFile.size
+	openDescriptors[fd].filePtr += uint64(len(data))
+	if openDescriptors[fd].filePtr > fdFile.size {
+		openDescriptors[fd].filePtr = fdFile.size
 	}
+	log.Printf("Client: file ending size %d", openFiles[filename].size);
 	log.Printf("Client: ************WRITE END**************\n");
 	return fileInfo.Status
 }
@@ -292,7 +384,18 @@ func Write (fd int, data []byte) (int){
 /* delete */
 //TODO
 func Delete(filename string) (int){
+
+	_ , present := openFiles[filename]
+	if (!present ){
+		log.Printf("Client: filename does not exist  %s\n", filename);
+		return FAIL
+	}
+	var dummy file
+	openFiles[filename] = &dummy,false
+
+
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
+
 	if err != nil{
 		log.Printf("Client: Dial Error %s", err.String());
 		return FAIL
@@ -310,12 +413,19 @@ func Delete(filename string) (int){
 }
 
 func Close(fd int) (int){
-	_ , present := openFiles[fd]
-	if (!present ){
+	n, inMap :=  openDescriptors[fd]
+	filename := n.name
+	if !inMap {
+		log.Printf("Client: fd does not exist\n");
 		return FAIL
 	}
-	var x file
-	openFiles[fd] = &x,false
+	_ , present := openFiles[filename]
+	if (!present ){
+		log.Printf("Client: filename does not exist  %s\n", filename);
+		return FAIL
+	}
+	var dummy nameAndPtr
+	openDescriptors[fd]= &dummy,false
 	return WIN
 }
 
@@ -342,26 +452,35 @@ func ReadDir(path string) ([]string, int){
 /* seek */
 //TODO
 func Seek (fd int, offset int, whence int) (int){
-	_ , present := openFiles[fd]
+	n, inMap :=  openDescriptors[fd]
+	filename := n.name
+	log.Printf("Client: filestarting size = %d", openFiles[filename].size)
+	log.Printf("Client: fileName   %s",openFiles[filename].name)
+
+	if !inMap {
+		log.Printf("Client: fd does not exist\n");
+		return FAIL
+	}
+	_ , present := openFiles[filename]
 	if !present{
 		return FAIL
 	}
-	filePtr := int(openFiles[fd].filePtr)
+	filePtr := int(openDescriptors[fd].filePtr)
 	if whence == SEEK_SET {
 		filePtr = 0 + offset
 	}else if whence == SEEK_CURR {
 		filePtr = filePtr + offset
 	}else if whence == SEEK_END {
-		filePtr = int(openFiles[fd].size) + offset
+		filePtr = int(openFiles[filename].size) + offset
 	}
-	openFiles[fd].filePtr = uint64(filePtr)
-	if filePtr > int(openFiles[fd].size) {
-		openFiles[fd].filePtr = openFiles[fd].size
+	openDescriptors[fd].filePtr = uint64(filePtr)
+	if filePtr > int(openFiles[filename].size) {
+		openDescriptors[fd].filePtr = openFiles[filename].size
 	}
 	if filePtr < 0 {
-		openFiles[fd].filePtr = 0
+		openDescriptors[fd].filePtr = 0
 	}
-	return  int(openFiles[fd].filePtr);
+	return  int(openDescriptors[fd].filePtr);
 }
 
 func printByteSlice(toPrint []byte){
