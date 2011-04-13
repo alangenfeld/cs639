@@ -571,7 +571,7 @@ func (s *server) AssociateChunk(c *chunk) os.Error {
 	return nil
 }
 
-func AssociateChunkAndServer(c *chunk, s *server) {
+func AssociateChunkAndServer(c *chunk, s *server) os.Error {
 	err := s.AssociateChunk(c)
 	
 	if err != nil {
