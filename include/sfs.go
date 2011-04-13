@@ -43,6 +43,7 @@ type ReadDirReturn struct {
 type ChunkBirthArgs struct {
 	ChunkServerIP net.TCPAddr
 	Capacity      uint64
+	ChunkIDs []uint64
 }
 type ChunkBirthReturn struct {
 	ChunkServerID uint64
@@ -67,6 +68,7 @@ type HeartbeatArgs struct {
 
 type HeartbeatReturn struct {
 	ChunksToRemove *vector.Vector
+	Accepted bool
 }
 
 type DeleteArgs struct {
