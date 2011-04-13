@@ -245,6 +245,7 @@ func SendHeartbeat(masterAddress string){
 			_,iparray,_ := net.LookupHost(host)
 			tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 			bArgs.ChunkServerIP = *tcpAddr
+			bArgs.ChunkIDs = make([]uint64, len(chunkTable))
 			i := 0
 			for k, _ := range chunkTable {
 				bArgs.ChunkIDs[i] = k
