@@ -162,10 +162,20 @@ func Read (fd int, size int) ([]byte, int ){
 		if (len(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers) < 1) {
 			log.Fatal("Client: No servers listed")
 		}
-		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers[0].String())
+
+		chunkServerMirrors := fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers
+		client,err :=rpc.Dial("tcp",chunkServerMirrors[0].String())
 		if err != nil{
-			log.Printf("Client: Dial Failed in Read")
-			return entireRead, FAIL
+			for i:=1; i<len(chunkServerMirrors);i++{
+				client,err = rpc.Dial("tcp",chunkServerMirrors[i].String())
+				if err == nil{
+					break
+				}
+			}
+			if err != nil {
+				log.Printf("Client: Dial Failed in Read")
+				return entireRead, FAIL
+			}
 		}
 		fileArgs.ChunkID= fdFile.chunkInfo.At(i).(sfs.ChunkInfo).ChunkID;
 		if fileArgs.ChunkID == 0 {

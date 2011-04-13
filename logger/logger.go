@@ -129,16 +129,10 @@ func GetLoad() int {
                  log.Fatal("logger: unable to obtain remote command")
         }
         _,err =command.Stdout.Read(result)
-	index := bytes.IndexRune(result, 10)
-	result2 := result[0:index]
-	//fmt.Print(result2)
-	who := string(result2)
-	whoInt,err2 := strconv.Atoi(who)
-	if err2 != nil {
-		log.Print(err2.String())
+	if err != nil{
+        	log.Println("logger fails read from command: " + err.String())
 	}
-	//users := float32(whoInt) * .25
-	//fmt.Print(result)
+	whoResult := commandToInt(result)
 	result = make([]byte, MEM_LEN)
 	command, err = exec.Run(MEM_FREE, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
@@ -147,16 +141,9 @@ func GetLoad() int {
         }
         _,err =command.Stdout.Read(result)
 	if err != nil{
-        	log.Println("chunk fails read from command: " + err.String())
+        	log.Println("logger: fails read from command: " + err.String())
 	}
-	//fmt.Print(result)
-	index = bytes.IndexRune(result, 10)
-	result3 := result[0:index]
-	free := string(result3)
-	freeInt,err3 := strconv.Atoi(free)
-	if err3 != nil {
-		log.Print(err3.String())
-	}
+	freeResult := commandToInt(result)
 	result = make([]byte, MEM_LEN)
 	command, err = exec.Run(MEM_TOTAL, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
@@ -165,17 +152,21 @@ func GetLoad() int {
         }
         _,err =command.Stdout.Read(result)
 	if err != nil{
-        	log.Println("chunk fails read from command: " + err.String())
+        	log.Println("logger fails read from command: " + err.String())
 	}
-	//fmt.Print(result)
-	index = bytes.IndexRune(result, 10)
-	result4 := result[0:index]
-	total := string(result4)
-	totalInt,err3 := strconv.Atoi(total)
-	if err3 != nil {
-		log.Print(err3.String())
-	}
-	mem_usage := (1 - (float32(freeInt) / float32(totalInt))) * 5
-	return whoInt + int(mem_usage)
+	totalResult := commandToInt(result)
+	mem_usage := (1 - (float32(freeResult) / float32(totalResult))) * 5
+	user_percent := float32(whoResult) * .25
+	return int(user_percent) + int(mem_usage)
 }
-	
+
+func commandToInt(result []byte) int {
+	index := bytes.IndexRune(result, 10)
+	result2 := result[0:index]
+	resultString := string(result2)
+	resultInt,err := strconv.Atoi(resultString)
+	if err != nil {
+		log.Print(err.String())
+	}
+	return resultInt
+}	
