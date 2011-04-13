@@ -156,7 +156,8 @@ func GetLoad() int {
 	}
 	totalResult := commandToInt(result)
 	mem_usage := (1 - (float32(freeResult) / float32(totalResult))) * 5
-	return whoResult + int(mem_usage)
+	user_percent := float32(whoResult) * .25
+	return int(user_percent) + int(mem_usage)
 }
 
 func commandToInt(result []byte) int {
