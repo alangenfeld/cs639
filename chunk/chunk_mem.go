@@ -238,8 +238,23 @@ func SendHeartbeat(masterAddress string){
 		if err != nil {
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
-		
-		if ret.ChunksToRemove != nil {
+		if ret.Accepted == false {
+			var bArgs sfs.ChunkBirthArgs
+			var bRet sfs.ChunkBirthReturn
+			host,_ := os.Hostname()
+			_,iparray,_ := net.LookupHost(host)
+			tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
+			bArgs.ChunkServerIP = *tcpAddr
+			i := 0
+			for k, _ := range chunkTable {
+				bArgs.ChunkIDs[i] = k
+				i++
+			}
+			err = master.Call("Master.BirthChunk", &bArgs, &bRet)
+			if err != nil {
+				log.Fatal("chunk call error: ", err)
+			}
+		} else if ret.ChunksToRemove != nil {
 			for i := 0; i < ret.ChunksToRemove.Len(); i++ {
 				chunkTable[ret.ChunksToRemove.At(i).(uint64)] = 
 					sfs.Chunk{}, false
