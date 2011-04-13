@@ -247,6 +247,8 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 		info.Accepted = false
 		return nil
 	}
+	
+	info.Accepted = true
 
 	//if somethings changed, update the server, heapify
 	if server.capacity != args.Capacity || args.AddedChunks != nil {
