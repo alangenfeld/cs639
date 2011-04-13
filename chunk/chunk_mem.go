@@ -309,6 +309,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 }
 
 func ServerBusy() bool {
-	return false
-	//return logger.GetLoad() + requestLoad > THRESHOLD
+	//return false
+	log.Println("Chunk: server load index", logger.GetLoad() + requestLoad)
+	return logger.GetLoad() + requestLoad > THRESHOLD
 }
