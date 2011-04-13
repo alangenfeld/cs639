@@ -11,11 +11,11 @@ import (
 const CHUNK_SIZE = 32                 // 32 B
 const HEARTBEAT_WAIT = 3 * 1000000000 // 15 seconds
 const NREPLICAS = 3
-const FAIL = -1;
-const SUCCESS = 0;
-const BUSY = 2;
-const NICE = 1;
-const FORCE = 0;
+const FAIL = -1
+const SUCCESS = 0
+const BUSY = 2
+const NICE = 1
+const FORCE = 0
 
 type Chunk struct {
 	Data [CHUNK_SIZE]byte
@@ -23,7 +23,7 @@ type Chunk struct {
 
 type ReadArgs struct {
 	ChunkID uint64
-	Nice int
+	Nice    int
 }
 
 type ReadReturn struct {
@@ -43,7 +43,7 @@ type ReadDirReturn struct {
 type ChunkBirthArgs struct {
 	ChunkServerIP net.TCPAddr
 	Capacity      uint64
-	ChunkIDs []uint64
+	ChunkIDs      []uint64
 }
 type ChunkBirthReturn struct {
 	ChunkServerID uint64
@@ -68,7 +68,7 @@ type HeartbeatArgs struct {
 
 type HeartbeatReturn struct {
 	ChunksToRemove *vector.Vector
-	Accepted bool
+	Accepted       bool
 }
 
 type DeleteArgs struct {

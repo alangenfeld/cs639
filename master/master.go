@@ -197,8 +197,17 @@ func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.E
 
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
 	s := AddServer(args.ChunkServerIP, args.Capacity)
-
 	go s.monitorServerBeats(heartbeatMonitors[s.id])
+	
+	if args.ChunkIDs != nil {
+		for _, id := range args.ChunkIDs {
+			c, ok := chunks[id]
+			
+			if ok {
+				AssociateChunkAndServer(c, s)
+			}
+		}
+	}	
 
 	info.ChunkServerID = s.id
 
@@ -234,7 +243,8 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 	//find the server who's heart is beating
 	server, servOK := servers[args.ChunkServerID]
 	if servOK == false {
-		log.Printf("BeatHeart: Error server (%s) not in server map\n", str)
+		log.Printf("BeatHeart: Server (%s) not in server map; telling it to rebirth itself a la Madonna\n", str)
+		info.Accepted = false
 		return nil
 	}
 
@@ -550,6 +560,33 @@ func (c *chunk) unmapChunk() (err os.Error){
 	
 	return nil
 }
+
+func (c *chunk) AssociateServer(s *server) os.Error {
+	c.servers.Push(s)
+	return nil
+} 
+
+func (s *server) AssociateChunk(c *chunk) os.Error {
+	s.chunks.Push(c)
+	return nil
+}
+
+func AssociateChunkAndServer(c *chunk, s *server) {
+	err := s.AssociateChunk(c)
+	
+	if err != nil {
+		return err
+	}
+	
+	err = c.AssociateServer(s)
+	
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
 
 func FindMissingChunkReplicas() (ret uint64) {
 	for cID, _ := range chunks {
