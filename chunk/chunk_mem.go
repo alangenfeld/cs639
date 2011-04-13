@@ -45,7 +45,7 @@ func Init(masterAddress string, loggingFlag bool) {
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
-	log.Println(args.ChunkServerIP)
+	log.Println("Chunk: Server addr: ", args.ChunkServerIP)
 	
 	if logging {
 		err := os.Mkdir("log", 0777);
