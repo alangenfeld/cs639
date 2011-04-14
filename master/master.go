@@ -119,7 +119,7 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
-	dirs, files, err := t.ReadDir(strings.TrimRight(args.Prefix, "/")
+	dirs, files, err := t.ReadDir(strings.TrimRight(args.Prefix, "/"))
 	
 	if err != nil {
 		return err
