@@ -47,7 +47,7 @@ func main(){
 	}
 
 	val := children[0]
-	if(val != "b") {
+	if(val != "b/") {
 		panic("wrong child from ReadDir")
 	}
 
