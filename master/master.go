@@ -626,7 +626,7 @@ func DumpTrie(){
 
 func init() {
 	t = trie.NewTrie()
-	t.AddDir("/")
+
 	sHeap = new(serverHeap)
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
@@ -638,6 +638,8 @@ func init() {
 	sHeap.serverChan = make(chan *heapCommand)
 	go sHeap.Handler()
 	go sigHandler()
+
+	t.AddDir("/")
 
 	//missingCh := make(chan uint64)
 
