@@ -13,7 +13,6 @@ import (
 	"rpc"
 	"rand"
 	"math"
-	"strings"
 	"os/signal"
 )
 
