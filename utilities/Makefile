@@ -11,19 +11,19 @@ endif
 
 all: put sfscat get
 
-put: put.$(su) ../client/client
+put: put.$(su) ../client/client.go
 	$(gl) -o put put.$(su)
 
 put.$(su): put.go
 	$(gc) put.go
 
-sfscat: sfscat.$(su) ../client/client
+sfscat: sfscat.$(su) ../client/client.go
 	$(gl) -o sfscat sfscat.$(su)
 
 sfscat.$(su): sfscat.go
 	$(gc) sfscat.go
 
-get: get.$(su) ../client/client
+get: get.$(su) ../client/client.go
 	$(gl) -o get get.$(su)
 
 get.$(su): get.go
