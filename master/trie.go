@@ -133,7 +133,7 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 
 func (p *Trie) QueryFile(path_s string)  (i interface{}, r bool){
 	if len(path_s) == 0 {
-		return os.NewError("Path Length == 0\n")
+		return nil, false
 	}
 	
 	dir, file := path.Split(path_s)
