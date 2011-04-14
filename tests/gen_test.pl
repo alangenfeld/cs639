@@ -18,7 +18,7 @@ sub doOpen {
     if(int(rand(2)) == 0 and (keys %files) > 0) {
 	$fileName = (keys %files)[int(rand(keys %files))];
     } else {
-	$fileName = randStr(10).".txt";
+	$fileName = "/".randStr(10).".txt";
 	$files{$fileName} = '';
     }
 
@@ -47,7 +47,7 @@ if(ret != 0) {
   panic("read failed")
 }
 if(string(buf) != "'.substr($files{$fds{$fd}}, $fdOffsets{$fd}, $length).'") {
-  
+  panic("wrong data returned")
 }
 
 ';
@@ -77,7 +77,7 @@ if(ret != 0) {
     $files{$fds{$fd}} = 
 	substr($files{$fds{$fd}}, 0, $fdOffsets{$fd}) . 
 	$str . 
-	substr($files{$fds{$fd}}, $fdOffsets{$fd} + $length, $fdOffsets{$fd});
+	substr($files{$fds{$fd}}, $fdOffsets{$fd} + $length);
 
     $fdOffsets{$fd} += $length;
     if($fdOffsets{$fd} > length($files{$fds{$fd}})) {
@@ -95,6 +95,7 @@ sub doSeek {
     print '
 ret = client.Seek(fd'.$fd.', '.$offset.', client.SEEK_SET)
 if(ret != '.$offset.') {
+  fmt.Printf("Seek returned %d, but we expected %d\n", ret, '.$offset.')
   panic("seek failed")
 }
 
@@ -122,7 +123,7 @@ if(ret != 0) {
 
 main();
 sub main {
-    my $instCount = 100;
+    my $instCount = 5000;
 
     printPrefix();
 
