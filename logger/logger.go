@@ -82,8 +82,8 @@ func systemStats() {
         result = make([]byte, STATUS_LEN)
         command, err := exec.Run(STATUS_CMD, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
-                 log.Println("chunk fails in command:" + err.String())
-                 log.Fatal("chunk: unable to obtain remote command")
+                log.Println("chunk fails in command:" + err.String())
+                log.Fatal("chunk: unable to obtain remote command")
         }
 	err = nil
 	
@@ -125,9 +125,9 @@ func GetLoad() int {
         args := make([]string, 1)
 	command, err := exec.Run(WHO, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
-                 log.Println("logger fails in command:" + err.String())
-                 log.Fatal("logger: unable to obtain remote command")
-        }
+                log.Println("logger fails in command:" + err.String())
+                log.Fatal("logger: unable to obtain remote command")
+	}
         _,err =command.Stdout.Read(result)
 	if err != nil{
         	log.Println("logger fails read from command: " + err.String())
@@ -137,7 +137,7 @@ func GetLoad() int {
 	command, err = exec.Run(MEM_FREE, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
                  log.Println("logger fails in command:" + err.String())
-                 log.Fatal("logger: unable to obtain remote command")
+                log.Fatal("logger: unable to obtain remote command")
         }
         _,err =command.Stdout.Read(result)
 	if err != nil{
@@ -148,7 +148,7 @@ func GetLoad() int {
 	command, err = exec.Run(MEM_TOTAL, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
                  log.Println("logger fails in command:" + err.String())
-                 log.Fatal("logger: unable to obtain remote command")
+                log.Fatal("logger: unable to obtain remote command")
         }
         _,err =command.Stdout.Read(result)
 	if err != nil{

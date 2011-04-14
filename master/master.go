@@ -141,6 +141,7 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	var files map[string]interface{}
 	var dirs *vector.StringVector
 	var err os.Error
+
 	if args.Prefix[len(args.Prefix)-1] == byte('/') {
 		dirs, files, err = t.ReadDir(args.Prefix[0:len(args.Prefix)-2])
 	} else {
@@ -173,7 +174,11 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	return nil
 }
 
+<<<<<<< HEAD
 func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error {
+=======
+func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn){
+>>>>>>> master
 	err := t.AddDir(args.DirName)
 	
 	return err

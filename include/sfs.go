@@ -39,12 +39,29 @@ type ReadDirReturn struct {
 	FileNames []string
 }
 
+type MakeDirArgs struct {
+	DirName string
+}
+
+type MakeDirReturn struct {
+	Status int
+}
+
+type RemoveDirArgs struct {
+	DirName string
+	Recursive bool
+}
+
+type RemoveDirReturn struct {
+	Status int
+}
 
 type ChunkBirthArgs struct {
 	ChunkServerIP net.TCPAddr
 	Capacity      uint64
 	ChunkIDs      []uint64
 }
+
 type ChunkBirthReturn struct {
 	ChunkServerID uint64
 }
