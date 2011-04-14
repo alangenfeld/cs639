@@ -40,7 +40,9 @@ func Init(masterAddress string, loggingFlag bool) {
 	requestLoad = 0
 	logging = loggingFlag
 
-	args.Capacity = 5
+	capacity = CHUNK_TABLE_SIZE
+	args.Capacity = capacity
+
 	host,_ := os.Hostname()
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
@@ -103,11 +105,18 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 
 func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	requestLoad++
+	ret.Status = sfs.FAIL
 	var id logger.TaskId
+
 	if logging {
 		id = logger.Start("Write")
 	}
 	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
+	if (capacity < 1) {
+		log.Println("chunk: Server Full!")
+		return nil
+	}
+	
 	data,present := chunkTable[args.Info.ChunkID]
 	if !present{
 		addedChunks.Push(args.Info)
@@ -156,6 +165,8 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 			logging = false
 		}
 	}
+
+	ret.Status = sfs.SUCCESS
 	return nil	
 }
 
@@ -259,7 +270,7 @@ func SendHeartbeat(masterAddress string){
 			for i := 0; i < ret.ChunksToRemove.Len(); i++ {
 				chunkTable[ret.ChunksToRemove.At(i).(uint64)] = 
 					sfs.Chunk{}, false
-				capacity--
+				capacity++
 			}
 		}
 		addedChunks.Resize(0, 0)
@@ -304,6 +315,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		}
 		
 		chunkTable[args.ChunkID] = readRet.Data
+		capacity--
 		break
 	}
 	return nil

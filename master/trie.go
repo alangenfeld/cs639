@@ -54,6 +54,7 @@ import (
 	"fmt"
 	"path"
 	"os"
+	"rand"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
@@ -85,10 +86,13 @@ func NewTrie() *Trie {
 }
 
 func (p *Trie) GetDotString() string {
+	rsrc := rand.NewSource(140209)
+	rgen := rand.New(rsrc)
+	
 	outStr := "digraph Trie {"
 	vec := new(vector.StringVector)
 	
-	p.outputDot(vec, 0, 0)
+	p.outputDot(vec, 0, -1, rgen)
 	
 	cnt := vec.Len()
 	for i := 0; i < cnt; i++ {
@@ -98,7 +102,7 @@ func (p *Trie) GetDotString() string {
 	return strings.Join([]string{outStr, "}"}, "\n")
 }
 
-func (p *Trie) outputDot(vec *vector.StringVector, rune int, depth int) {
+func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen *rand.Rand) {
 	this := make([]byte, 10)
 	child := make([]byte, 10)
 
@@ -106,17 +110,27 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, depth int) {
 	
 	thisChar := string(this[0])
 	
-	if depth == 0 {
+	if serial == -1 {
 		thisChar = "root"
 	}
 	
 	
 	for childRune, childNode := range p.children {
 		utf8.EncodeRune(child, childRune)
-		vec.Push(fmt.Sprintf("\t\"%s(%d)\" -> \"%s(%d)\"", thisChar, depth, string(child[0]), depth+1))
-		childNode.outputDot(vec, childRune, depth + 1)
+		childSerial := rgen.Int63()
+		childNodeStr := fmt.Sprintf("\"%s(%d)\"", string(child[0]), childSerial)
+		var notation string
+		
+		if string(child[0]) == "/" {
+			notation = fmt.Sprintf("[label=\"%s\" shape=box color=red]")
+		} else {
+			notation = fmt.Sprintf("[label=\"%s\"]")
+		}
+		vec.Push(fmt.Sprintf("\t%s %s\n\t\"%s(%d)\" -> \"%s(%d)\"", childNodeStr, notation, thisChar, serial, string(child[0]), childSerial))
+		childNode.outputDot(vec, childRune, childSerial, rgen)
 	}
 }
+
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
 func (p *Trie) AddFile(path_s string) os.Error{
 	if len(path_s) == 0 {
