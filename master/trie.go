@@ -53,6 +53,7 @@ import (
 	"sort"
 	"fmt"
 	"path"
+	"os"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
@@ -117,9 +118,9 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, depth int) {
 	}
 }
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
-func (p *Trie) AddFile(path_s string) bool{
+func (p *Trie) AddFile(path_s string) os.Error{
 	if len(path_s) == 0 {
-		return false
+		return os.NewError("Path Length == 0\n")
 	}
 	
 	dir, file := path.Split(path_s)
@@ -127,47 +128,47 @@ func (p *Trie) AddFile(path_s string) bool{
 	// append the runes to the trie
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil{
-		return false
+		return os.NewError("AddFile - Directory Doesn't Exist\n")
 	}
     inode , check := leaf.files[file]
 	if check && inode != "" {
 		//file already exists
-		return false
+		return os.NewError("AddFile - File Already Exist\n")
 	} else {
 		leaf.files[file] = file
 	}
-	return true
+	return nil
 
 
 }
-func (p *Trie) DeleteFile(path_s string) bool{
+func (p *Trie) DeleteFile(path_s string) os.Error{
 	if len(path_s) == 0{
-		return false
+		return os.NewError("Path Length == 0\n")
 	}
 	
 	dir, file := path.Split(path_s)
 	
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil{
-		return false
+		return os.NewError("DeleteFile - Directory Doesn't Exist\n")
 	}
 	inode , check := leaf.files[file]
 	if !check || inode == "" {
 		//file doesn't exist.. (maybe don't return?)
-		return false
+		return os.NewError("DeleteFile - File Doesn't Exist\n")
 	}
 	leaf.files[file] = ""
 	
 	//DELETE INODE IN MASTER???
 	
-	return true
+	return nil
 
 
 
 }
-func (p *Trie) GetFile(path_s string) (inode string, r bool) {
+func (p *Trie) GetFile(path_s string) (inode string, r os.Error) {
 	if len(path_s) == 0 {
-		return "", false
+		return "", os.NewError("Path Length == 0\n")
 	}
 	
 	dir, file := path.Split(path_s)
@@ -175,18 +176,18 @@ func (p *Trie) GetFile(path_s string) (inode string, r bool) {
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil {
 		//bad path_s
-		return "", false
+		return "", os.NewError("GetFile - directory doesn't exist\n")
 	}	
 	inode, check := leaf.files[file]
 	if !check || inode == ""{
 		//bad file name
-		return "", false
+		return "", os.NewError("GetFile - File doesn't exist\n")
 	}
-	return leaf.files[file], true
+	return leaf.files[file], nil
 }
-func (p *Trie) AddDir(path_s string) bool {
+func (p *Trie) AddDir(path_s string) os.Error {
 	if len(path_s) == 0 {
-		return false
+		return os.NewError("Path Length == 0\n")
 	}
 	
 	directory_s, dir_name:= path.Split(path_s)
@@ -195,51 +196,73 @@ func (p *Trie) AddDir(path_s string) bool {
 	leaf_test := p.find(strings.NewReader(path_s))
 	if leaf_test != nil {
 		//dir already exists
-		return false
+		return os.NewError("AddDir - Directory Already Exists")
 	
 	}
 	//create the dir
 	p.addRunes(strings.NewReader(path_s))
 	
-	fmt.Printf("BLAH: %s\n", directory_s)
-	
 	//add dir record to parent dir
 	dir := p.find(strings.NewReader(directory_s))
 	dir.dirs.Push(dir_name)
 
-	return true
+	return nil
 
 }
-func (p *Trie) ReadDir(path_s string) (dirs * vector.Vector, files map[string] string, r bool) {
+func (p *Trie) ReadDir(path_s string) (dirs * vector.Vector, files map[string] string, r os.Error) {
 	if len(path_s) == 0 {
-		return nil, nil, false
+		return nil, nil, os.NewError("Path Length == 0\n")
 	}
 	path_cor := fmt.Sprintf("%s%s", path_s, "/")
 	//CHECK path_s SYNTAX to make sure it ends on a forward slash..
 	leaf := p.find(strings.NewReader(path_cor))
 	if leaf == nil {
 		//bad path_s
-		return nil, nil, false
+		return nil, nil, os.NewError("ReadDir - Dir doesn't exist\n")
 	}
 	if leaf.dirs.Len() == 0 {
-		return nil, nil, false
+		return nil, nil, nil
 	}
 	//TRAVERSE FILES STRUCTURE??
-	return leaf.dirs, leaf.files, true
+	return leaf.dirs, leaf.files, nil
 
 }
-func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
-	movingnode := p.includes(strings.NewReader(oldpath_s))
-	if movingnode == nil {
-		//invalid old path_s
-		return false
+func (p *Trie) RemoveDir(path_s string) os.Error {
+	if len(path_s) == 0 {
+		return os.NewError("Path Length == 0\n")
 	}
-	//new_path_cor := fmt.Sprintf("%s%s", newpath_s, "/")
+	
+	//path_s_cor := fmt.Sprintf("%s%s",path_s, "/")
+	//get the parent directory
+	
+	//remove the dir from the parent
+	parent := p.find(strings.NewReader(path_s))
+	if parent == nil {
+		//error finding directory
+		return os.NewError("RemoveDir - Dir doesn't exist\n")
+	}
+	
+	//remove path from parent
+	parent.children['/'] = nil
+	
+	return nil
+
+
+}
+func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
+	
+	new_path_cor := fmt.Sprintf("%s%s", newpath_s, "/")
 	old_path_cor := fmt.Sprintf("%s%s", oldpath_s, "/")
-	overwrite_check := p.find(strings.NewReader(old_path_cor))
+	overwrite_check := p.find(strings.NewReader(new_path_cor))
 	if overwrite_check != nil {
 		//new path already exists
-		return false
+		return os.NewError("New path already exists\n")
+	}
+	
+	movingnode := p.includes(strings.NewReader(old_path_cor))
+	if movingnode == nil {
+		//invalid old path_s
+		return os.NewError("Invalid old path\n")
 	}
 	//parse new path_s and old to get dir nodes
 	//also get nodes to insert (1 char less than full path_s)
@@ -253,20 +276,17 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 	old_key := oldpath_s[old_length]
 	new_key := newpath_s[new_length]
 	
-	old_parent_s := oldpath_s[:old_length - 1]
-	new_parent_s := newpath_s[:new_length - 1]
-	
 	//get the new parent node, create if necessary
-	newparent := p.addRunes(strings.NewReader(new_parent_s))
-	oldparent := p.find(strings.NewReader(old_parent_s))
+	newparent := p.addRunes(strings.NewReader(newpath_s))
+	oldparent := p.find(strings.NewReader(oldpath_s))
 	if oldparent == nil {
 		//what???
-		return false
+		return os.NewError("Couldn't find old parent node... What the what??\n")
 	}
 	newdir := p.find(strings.NewReader(new_dir_s))
 	if newdir == nil {
 		//what the what??
-		return false
+		return os.NewError("Couldn't find new dir node... What the what??\n")
 	}
 	
 	//uniqueness check in newdir..
@@ -274,7 +294,7 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 	for i := 0 ; i < unq_length ; i++ {
 		if newdir.dirs.At(i).(string) == new_name {
 			//failed uniquness check
-			return false
+			return os.NewError("New Dir failed uniqueness check\n")
 		}
 	}
 	
@@ -282,7 +302,7 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 	olddir := p.find(strings.NewReader(old_dir_s))
 	if olddir == nil {
 		//lies
-		return false
+		return os.NewError("Couldn't find old dir node.. ?!??!\n")
 	}
 	
 	//first add movingnode to new parent
@@ -304,7 +324,7 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 			olddir.dirs.Delete(i)
 		}
 	}
-	return true
+	return nil
 	
 
 }
