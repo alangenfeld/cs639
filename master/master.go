@@ -13,7 +13,6 @@ import (
 	"rpc"
 	"rand"
 	"math"
-	"strings"
 	"os/signal"
 )
 
@@ -71,24 +70,6 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 
 	info.Chunk = make([]sfs.ChunkInfo, file.chunks.Len())
 
-	//for each chunk in the server, make a replication call.
-	for i := 0; i < file.chunks.Len(); i++ {
-		var chunkInfo sfs.ChunkInfo
-		chunk := file.chunks.At(i).(*chunk)
-
-		//populate chunk location vector
-		chunkInfo.Servers = make([]net.TCPAddr, chunk.servers.Len())
-
-		for j := 0; j < chunk.servers.Len(); j++ {
-			chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
-		}
-
-		chunkInfo.ChunkID = chunk.chunkID
-		chunkInfo.Size = chunk.size
-
-		info.Chunk[i] = chunkInfo
-	}
-
 	return err
 }
 
@@ -138,31 +119,33 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
-	strVec := t.AllSubstrings(args.Prefix)
-	
-	log.Printf("ReadDir: strVec -- %+v\n", strVec)
-	
-	cnt := strVec.Len()
-	
-	tmpVec := new(vector.StringVector)
-	
-	for i := 0; i < cnt; i++ {
-		splitStr := strings.Split(strVec.At(i), "/", 2)
-		
-		cnt2 := tmpVec.Len()
-		for j := 0; j < cnt2; j++ {
-			if tmpVec.At(j) == splitStr[0] {
-				goto Dupe
-			}
-		}
-		tmpVec.Push(splitStr[0])
-		Dupe:
+	var files map[string]interface{}
+	var dirs *vector.StringVector
+	var err os.Error
+
+	if args.Prefix[len(args.Prefix)-1] == byte('/') {
+		dirs, files, err = t.ReadDir(args.Prefix[0:len(args.Prefix)-2])
+	} else {
+		dirs, files, err = t.ReadDir(args.Prefix)
 	}
 	
-	cnt3 := tmpVec.Len()
-	retSlice := make([]string, cnt3)
-	for i := 0; i < cnt; i++ {
-		retSlice[i] = tmpVec.At(i)
+	if err != nil {
+		return err
+	}
+	
+	log.Printf("ReadDir: prefix %s\n", args.Prefix)
+	
+	cnt := dirs.Len()
+	retSlice := make([]string, cnt + len(files))
+
+	var i int
+	for i = 0; i < cnt; i++ {
+		retSlice[i] = dirs.At(i) + "/"
+	}
+	
+	for k, _ := range files {
+		retSlice[i] = k
+		i++
 	}
 	
 	ret.FileNames = retSlice
@@ -170,6 +153,12 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	log.Printf("ReadDir: retSlice -- %+v\n", retSlice)
 
 	return nil
+}
+
+func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error {
+	err := t.AddDir(args.DirName)
+	
+	return err
 }
 
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
@@ -403,8 +392,6 @@ func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	}
 
 	newFile = !exists
-	
-	dumpTrie()
 
 	return i, newFile, err
 }
@@ -425,13 +412,12 @@ func AddFile(name string) (i *inode, err os.Error) {
 	t.AddValue(name, i) // trie insert
 	
 	log.Printf("AddFile: %d nodes in trie\n", t.Size())
-	dumpTrie()
 
 	return i, nil
 }
 
 func QueryFile(name string) (i *inode, fileExists bool) {
-	inter, exists := t.GetValue(name)
+	inter, exists := t.QueryFile(name)
 
 	if !exists {
 		log.Printf("QueryFile: file %s does not exist\n", name)
@@ -439,7 +425,6 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	}
 
 	log.Printf("QueryFile: %d nodes in trie\n", t.Size())
-	dumpTrie()
 
 	return inter.(*inode), exists
 }
@@ -464,7 +449,6 @@ func DeleteFile(name string) (err os.Error) {
 	}
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
-	dumpTrie()
 
 	return nil
 }
@@ -617,6 +601,7 @@ func sigHandler() {
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
 			os.Exit(1337)
+			DumpTrie()
 		}
 
 		for s := range servers {
@@ -625,7 +610,7 @@ func sigHandler() {
 	}
 }
 
-func dumpTrie(){
+func DumpTrie(){
 	dump := t.Members()
 	
 	cnt := dump.Len()
