@@ -61,7 +61,7 @@ import (
 type Trie struct {
 	leaf     bool          // whether the node is a leaf (the end of an input string).
 	value    interface{}   // the value associated with the string up to this leaf node.
-	files map[string] * inode
+	files map[string] interface{}
 	dirs  * vector.StringVector
 	children map[int]*Trie // a map if len(s) == 0 {
 }
@@ -79,7 +79,7 @@ func NewTrie() *Trie {
 	t := new(Trie)
 	t.leaf = false
 	t.value = nil
-	t.files = make(map[string] *inode)
+	t.files = make(map[string] interface{})
 	t.dirs = new(vector.StringVector)
 	t.children = make(map[int]*Trie)
 	return t
@@ -132,7 +132,7 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 }
 
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
-func (p *Trie) AddFile(path_s string, i * inode) os.Error{
+func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
@@ -180,7 +180,7 @@ func (p *Trie) DeleteFile(path_s string) os.Error{
 
 
 }
-func (p *Trie) GetFile(path_s string) (i * inode, r os.Error) {
+func (p *Trie) GetFile(path_s string) (i interface{}, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, os.NewError("Path Length == 0\n")
 	}
@@ -223,7 +223,7 @@ func (p *Trie) AddDir(path_s string) os.Error {
 	return nil
 
 }
-func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[string] * inode, r os.Error) {
+func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[string] interface{}, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, nil, os.NewError("Path Length == 0\n")
 	}
