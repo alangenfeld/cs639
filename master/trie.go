@@ -228,6 +228,8 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		return os.NewError("Path Length == 0\n")
 	}
 	
+	path_cor := fmt.Sprintf("%s%s", path_s, "/")
+	
 	directory_s, dir_name:= path.Split(path_s)
 	
 	//check to make sure the dir doesn't already exist
@@ -238,7 +240,7 @@ func (p *Trie) AddDir(path_s string) os.Error {
 	
 	}
 	//create the dir
-	p.addRunes(strings.NewReader(path_s))
+	p.addRunes(strings.NewReader(path_cor))
 	
 	//add dir record to parent dir
 	dir := p.find(strings.NewReader(directory_s))
