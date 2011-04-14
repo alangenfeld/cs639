@@ -46,6 +46,14 @@ func Initialize(masterAddr string){
 	master = masterAddr
 }
 
+func dialServer(address string) (*rpc.Client, os.Error){
+	server,err := rpc.Dial("tcp", address)
+	if(err != nil){
+		log.Printf("Client: Dial Error to %s - %s", address, err.String())
+	}
+	return server,err
+}
+
 func Open(filename string , flag int ) (int){
 	log.Printf("Client: opening %s!!\n", filename)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
@@ -111,19 +119,21 @@ func Open(filename string , flag int ) (int){
 
 /* read */
 func Read (fd int, size int) ([]byte, int ){
-	//goes to chunk and gets a chunk of memory to read...
+	
 	log.Printf("Client: **********READ BEGIN***********\n");
 	fileInfo := new (sfs.ReadReturn)
 	fileArgs := new (sfs.ReadArgs)
-	nameAndPointer, inMap :=  openDescriptors[fd]
+	nameAndPointer, present :=  openDescriptors[fd]
 	var entireRead []byte
-	if !inMap {
+
+	if !present {
 		log.Printf("Client: fd does not exist\n");
-		return entireRead, FAIL
+		return entireRead, sfs.FAIL
 	}
+
 	filename := nameAndPointer.name
 	filePtr := nameAndPointer.filePtr
-	fdFile, inMap := openFiles[filename]
+	fdFile, present := openFiles[filename]
 
 	if((nameAndPointer.permissions & O_RDONLY) != O_RDONLY){ //check if file was opened with Read permissions
 		log.Printf("Client: Cannot read without read permissions\n")
@@ -136,7 +146,7 @@ func Read (fd int, size int) ([]byte, int ){
 	}else {
 		entireRead = make([]byte,size)
 	}
-	if !inMap {
+	if !present {
 		log.Printf("Client: File not in open list!\n")
 		return entireRead, FAIL
 	}
@@ -157,50 +167,65 @@ func Read (fd int, size int) ([]byte, int ){
 		endChunk = int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE)))
 		log.Printf("Client: file was smaller than read size")
 	}
-	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
-	log.Printf("Client: I = %d\n", i)
-		if (len(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers) < 1) {
-			log.Fatal("Client: No servers listed")
-		}
 
+
+
+	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
+		
 		chunkServerMirrors := fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers
-		client,err :=rpc.Dial("tcp",chunkServerMirrors[0].String())
-		if err != nil{
-			for i:=1; i<len(chunkServerMirrors);i++{
-				client,err = rpc.Dial("tcp",chunkServerMirrors[i].String())
-				if err == nil{
-					break
-				}
-			}
-			if err != nil {
+		numChunkServers := len(chunkServerMirrors)
+		
+		if (numChunkServers < 1) {
 				log.Printf("Client: Dial Failed in Read")
 				return entireRead, FAIL
-			}
 		}
-		fileArgs.ChunkID= fdFile.chunkInfo.At(i).(sfs.ChunkInfo).ChunkID;
-		if fileArgs.ChunkID == 0 {
-			log.Printf("Client: ChunkID = 0, this shouldn't happen")
-		}
-		chunkCall := client.Go("Server.Read", &fileArgs,&fileInfo, nil);
-		replyCall:= <-chunkCall.Done
+		
+		fileArgs.Nice = 1 //default to reading "nicely"
 
+		for j:=0; j < (numChunkServers*2); j++ {
 
-		if replyCall.Error!=nil{
-			log.Printf("Client: error in reply from rpc in read\n");
-			return entireRead, FAIL
-		}
-		if(fileInfo.Status!=0){
-			log.Printf("Client: CHUNK RETURNED BAD STATUS = %d\n",fileInfo.Status);
-			break;
-		}
-		log.Printf("Client: data returned %v", fileInfo.Data.Data)
-		for j:=0; j<sfs.CHUNK_SIZE ; j++{
-			if (index< endIndex && index>= startIndex ) {
-				entireRead[index-startIndex] = fileInfo.Data.Data[j];
+			if(j >= numChunkServers) {//if we have tried all servers "nicely", start forcing reads
+				fileArgs.Nice = 0
 			}
-			index++;
+
+			client,err := dialServer(chunkServerMirrors[j % numChunkServers].String())
+			
+			if err != nil{
+				continue
+			}
+
+			fileArgs.ChunkID= fdFile.chunkInfo.At(i).(sfs.ChunkInfo).ChunkID;
+			if fileArgs.ChunkID == 0 {
+				log.Printf("Client: ChunkID = 0, this shouldn't happen")
+			}
+			err = client.Call("Server.Read", &fileArgs, &fileInfo);
+
+			if err!=nil{
+				log.Printf("Client: error reading from Chunk Server - %s\n",chunkServerMirrors[j % numChunkServers].String());
+				continue
+			}
+
+			if(fileInfo.Status == sfs.SUCCESS){
+				for k:=0; k<sfs.CHUNK_SIZE ; k++{
+					if (index< endIndex && index>= startIndex ) {
+						entireRead[index-startIndex] = fileInfo.Data.Data[k];
+					}
+					index++;
+				}
+
+				break //successfully read chunk.
+			}
+
+			log.Printf("Client: Chunk returned status %d\n",fileInfo.Status);
+
 		}
+
+		if fileInfo.Status != sfs.SUCCESS { //case where chunk was never read successfully. 
+			return entireRead, fileInfo.Status //return early b/c we failed to read chunk
+		}
+
 	}
+
 	openDescriptors[fd].filePtr += uint64(size)
 	if openDescriptors[fd].filePtr > fdFile.size {
 		openDescriptors[fd].filePtr	=openFiles[filename].size
