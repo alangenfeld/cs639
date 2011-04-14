@@ -61,8 +61,8 @@ import (
 type Trie struct {
 	leaf     bool          // whether the node is a leaf (the end of an input string).
 	value    interface{}   // the value associated with the string up to this leaf node.
-	files map[string] string
-	dirs  * vector.Vector
+	files map[string] * inode
+	dirs  * vector.StringVector
 	children map[int]*Trie // a map if len(s) == 0 {
 }
 
@@ -79,8 +79,8 @@ func NewTrie() *Trie {
 	t := new(Trie)
 	t.leaf = false
 	t.value = nil
-	t.files = make(map[string]string)
-	t.dirs = new(vector.Vector)
+	t.files = make(map[string] *inode)
+	t.dirs = new(vector.StringVector)
 	t.children = make(map[int]*Trie)
 	return t
 }
@@ -132,7 +132,7 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 }
 
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
-func (p *Trie) AddFile(path_s string) os.Error{
+func (p *Trie) AddFile(path_s string, i * inode) os.Error{
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
@@ -145,11 +145,11 @@ func (p *Trie) AddFile(path_s string) os.Error{
 		return os.NewError("AddFile - Directory Doesn't Exist\n")
 	}
     inode , check := leaf.files[file]
-	if check && inode != "" {
+	if check && inode != nil {
 		//file already exists
 		return os.NewError("AddFile - File Already Exist\n")
 	} else {
-		leaf.files[file] = file
+		leaf.files[file] = i
 	}
 	return nil
 
@@ -166,12 +166,12 @@ func (p *Trie) DeleteFile(path_s string) os.Error{
 	if leaf == nil{
 		return os.NewError("DeleteFile - Directory Doesn't Exist\n")
 	}
-	inode , check := leaf.files[file]
-	if !check || inode == "" {
+	i, check := leaf.files[file]
+	if !check || i == nil {
 		//file doesn't exist.. (maybe don't return?)
 		return os.NewError("DeleteFile - File Doesn't Exist\n")
 	}
-	leaf.files[file] = ""
+	leaf.files[file] = nil
 	
 	//DELETE INODE IN MASTER???
 	
@@ -180,9 +180,9 @@ func (p *Trie) DeleteFile(path_s string) os.Error{
 
 
 }
-func (p *Trie) GetFile(path_s string) (inode string, r os.Error) {
+func (p *Trie) GetFile(path_s string) (i * inode, r os.Error) {
 	if len(path_s) == 0 {
-		return "", os.NewError("Path Length == 0\n")
+		return nil, os.NewError("Path Length == 0\n")
 	}
 	
 	dir, file := path.Split(path_s)
@@ -190,12 +190,12 @@ func (p *Trie) GetFile(path_s string) (inode string, r os.Error) {
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil {
 		//bad path_s
-		return "", os.NewError("GetFile - directory doesn't exist\n")
+		return nil, os.NewError("GetFile - directory doesn't exist\n")
 	}	
-	inode, check := leaf.files[file]
-	if !check || inode == ""{
+	i, check := leaf.files[file]
+	if !check || i == nil{
 		//bad file name
-		return "", os.NewError("GetFile - File doesn't exist\n")
+		return nil, os.NewError("GetFile - File doesn't exist\n")
 	}
 	return leaf.files[file], nil
 }
@@ -223,7 +223,7 @@ func (p *Trie) AddDir(path_s string) os.Error {
 	return nil
 
 }
-func (p *Trie) ReadDir(path_s string) (dirs * vector.Vector, files map[string] string, r os.Error) {
+func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[string] * inode, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, nil, os.NewError("Path Length == 0\n")
 	}
@@ -306,7 +306,7 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 	//uniqueness check in newdir..
 	unq_length := newdir.dirs.Len()
 	for i := 0 ; i < unq_length ; i++ {
-		if newdir.dirs.At(i).(string) == new_name {
+		if newdir.dirs.At(i) == new_name {
 			//failed uniquness check
 			return os.NewError("New Dir failed uniqueness check\n")
 		}
@@ -334,7 +334,7 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 	//then remove it from the old directory (expensive)
 	remove_length := olddir.dirs.Len()
 	for i := 0 ; i < remove_length ; i++ {
-		if olddir.dirs.At(i).(string) == old_name {
+		if olddir.dirs.At(i) == old_name {
 			olddir.dirs.Delete(i)
 		}
 	}
