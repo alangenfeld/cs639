@@ -131,6 +131,30 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 	}
 }
 
+func (p *Trie) QueryFile(path_s string) bool{
+	if len(path_s) == 0 {
+		return os.NewError("Path Length == 0\n")
+	}
+	
+	dir, file := path.Split(path_s)
+	
+	// append the runes to the trie
+	leaf := p.find(strings.NewReader(dir))
+	if leaf == nil{
+		return os.NewError("AddFile - Directory Doesn't Exist\n")
+	}
+
+	i , check := leaf.files[file]
+	if check && inode != nil {
+		//file already exists
+		return true
+	}
+	
+	return false
+
+}
+
+
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
 func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	if len(path_s) == 0 {
@@ -144,8 +168,8 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	if leaf == nil{
 		return os.NewError("AddFile - Directory Doesn't Exist\n")
 	}
-    inode , check := leaf.files[file]
-	if check && inode != nil {
+    i , check := leaf.files[file]
+	if check && i != nil {
 		//file already exists
 		return os.NewError("AddFile - File Already Exist\n")
 	} else {
