@@ -70,24 +70,6 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 
 	info.Chunk = make([]sfs.ChunkInfo, file.chunks.Len())
 
-	//for each chunk in the server, make a replication call.
-	for i := 0; i < file.chunks.Len(); i++ {
-		var chunkInfo sfs.ChunkInfo
-		chunk := file.chunks.At(i).(*chunk)
-
-		//populate chunk location vector
-		chunkInfo.Servers = make([]net.TCPAddr, chunk.servers.Len())
-
-		for j := 0; j < chunk.servers.Len(); j++ {
-			chunkInfo.Servers[j] = chunk.servers.At(j).(*server).addr
-		}
-
-		chunkInfo.ChunkID = chunk.chunkID
-		chunkInfo.Size = chunk.size
-
-		info.Chunk[i] = chunkInfo
-	}
-
 	return err
 }
 
@@ -410,8 +392,6 @@ func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	}
 
 	newFile = !exists
-	
-	dumpTrie()
 
 	return i, newFile, err
 }
@@ -432,13 +412,12 @@ func AddFile(name string) (i *inode, err os.Error) {
 	t.AddValue(name, i) // trie insert
 	
 	log.Printf("AddFile: %d nodes in trie\n", t.Size())
-	dumpTrie()
 
 	return i, nil
 }
 
 func QueryFile(name string) (i *inode, fileExists bool) {
-	inter, exists := t.GetValue(name)
+	inter, exists := t.QueryFile(name)
 
 	if !exists {
 		log.Printf("QueryFile: file %s does not exist\n", name)
@@ -446,7 +425,6 @@ func QueryFile(name string) (i *inode, fileExists bool) {
 	}
 
 	log.Printf("QueryFile: %d nodes in trie\n", t.Size())
-	dumpTrie()
 
 	return inter.(*inode), exists
 }
@@ -471,7 +449,6 @@ func DeleteFile(name string) (err os.Error) {
 	}
 
 	log.Printf("DeleteFile: %d nodes in trie\n", t.Size())
-	dumpTrie()
 
 	return nil
 }
@@ -624,6 +601,7 @@ func sigHandler() {
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
 			os.Exit(1337)
+			DumpTrie()
 		}
 
 		for s := range servers {
@@ -632,7 +610,7 @@ func sigHandler() {
 	}
 }
 
-func dumpTrie(){
+func DumpTrie(){
 	dump := t.Members()
 	
 	cnt := dump.Len()
