@@ -30,7 +30,7 @@ func main(){
 	client.Initialize(*master)
 
 	//create file
-	fd := client.Open("newfile.txt", client.O_RDWR|client.O_CREATE)
+	fd := client.Open("/newfile.txt", client.O_RDWR|client.O_CREATE)
 	if(fd < 0) {
 		panic("could not create new file")
 	}
@@ -41,11 +41,11 @@ func main(){
 	}
 
 
-	if(client.Delete("newfile.txt") != 0) {
+	if(client.Delete("/newfile.txt") != 0) {
 		panic("Delete failed")
 	}
 
-	fd = client.Open("newfile.txt", client.O_RDWR)
+	fd = client.Open("/newfile.txt", client.O_RDWR)
 	if(fd != -1) {
 		panic("open succeeded on deleted file")
 	}

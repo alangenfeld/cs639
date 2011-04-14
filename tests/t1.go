@@ -14,7 +14,7 @@ func main(){
 
 	client.Initialize(*master)
 
-	fd := client.Open("newfile.txt", client.O_WRONLY|client.O_CREATE)
+	fd := client.Open("/newfile.txt", client.O_WRONLY|client.O_CREATE)
 	if(fd < 0) {
 		panic("open failed")
 	}

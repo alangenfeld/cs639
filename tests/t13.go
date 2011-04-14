@@ -29,7 +29,7 @@ func main(){
 	client.Initialize(*master)
 
 	//create file
-	fd := client.Open("newfile.txt", client.O_WRONLY|client.O_CREATE)
+	fd := client.Open("/newfile.txt", client.O_WRONLY|client.O_CREATE)
 	if(fd < 0) {
 		panic("could not create new file")
 	}
@@ -51,7 +51,7 @@ func main(){
 	//READ THE FILE
 
 	//open file
-	fd = client.Open("newfile.txt", client.O_RDONLY)
+	fd = client.Open("/newfile.txt", client.O_RDONLY)
 	if(fd < 0) {
 		panic("could not open file")
 	}
