@@ -131,9 +131,9 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 	}
 }
 
-func (p *Trie) QueryFile(path_s string) bool{
+func (p *Trie) QueryFile(path_s string)  (i interface{}, r bool){
 	if len(path_s) == 0 {
-		return os.NewError("Path Length == 0\n")
+		return nil, false
 	}
 	
 	dir, file := path.Split(path_s)
@@ -141,16 +141,16 @@ func (p *Trie) QueryFile(path_s string) bool{
 	// append the runes to the trie
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil{
-		return os.NewError("AddFile - Directory Doesn't Exist\n")
+		return nil, false
 	}
 
 	i , check := leaf.files[file]
-	if check && inode != nil {
+	if check && i != nil {
 		//file already exists
-		return true
+		return i, true
 	}
 	
-	return false
+	return nil, false
 
 }
 
