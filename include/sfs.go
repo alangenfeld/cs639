@@ -47,16 +47,6 @@ type MakeDirReturn struct {
 	Status int
 }
 
-
-
-type RemoveDirArgs struct {
-	DirName string
-}
-
-type RemoveDirReturn struct {
-	Status int
-}
-
 type RemoveDirArgs struct {
 	DirName string
 	Recursive bool

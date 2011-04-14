@@ -409,7 +409,7 @@ func AddFile(name string) (i *inode, err os.Error) {
 
 	//i.AddChunk()
 
-	err := t.AddFile(name, i) // trie insert
+	err = t.AddFile(name, i) // trie insert
 	
 	if err != nil {
 		return nil, err
