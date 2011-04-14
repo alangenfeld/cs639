@@ -40,7 +40,9 @@ func Init(masterAddress string, loggingFlag bool) {
 	requestLoad = 0
 	logging = loggingFlag
 
-	args.Capacity = CHUNK_TABLE_SIZE
+	capacity = CHUNK_TABLE_SIZE
+	args.Capacity = capacity
+
 	host,_ := os.Hostname()
 	_,iparray,_ := net.LookupHost(host)
 	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
