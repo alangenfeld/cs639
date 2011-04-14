@@ -138,31 +138,28 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
-	strVec := t.AllSubstrings(args.Prefix)
-	
-	log.Printf("ReadDir: strVec -- %+v\n", strVec)
-	
-	cnt := strVec.Len()
-	
-	tmpVec := new(vector.StringVector)
-	
-	for i := 0; i < cnt; i++ {
-		splitStr := strings.Split(strVec.At(i), "/", 2)
-		
-		cnt2 := tmpVec.Len()
-		for j := 0; j < cnt2; j++ {
-			if tmpVec.At(j) == splitStr[0] {
-				goto Dupe
-			}
-		}
-		tmpVec.Push(splitStr[0])
-		Dupe:
+	var files map[string]*inode
+	var dirs *vector.StringVector
+	if args.Prefix[len(args.Prefix)-1] == "/" {
+		dirs, files, err = t.ReadDir(args.Prefix[0:len(args.Prefix)-2])
+	} else {
+		dirs, files, err = t.ReadDir(args.Prefix)
 	}
 	
-	cnt3 := tmpVec.Len()
-	retSlice := make([]string, cnt3)
-	for i := 0; i < cnt; i++ {
-		retSlice[i] = tmpVec.At(i)
+	
+	log.Printf("ReadDir: prefix %s\n", args.Prefix)
+	
+	cnt := dirs.Len()
+	retSlice := make([]string, cnt + len(files))
+
+	var i int
+	for i = 0; i < cnt; i++ {
+		retSlice[i] = dirs.At(i) + "/"
+	}
+	
+	for k, _ := range files {
+		retSlice[i] = k
+		i++
 	}
 	
 	ret.FileNames = retSlice
