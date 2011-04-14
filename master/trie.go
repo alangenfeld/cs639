@@ -53,6 +53,7 @@ import (
 	"sort"
 	"fmt"
 	"path"
+	"rand"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
