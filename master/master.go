@@ -174,7 +174,9 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 }
 
 func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn){
-	return nil
+	err := t.AddDir(args.DirName)
+	
+	return err
 }
 
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
