@@ -232,8 +232,6 @@ sub main {
 	    $outputDir = "output$i";
 	    @testArr = @testGroup;
 	    $mumbleBase += ($chunkCount+1)*$i;
-	    print "\n\nGROUP: ".join(',',@testArr)."\n";
-	    print "\n\nMUMBLE BASE: $mumbleBase\n";
 	    last; #run this division
 	} #else
 
@@ -267,7 +265,7 @@ sub main {
 
 		my $rate = int(100 * $passCount / ($passCount + $failCount)) . '%';
 		print "\n\nPass=$passCount, Fail=$failCount, Rate=$rate\n";
-		if($passCount+$failCount > 1) {
+		if($passCount+$failCount >= 1) {
 		    if($failCount == 0) {
 			print "T-shirt time!";
 		    } else {

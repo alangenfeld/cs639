@@ -122,9 +122,9 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 		var notation string
 		
 		if string(child[0]) == "/" {
-			notation = fmt.Sprintf("[label=\"%s\" shape=box color=red]")
+			notation = fmt.Sprintf("[label=\"%s\" shape=box color=red]", string(child[0]))
 		} else {
-			notation = fmt.Sprintf("[label=\"%s\"]")
+			notation = fmt.Sprintf("[label=\"%s\"]", string(child[0]))
 		}
 		vec.Push(fmt.Sprintf("\t%s %s\n\t\"%s(%d)\" -> \"%s(%d)\"", childNodeStr, notation, thisChar, serial, string(child[0]), childSerial))
 		childNode.outputDot(vec, childRune, childSerial, rgen)
