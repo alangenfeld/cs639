@@ -27,6 +27,7 @@ func main() {
 		chunk.Init(masterAddress, false)
 	}
 	go chunk.SendHeartbeat(masterAddress)
+
 	rpc.Register(chunkServ)
 	
 	log.Println("chunk: Server Online.")
