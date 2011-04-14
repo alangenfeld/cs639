@@ -35,7 +35,7 @@ func main(){
 
 
 	//test O_RDWR
-	fd := client.Open("newfile.txt", client.O_RDWR|client.O_CREATE)
+	fd := client.Open("/newfile.txt", client.O_RDWR|client.O_CREATE)
 	if(fd < 0) {
 		panic("could not create new file")
 	}
@@ -71,7 +71,7 @@ func main(){
 
 
 	//test O_RDONLY
-	fd = client.Open("newfile.txt", client.O_RDONLY)
+	fd = client.Open("/newfile.txt", client.O_RDONLY)
 	if(fd < 0) {
 		panic("could not open file")
 	}
@@ -115,7 +115,7 @@ func main(){
 
 
 	//test O_WRONLY
-	fd = client.Open("newfile.txt", client.O_WRONLY)
+	fd = client.Open("/newfile.txt", client.O_WRONLY)
 	if(fd < 0) {
 		panic("could not open file")
 	}

@@ -26,6 +26,13 @@ func main(){
 
 	client.Initialize(*master)
 
+	if(client.MakeDir("/a") != 0) {
+		panic("make dir failed")
+	}
+	if(client.MakeDir("/a/b") != 0) {
+		panic("make dir failed")
+	}
+
 	createPath("/a/b/c1")
 	createPath("/a/b/c2")
 	createPath("/a/b/c3")

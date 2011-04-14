@@ -29,7 +29,7 @@ func main(){
 	client.Initialize(*master)
 
 	//create file
-	fd := client.Open("newfile.txt", client.O_RDWR|client.O_CREATE)
+	fd := client.Open("/newfile.txt", client.O_RDWR|client.O_CREATE)
 	if(fd < 0) {
 		panic("could not create new file")
 	}
