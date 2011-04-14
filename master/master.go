@@ -174,11 +174,7 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	return nil
 }
 
-<<<<<<< HEAD
 func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error {
-=======
-func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn){
->>>>>>> master
 	err := t.AddDir(args.DirName)
 	
 	return err
