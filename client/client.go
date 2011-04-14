@@ -57,6 +57,7 @@ func dialServer(address string) (*rpc.Client, os.Error){
 func Open(filename string , flag int ) (int){
 	log.Printf("Client: opening %s!!\n", filename)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
+	defer client.Close()
 	if err != nil{
 		log.Printf("Client: Dial Error %s", err.String());
 		return FAIL
@@ -114,6 +115,7 @@ func Open(filename string , flag int ) (int){
 		}
 		return fd;
 	}
+	
 	return FAIL
 }
 
@@ -189,6 +191,7 @@ func Read (fd int, size int) ([]byte, int ){
 			}
 
 			client,err := dialServer(chunkServerMirrors[j % numChunkServers].String())
+			defer client.Close()
 			
 			if err != nil{
 				continue
@@ -272,6 +275,7 @@ func Write (fd int, data []byte) (int){
 		fileArgsRead := new (sfs.ReadArgs)
 		fileInfoRead := new (sfs.ReadReturn)
 		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
+		defer client.Close()
 		if err != nil{
 			log.Printf("Client: Dial Failed in Write 1")
 			return FAIL
@@ -304,6 +308,7 @@ func Write (fd int, data []byte) (int){
 				fileArgsRead := new (sfs.ReadArgs)
 				fileInfoRead := new (sfs.ReadReturn)
 				client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
+				defer client.Close()
 				if err != nil{
 					log.Printf("Client: Dial Failed in Write 2")
 					return FAIL
@@ -344,6 +349,7 @@ func Write (fd int, data []byte) (int){
 			}
 			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
 			client,err  := rpc.Dial("tcp",servers[0].String())
+			defer client.Close()
 			if err != nil {
 				for j:=1 ; j<len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers) ; j++ {
 					client,err  = rpc.Dial("tcp",servers[j].String())
@@ -361,7 +367,7 @@ func Write (fd int, data []byte) (int){
 
 			err = client.Call("Server.Write", &fileArgs,&fileInfo);
 			if err != nil{
-				log.Fatal("Client: error in reply from rpc in write\n");
+				log.Printf("Client: error in reply from rpc in write %s\n", err.String());
 			}
 			if(fileInfo.Status!=0){
 				log.Fatal("Client: Status non zero =",fileInfo.Status)
@@ -379,7 +385,7 @@ func Write (fd int, data []byte) (int){
 			}
 			err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
 			if err != nil{
-				log.Fatal("Client: error in reply from rpc in write\n");
+				log.Printf("Client: error in reply from rpc in write %s\n", err.String());
 			}
 
 			chunkOffset++;
@@ -430,6 +436,7 @@ func Delete(filename string) (int){
 
 
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
+	defer client.Close()
 
 	if err != nil{
 		log.Printf("Client: Dial Error %s", err.String());
@@ -470,6 +477,7 @@ func ReadDir(path string) ([]string, int){
 	readDirArgs := new (sfs.ReadDirArgs)
 	readDirRet := new (sfs.ReadDirReturn)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
+	defer client.Close()
 	if err != nil{
 		log.Printf("Client: Dial Error %s", err.String());
 		return readDirRet.FileNames,  FAIL
@@ -529,6 +537,54 @@ func printByteSlice(toPrint []byte){
 
 	log.Printf(st)
 }
+
+func MakeDir(path string) (int) {
+
+	var args sfs.MakeDirArgs
+	var returnVal sfs.MakeDirReturn
+
+	args.DirName = path
+
+	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	if(err != nil){
+		log.Printf("Error Dialing Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+
+	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
+	if(err != nil){
+		log.Printf("Error Calling Master(MakeDir):", err.String())
+		os.Exit(1)
+	}
+
+	return returnVal.Status
+
+}
+
+
+func RemoveDir(path string) (int) {
+
+	var args sfs.RemoveDirArgs
+	var returnVal sfs.RemoveDirReturn
+
+	args.DirName = path
+
+	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	if(err != nil){
+		log.Printf("Error Dialing Master(AddChunks):", err.String())
+		os.Exit(1)
+	}
+
+	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
+	if(err != nil){
+		log.Printf("Error Calling Master(MakeDir):", err.String())
+		os.Exit(1)
+	}
+
+	return returnVal.Status
+
+}
+
 
 func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
