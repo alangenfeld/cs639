@@ -626,6 +626,7 @@ func DumpTrie(){
 
 func init() {
 	t = trie.NewTrie()
+	t.AddDir("/")
 	sHeap = new(serverHeap)
 	sHeap.vec = new(vector.Vector)
 	chunks = make(map[uint64](*chunk))
