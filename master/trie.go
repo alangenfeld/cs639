@@ -52,7 +52,6 @@ import (
 	"utf8"
 	"sort"
 	"fmt"
-	"strconv"
 	"path"
 )
 
@@ -126,7 +125,7 @@ func (p *Trie) AddFile(path_s string) bool{
 	dir, file := path.Split(path_s)
 	
 	// append the runes to the trie
-	leaf := p.includes(strings.NewReader(dir))
+	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil{
 		return false
 	}
@@ -148,7 +147,7 @@ func (p *Trie) DeleteFile(path_s string) bool{
 	
 	dir, file := path.Split(path_s)
 	
-	leaf := p.includes(strings.NewReader(dir))
+	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil{
 		return false
 	}
@@ -173,7 +172,7 @@ func (p *Trie) GetFile(path_s string) (inode string, r bool) {
 	
 	dir, file := path.Split(path_s)
 	
-	leaf := p.includes(strings.NewReader(dir))
+	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil {
 		//bad path_s
 		return "", false
@@ -193,7 +192,7 @@ func (p *Trie) AddDir(path_s string) bool {
 	directory_s, dir_name:= path.Split(path_s)
 	
 	//check to make sure the dir doesn't already exist
-	leaf_test := p.includes(strings.NewReader(path_s))
+	leaf_test := p.find(strings.NewReader(path_s))
 	if leaf_test != nil {
 		//dir already exists
 		return false
@@ -202,13 +201,10 @@ func (p *Trie) AddDir(path_s string) bool {
 	//create the dir
 	p.addRunes(strings.NewReader(path_s))
 	
-	fmt.Printf("%s\n", directory_s)
+	fmt.Printf("BLAH: %s\n", directory_s)
 	
 	//add dir record to parent dir
-	dir := p.includes(strings.NewReader(directory_s))
-	if dir == nil {
-		return false
-	}
+	dir := p.find(strings.NewReader(directory_s))
 	dir.dirs.Push(dir_name)
 
 	return true
@@ -220,7 +216,7 @@ func (p *Trie) ReadDir(path_s string) (dirs * vector.Vector, files map[string] s
 	}
 	path_cor := fmt.Sprintf("%s%s", path_s, "/")
 	//CHECK path_s SYNTAX to make sure it ends on a forward slash..
-	leaf := p.includes(strings.NewReader(path_cor))
+	leaf := p.find(strings.NewReader(path_cor))
 	if leaf == nil {
 		//bad path_s
 		return nil, nil, false
@@ -238,32 +234,44 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 		//invalid old path_s
 		return false
 	}
+	//new_path_cor := fmt.Sprintf("%s%s", newpath_s, "/")
+	old_path_cor := fmt.Sprintf("%s%s", oldpath_s, "/")
+	overwrite_check := p.find(strings.NewReader(old_path_cor))
+	if overwrite_check != nil {
+		//new path already exists
+		return false
+	}
 	//parse new path_s and old to get dir nodes
 	//also get nodes to insert (1 char less than full path_s)
 	//and the name keys of the new and old nodes..
-	new_dir_s := newpath_s //parse..
-	old_dir_s := oldpath_s //parse..
-	new_parent_s := newpath_s //parse..
-	old_parent_s := oldpath_s //parse..
-	old_key := oldpath_s //parse..
-	new_key := newpath_s //parse..
-	old_name := oldpath_s //parse..
-	new_name := newpath_s //parse..
+	new_dir_s, new_name := path.Split(newpath_s)
+	old_dir_s, old_name := path.Split(oldpath_s)
+	
+	new_length := len(newpath_s)
+	old_length := len(oldpath_s)
+	
+	old_key := oldpath_s[old_length]
+	new_key := newpath_s[new_length]
+	
+	old_parent_s := oldpath_s[:old_length - 1]
+	new_parent_s := newpath_s[:new_length - 1]
+	
+	//get the new parent node, create if necessary
 	newparent := p.addRunes(strings.NewReader(new_parent_s))
-	oldparent := p.includes(strings.NewReader(old_parent_s))
+	oldparent := p.find(strings.NewReader(old_parent_s))
 	if oldparent == nil {
 		//what???
 		return false
 	}
-	newdir := p.includes(strings.NewReader(new_dir_s))
+	newdir := p.find(strings.NewReader(new_dir_s))
 	if newdir == nil {
 		//what the what??
 		return false
 	}
 	
 	//uniqueness check in newdir..
-	new_length := newdir.dirs.Len()
-	for i := 0 ; i < new_length ; i++ {
+	unq_length := newdir.dirs.Len()
+	for i := 0 ; i < unq_length ; i++ {
 		if newdir.dirs.At(i).(string) == new_name {
 			//failed uniquness check
 			return false
@@ -271,22 +279,20 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 	}
 	
 	
-	olddir := p.includes(strings.NewReader(old_dir_s))
+	olddir := p.find(strings.NewReader(old_dir_s))
 	if olddir == nil {
 		//lies
 		return false
 	}
 	
 	//first add movingnode to new parent
-	key1,_ := strconv.Atoi(new_key)
-	newparent.children[key1] = movingnode
+	newparent.children[new_key] = movingnode
 	
 	//then add it to the new directory
 	newdir.dirs.Push(new_name)
 	
 	//then remove it from the old parent
-	key2,_ := strconv.Atoi(old_key)
-	oldparent.children[key2] = nil
+	oldparent.children[old_key] = nil
 	if(oldparent.dirs.Len() == 0){
 		oldparent.leaf = true
 	}
@@ -371,6 +377,27 @@ func (p *Trie) Remove(s string) bool {
 	// remove the runes, returning the final result
 	return p.removeRunes(strings.NewReader(s))
 }
+
+func (p *Trie) find(r *strings.Reader) *Trie {
+	rune, _, err := r.ReadRune()
+	if err != nil {
+		//if p.leaf {
+			return p
+		//}
+		//return nil
+	}
+
+	child, ok := p.children[rune]
+	if !ok {
+		return nil // no node for this rune was in the trie
+	}
+
+	// recurse down to the next node with the remainder of the string
+	return child.includes(r)
+}
+
+
+
 
 // Internal string inclusion function.
 func (p *Trie) includes(r *strings.Reader) *Trie {
