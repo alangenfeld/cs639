@@ -138,14 +138,18 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
-	var files map[string]*inode
+	var files map[string]interface{}
 	var dirs *vector.StringVector
-	if args.Prefix[len(args.Prefix)-1] == "/" {
+	var err os.Error
+	if args.Prefix[len(args.Prefix)-1] == byte('/') {
 		dirs, files, err = t.ReadDir(args.Prefix[0:len(args.Prefix)-2])
 	} else {
 		dirs, files, err = t.ReadDir(args.Prefix)
 	}
 	
+	if err != nil {
+		return err
+	}
 	
 	log.Printf("ReadDir: prefix %s\n", args.Prefix)
 	
@@ -167,6 +171,12 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	log.Printf("ReadDir: retSlice -- %+v\n", retSlice)
 
 	return nil
+}
+
+func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error {
+	err := t.AddDir(args.DirName)
+	
+	return err
 }
 
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
