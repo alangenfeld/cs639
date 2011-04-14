@@ -409,7 +409,11 @@ func AddFile(name string) (i *inode, err os.Error) {
 
 	//i.AddChunk()
 
-	t.AddValue(name, i) // trie insert
+	err := t.AddFile(name, i) // trie insert
+	
+	if err != nil {
+		return nil, err
+	}
 	
 	log.Printf("AddFile: %d nodes in trie\n", t.Size())
 
