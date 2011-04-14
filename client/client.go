@@ -181,7 +181,7 @@ func Read (fd int, size int) ([]byte, int ){
 				log.Printf("Client: Dial Failed in Read")
 				return entireRead, FAIL
 		}
-		
+
 		fileArgs.Nice = 1 //default to reading "nicely"
 
 		for j:=0; j < (numChunkServers*2); j++ {
@@ -192,7 +192,7 @@ func Read (fd int, size int) ([]byte, int ){
 
 			client,err := dialServer(chunkServerMirrors[j % numChunkServers].String())
 			defer client.Close()
-			
+
 			if err != nil{
 				continue
 			}
@@ -208,7 +208,7 @@ func Read (fd int, size int) ([]byte, int ){
 				continue
 			}
 
-			if(fileInfo.Status == sfs.SUCCESS){
+			if(fileInfo.Status == sfs.SUCCESS || fileInfo.Status == 2){ //// this should be changed at some point
 				for k:=0; k<sfs.CHUNK_SIZE ; k++{
 					if (index< endIndex && index>= startIndex ) {
 						entireRead[index-startIndex] = fileInfo.Data.Data[k];
@@ -345,7 +345,7 @@ func Write (fd int, data []byte) (int){
 			fileArgs.Data = toWrite
 
 			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
-				log.Fatal("fdFile.chunkInfo ", fdFile.chunkInfo)
+				log.Printf("fdFile.chunkInfo %v", fdFile.chunkInfo)
 			}
 			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
 			client,err  := rpc.Dial("tcp",servers[0].String())
@@ -358,7 +358,8 @@ func Write (fd int, data []byte) (int){
 					}
 				}
 				if err != nil {
-					log.Fatal("Client: dial fail:", err)
+					log.Printf("Client: dial fail: %s", err)
+					return FAIL
 				}
 			}
 
@@ -370,7 +371,8 @@ func Write (fd int, data []byte) (int){
 				log.Printf("Client: error in reply from rpc in write %s\n", err.String());
 			}
 			if(fileInfo.Status!=0){
-				log.Fatal("Client: Status non zero =",fileInfo.Status)
+				log.Printf("Client: Status non zero = %s",fileInfo.Status)
+				return FAIL
 			}
 
 			// reply to master
@@ -381,11 +383,13 @@ func Write (fd int, data []byte) (int){
 
 			masterServ,err  := rpc.Dial("tcp",master + ":1338")
 			if err != nil {
-				log.Fatal("Client: dial fail:", err)
+				log.Printf("Client: dial fail: %s", err)
+				return FAIL
 			}
 			err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
 			if err != nil{
 				log.Printf("Client: error in reply from rpc in write %s\n", err.String());
+				return FAIL
 			}
 
 			chunkOffset++;
@@ -476,20 +480,23 @@ func ReadDir(path string) ([]string, int){
 
 	readDirArgs := new (sfs.ReadDirArgs)
 	readDirRet := new (sfs.ReadDirReturn)
+	readDirArgs.Prefix = path
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	defer client.Close()
 	if err != nil{
 		log.Printf("Client: Dial Error %s", err.String());
 		return readDirRet.FileNames,  FAIL
 	}else{
-			err = client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
-			if(err != nil){
-				log.Printf("Client: Read Dir fail ", err )
-				return readDirRet.FileNames,  FAIL
-			}
-
+		err = client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
+		if(err != nil){
+			log.Printf("Client: Read Dir fail ", err )
+			return readDirRet.FileNames,  FAIL
+		}
 	}
-		return readDirRet.FileNames,  WIN
+	for i:= 0 ; i < len(readDirRet.FileNames) ; i++ {
+		log.Printf("Client: Got back directory: %s", readDirRet.FileNames[i])
+	}
+	return readDirRet.FileNames,  WIN
 }
 
 /* seek */
