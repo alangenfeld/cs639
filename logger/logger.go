@@ -36,8 +36,7 @@ func Init(Filename string, Directory string) os.Error{
 	var err os.Error
 	logFile, err = os.Open(Filename, os.O_CREATE | os.O_WRONLY, 0666)
 	if err != nil {
-		//log.Fatal("logger: unable to init log file: " + err.String());
-		log.Println("logger: unable to init log file: " + err.String());
+		log.Fatal("logger: unable to init log file: " + err.String());
 		return err;
 	}
 	statusDir = Directory
@@ -84,8 +83,7 @@ func systemStats() {
         command, err := exec.Run(STATUS_CMD, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
                 log.Println("chunk fails in command:" + err.String())
-                //log.Fatal("chunk: unable to obtain remote command")
-		log.Println("chunk: unable to obtain remote command")
+                log.Fatal("chunk: unable to obtain remote command")
         }
 	err = nil
 	
@@ -127,10 +125,9 @@ func GetLoad() int {
         args := make([]string, 1)
 	command, err := exec.Run(WHO, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
-                 log.Println("logger fails in command:" + err.String())
-                //log.Fatal("logger: unable to obtain remote command")
-		log.Println("logger: unable to obtain remote command")
-        }
+                log.Println("logger fails in command:" + err.String())
+                log.Fatal("logger: unable to obtain remote command")
+	}
         _,err =command.Stdout.Read(result)
 	if err != nil{
         	log.Println("logger fails read from command: " + err.String())
@@ -140,8 +137,7 @@ func GetLoad() int {
 	command, err = exec.Run(MEM_FREE, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
                  log.Println("logger fails in command:" + err.String())
-                //log.Fatal("logger: unable to obtain remote command")
-		log.Println("logger: unable to obtain remote command")
+                log.Fatal("logger: unable to obtain remote command")
         }
         _,err =command.Stdout.Read(result)
 	if err != nil{
@@ -152,8 +148,7 @@ func GetLoad() int {
 	command, err = exec.Run(MEM_TOTAL, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
         if err != nil{
                  log.Println("logger fails in command:" + err.String())
-                //log.Fatal("logger: unable to obtain remote command")
-                log.Println("logger: unable to obtain remote command")
+                log.Fatal("logger: unable to obtain remote command")
         }
         _,err =command.Stdout.Read(result)
 	if err != nil{
