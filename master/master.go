@@ -120,13 +120,13 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
+	log.Printf("ReadDir: prefix %s, trimmed: %s\n", args.Prefix, strings.TrimRight(args.Prefix, "/"))
 	dirs, files, err := t.ReadDir(strings.TrimRight(args.Prefix, "/"))
 	
 	if err != nil {
+		log.Printf("ReadDir: err: %+v\n", err)
 		return err
 	}
-	
-	log.Printf("ReadDir: prefix %s\n", args.Prefix)
 	
 	cnt := dirs.Len()
 	retSlice := make([]string, cnt + len(files))
@@ -597,8 +597,8 @@ func sigHandler() {
 		log.Printf("Signal received: %d!\n", sig)
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
-			os.Exit(1337)
 			DumpTrie()
+			os.Exit(1337)
 		}
 
 		for s := range servers {
