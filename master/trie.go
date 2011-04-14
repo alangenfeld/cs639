@@ -53,7 +53,6 @@ import (
 	"sort"
 	"fmt"
 	"path"
-	"rand"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
@@ -85,13 +84,10 @@ func NewTrie() *Trie {
 }
 
 func (p *Trie) GetDotString() string {
-	rsrc := rand.NewSource(140209)
-	rgen := rand.New(rsrc)
-	
 	outStr := "digraph Trie {"
 	vec := new(vector.StringVector)
 	
-	p.outputDot(vec, 0, -1, rgen)
+	p.outputDot(vec, 0, 0)
 	
 	cnt := vec.Len()
 	for i := 0; i < cnt; i++ {
@@ -101,7 +97,7 @@ func (p *Trie) GetDotString() string {
 	return strings.Join([]string{outStr, "}"}, "\n")
 }
 
-func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen *rand.Rand) {
+func (p *Trie) outputDot(vec *vector.StringVector, rune int, depth int) {
 	this := make([]byte, 10)
 	child := make([]byte, 10)
 
@@ -109,24 +105,15 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 	
 	thisChar := string(this[0])
 	
-	if serial == -1 {
+	if depth == 0 {
 		thisChar = "root"
 	}
 	
 	
 	for childRune, childNode := range p.children {
 		utf8.EncodeRune(child, childRune)
-		childSerial := rgen.Int63()
-		childNodeStr := fmt.Sprintf("\"%s(%d)\"", string(child[0]), childSerial)
-		var notation string
-		
-		if string(child[0]) == "/" {
-			notation = fmt.Sprintf("[label=\"%s\" shape=box color=red]")
-		} else {
-			notation = fmt.Sprintf("[label=\"%s\"]")
-		}
-		vec.Push(fmt.Sprintf("\t%s %s\n\t\"%s(%d)\" -> \"%s(%d)\"", childNodeStr, notation, thisChar, serial, string(child[0]), childSerial))
-		childNode.outputDot(vec, childRune, childSerial, rgen)
+		vec.Push(fmt.Sprintf("\t\"%s(%d)\" -> \"%s(%d)\"", thisChar, depth, string(child[0]), depth+1))
+		childNode.outputDot(vec, childRune, depth + 1)
 	}
 }
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
@@ -299,20 +286,20 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) bool {
 	}
 	
 	//first add movingnode to new parent
-	newparent.children[new_key] = movingnode
+	newparent.children[int(new_key)] = movingnode
 	
 	//then add it to the new directory
 	newdir.dirs.Push(new_name)
 	
 	//then remove it from the old parent
-	oldparent.children[old_key] = nil
+	oldparent.children[int(old_key)] = nil
 	if(oldparent.dirs.Len() == 0){
 		oldparent.leaf = true
 	}
 	
 	//then remove it from the old directory (expensive)
-	old_length := olddir.dirs.Len()
-	for i := 0 ; i < old_length ; i++ {
+	remove_length := olddir.dirs.Len()
+	for i := 0 ; i < remove_length ; i++ {
 		if olddir.dirs.At(i).(string) == old_name {
 			olddir.dirs.Delete(i)
 		}
