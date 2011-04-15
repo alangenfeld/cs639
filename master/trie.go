@@ -160,7 +160,6 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
-	
 	dir, file := path.Split(path_s)
 	
 	// append the runes to the trie
@@ -168,8 +167,8 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	if leaf == nil{
 		return os.NewError("AddFile - Directory Doesn't Exist\n")
 	}
-    i , check := leaf.files[file]
-	if check && i != nil {
+	inode, check := leaf.files[file]
+	if check && inode != nil {
 		//file already exists
 		return os.NewError("AddFile - File Already Exist\n")
 	} else {
