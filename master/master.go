@@ -75,11 +75,11 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 }
 
 func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkToFileReturn) os.Error {
-	file, ok := QueryFile(args.Name)
+	file, ok , error := QueryFile(args.Name)
 
 	if !ok {
 		log.Printf("master: MapChunkToFile: File %s does not exist\n", args.Name)
-		return os.NewError("File does not exist! Herp derp")
+		return error
 	}
 
 	log.Printf("master: MapChunkToFile: ChunkID: %d  Offset %d  nservers: %d\n", args.Chunk.ChunkID, args.Offset, len(args.Chunk.Servers))
@@ -158,7 +158,7 @@ func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.E
 	result.Success = true
 	name := args.Name
 
-	i, exists := QueryFile(name)
+	i, exists , _:= QueryFile(name)
 	if !exists {
 		log.Printf("RemoveFile: file %s does not exist\n", name)
 		err := os.NewError("You are trying to delete a file that doesn't exist.")
@@ -199,7 +199,7 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 }
 
 func (m *Master) ReleaseLock(args *sfs.LockReleaseArgs, ret *sfs.LockReleaseReturn) os.Error {
-	file, exists := QueryFile(args.Name)
+	file, exists ,_:= QueryFile(args.Name)
 	if !exists {
 		ret.Status = -1
 		return os.NewError("File does not exist")
@@ -375,18 +375,18 @@ func RemoveServer(serv *server) os.Error {
 func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	err = nil
 
-	i, exists := QueryFile(name)
+	i, exists , error:= QueryFile(name)
 
 	if !exists && create {
 		log.Printf("OpenFile: file %s does not exist\n", name)
 		i, err = AddFile(name)
 	} else if !exists && !create {
-		return nil, true, os.NewError("file doesn't exist")
+		return nil, true, error
 	}
 
 	newFile = !exists
 
-	return i, newFile, err
+	return i, newFile, error
 }
 
 func AddFile(name string) (i *inode, err os.Error) {
@@ -413,21 +413,21 @@ func AddFile(name string) (i *inode, err os.Error) {
 	return i, nil
 }
 
-func QueryFile(name string) (i *inode, fileExists bool) {
-	inter, exists := t.QueryFile(name)
+func QueryFile(name string) (i *inode, fileExists bool, err os.Error) {
+	inter, exists, error := t.QueryFile(name)
 
 	if !exists {
 		log.Printf("QueryFile: file %s does not exist\n", name)
-		return nil, exists
+		return nil, exists, error
 	}
 
 	log.Printf("QueryFile: %d nodes in trie\n", t.Size())
 
-	return inter.(*inode), exists
+	return inter.(*inode), exists, nil
 }
 
 func DeleteFile(name string) (err os.Error) {
-	inode, exists := QueryFile(name)
+	inode, exists ,_:= QueryFile(name)
 	if exists {
 		ok := t.Remove(name)
 		
