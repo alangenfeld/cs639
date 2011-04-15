@@ -287,7 +287,7 @@ func Write (fd int, data []byte) (int){
 		chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
 		replyCall:= <-chunkCall.Done
 		if replyCall.Error!=nil{
-			log.Printf("Client: error in reply from rpc in read\n");
+			log.Printf("Client: Server.Read failed:\n");
 			return FAIL
 		}
 		for i:= 0 ; i < indexWithinChunk ; i++ {
@@ -320,7 +320,7 @@ func Write (fd int, data []byte) (int){
 				chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
 				replyCall:= <-chunkCall.Done
 				if replyCall.Error!=nil{
-					log.Printf("Client: error in reply from rpc in read\n");
+					log.Println("Client: Server.Read Failed:", replyCall.Error);
 					return FAIL
 				}
 				log.Printf("data returned in write for special case %v ", fileInfoRead.Data.Data)
@@ -368,10 +368,10 @@ func Write (fd int, data []byte) (int){
 
 			err = client.Call("Server.Write", &fileArgs,&fileInfo);
 			if err != nil{
-				log.Printf("Client: error in reply from rpc in write %s\n", err.String());
+				log.Println("Client: Server.Write failed:", err);
 			}
 			if(fileInfo.Status!=0){
-				log.Printf("Client: Status non zero = %s",fileInfo.Status)
+				log.Println("Client: Server.Write status non zero=",fileInfo.Status)
 				return FAIL
 			}
 
@@ -388,7 +388,7 @@ func Write (fd int, data []byte) (int){
 			}
 			err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
 			if err != nil{
-				log.Printf("Client: error in reply from rpc in write %s\n", err.String());
+				log.Println("Client: Master.MapChunkToFile failed:", err);
 				return FAIL
 			}
 

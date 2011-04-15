@@ -6,12 +6,13 @@
 pwd=`pwd`
 num=0
 ssh='ssh -o StrictHostKeyChecking=no '
+master='mumble-02'
 
 trap cleanup 2
 
 cleanup()
 {
-    $ssh mumble-01 "killall master" &
+    $ssh $master "killall master" &
     for (( c=1;c<=40;c++ ))
     do
 	if [ $c -lt 10 ]
@@ -38,8 +39,8 @@ else
 	max=$1
     fi
 
-    $ssh mumble-01 "$pwd/master/master"&
-
+    $ssh $master "$pwd/master/master"&
+    sleep 1
     for (( c=1;c<=$max;c++ ))
     do
 	if [ $c -lt 10 ]
@@ -48,7 +49,7 @@ else
 	else
 	    num="$c"
 	fi
-	$ssh mumble-$num "$pwd/chunk/serv mumble-01" &
+	$ssh mumble-$num "$pwd/chunk/serv $master" &
     done
 
     while :
