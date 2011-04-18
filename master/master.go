@@ -52,6 +52,7 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 		return err
 	}
 	file, newFile, err := OpenFile(args.Name, args.NewFile)
+	log.Println("CREATE? ", args.NewFile)
 	
 	if file == nil {
 		return err
@@ -386,7 +387,7 @@ func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 
 	newFile = !exists
 
-	return i, newFile, error
+	return i, newFile, nil
 }
 
 func AddFile(name string) (i *inode, err os.Error) {
