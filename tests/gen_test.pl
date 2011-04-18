@@ -127,6 +127,9 @@ sub main {
 
     printPrefix();
 
+    print "last := time.Nanoseconds()\n";
+    print "now := time.Nanoseconds()\n";
+
     for(my $i = 0; $i < $maxFDCount; $i++) {
 	print "\tvar fd$i int\n"
     }
@@ -148,6 +151,12 @@ sub main {
 	    doSeek();
 	} elsif ($type == 4) {
 	    doClose();
+	}
+
+	if($i % 100 == 99) {
+	    print "now = time.Nanoseconds()\n";
+	    print "fmt.Printf(\"Elapsed = %d\\nn\", now - last)\n";
+	    print "last = now";
 	}
     }
 
@@ -176,6 +185,7 @@ import (
 	"fmt"
 	"flag"
 	"os"
+	"time"
 )
 
 func main(){

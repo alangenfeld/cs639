@@ -15,3 +15,5 @@ t14: Use O_RDWR, O_RDONLY, and O_WRONLY
 t15: Seek test
 t16: Delete test
 t17: Randomly generated test
+t18: Bigger randomly generated test
+t19: Bigger randomly generated test with elapsed times
