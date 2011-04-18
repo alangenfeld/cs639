@@ -150,7 +150,7 @@ func (p *Trie) QueryFile(path_s string)  (i interface{}, exists bool, r os.Error
 		return inode, true, nil
 	}
 	
-	return nil, false, nil
+	return nil, false, os.NewError("File does not exist")
 
 }
 
