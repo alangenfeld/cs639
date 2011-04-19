@@ -239,7 +239,7 @@ func SendHeartbeat(masterAddress string){
 	for {
 		var id logger.TaskId	
 		if logging {
-			id = logger.Start("Write")
+			id = logger.Start("Heart")
 		}
 
 		args.Capacity = capacity
