@@ -5,7 +5,7 @@ use Cwd 'abs_path';
 my $mumbleBase = 20;
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
 my $chunkCount = 3;
-my $timeout = 30;
+my $timeout = 120;
 my $testdir;
 my $verbose = 0;
 my $master;
@@ -114,10 +114,10 @@ sub runTest {
 	if($pid2 == 0) {
 	    while(1) {
 		sleep(1);
-		print "Killing\n";
+#		print "Killing\n";
 		sys("$ssh $servers[1] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
 		sleep(1);
-		print "Restarting\n";
+#		print "Restarting\n";
 		sys("$ssh $servers[1] ".
 		    "'$testdir/../chunk/serv $master ".
 		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
@@ -161,10 +161,12 @@ sub killTest1 {
     $#_ == 0 or die;
     my ($test) = @_;
     my $ret = 0;
+    $test =~ s/t//;
 
     open KT1, "killtest1.txt" or die "Could not open file: $!\n";
-    while(my $line = <KT>) {
+    while(my $line = <KT1>) {
 	chomp($line);
+	$line =~ s/t//;
 	if($line eq $test) {
 	    $ret = 1;
 	}
