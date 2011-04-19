@@ -121,8 +121,6 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
-	log.Printf("ReadDir: prefix %s, trimmed: %s\n", args.Prefix, strings.TrimRight(args.Prefix, "/"))
-	
 	var lookupPath string
 	
 	if args.Prefix == "/" {
@@ -130,6 +128,8 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 	} else {
 		lookupPath = strings.TrimRight(args.Prefix, "/")
 	}
+	
+	log.Printf("ReadDir: prefix %s, trimmed: %s\n", args.Prefix, lookupPath)
 	
 	dirs, files, err := t.ReadDir(lookupPath)
 	
@@ -152,11 +152,14 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 		retSlice[i] = dirs.At(i) + "/"
 	}
 	
+	log.Printf("ReadDir: retSlice dirs -- %+v\n", retSlice)
+	log.Printf("ReadDir: retSlice file -- %+v\n", files)
+	
 	for k, _ := range files {
 		retSlice[i] = k
 		i++
 	}
-	
+		
 	ret.FileNames = retSlice
 	
 	log.Printf("ReadDir: retSlice -- %+v\n", retSlice)
