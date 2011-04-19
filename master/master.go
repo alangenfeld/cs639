@@ -122,7 +122,16 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
 	log.Printf("ReadDir: prefix %s, trimmed: %s\n", args.Prefix, strings.TrimRight(args.Prefix, "/"))
-	dirs, files, err := t.ReadDir(strings.TrimRight(args.Prefix, "/"))
+	
+	var lookupPath string
+	
+	if args.Prefix == "/" {
+		lookupPath = "/"
+	} else {
+		lookupPath = strings.TrimRight(args.Prefix, "/")
+	}
+	
+	dirs, files, err := t.ReadDir(lookupPath)
 	
 	if err != nil {
 		log.Printf("ReadDir: err: %+v\n", err)
@@ -376,7 +385,7 @@ func RemoveServer(serv *server) os.Error {
 func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	err = nil
 
-	i, exists , error:= QueryFile(name)
+	i, exists, error := QueryFile(name)
 
 	if !exists && create {
 		log.Printf("OpenFile: file %s does not exist\n", name)
