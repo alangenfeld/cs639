@@ -9,8 +9,17 @@ gl=8l
 su=8
 endif
 
+cproxy: runChunkProxy.$(su) chunkproxy.$(su) chunk.$(su)
+	$(gl) -o cproxy runChunkProxy.$(su)
+
 serv: chunkServer.$(su) chunk.$(su)
 	$(gl) -o serv chunkServer.$(su)
+
+runChunkProxy.$(su): chunkproxy.$(su)
+	$(gc)  runChunkProxy.go
+
+chunkproxy.$(su): chunk.$(su)
+	$(gc) chunkProxy.go
 
 chunkServer.$(su): chunkServer.go chunk.$(su)
 	$(gc) chunkServer.go

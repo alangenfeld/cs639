@@ -15,23 +15,23 @@ my $outputDir = 'output';
 
 sub doLaunch {
     sys("ssh $master ".
-	"'$testdir/../master/master ".
+	"'$testdir/../master/proxy ".
 	"&> $testdir/$outputDir/master.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 
     sleep(1);
 
     for(my $i = 1; $i <= $chunkCount; $i++) {
 	sys("$ssh $servers[$i] ".
-	    "'$testdir/../chunk/serv $master ".
+	    "'$testdir/../chunk/cproxy $master ".
 	    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
     }
 }
 
 sub doKill {
-    sys("$ssh $master 'killall master'".($verbose != 1 ? " &> /dev/null":""));
+    sys("$ssh $master 'killall proxy'".($verbose != 1 ? " &> /dev/null":""));
     for(my $i = 1; $i <= $chunkCount; $i++) {
-	sys("$ssh $servers[$i] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
-	sys("$ssh $servers[$i] 'killall master'".($verbose != 1 ? " &> /dev/null":""));
+	sys("$ssh $servers[$i] 'killall cproxy'".($verbose != 1 ? " &> /dev/null":""));
+	sys("$ssh $servers[$i] 'killall proxy'".($verbose != 1 ? " &> /dev/null":""));
     }
 }
 
@@ -42,8 +42,8 @@ sub killOne {
     if($num < 10) {
 	$num = '0'.$num;
     }
-    sys("$ssh mumble-$num.cs.wisc.edu 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
-    sys("$ssh mumble-$num.cs.wisc.edu 'killall master'".($verbose != 1 ? " &> /dev/null":""));
+    sys("$ssh mumble-$num.cs.wisc.edu 'killall cproxy'".($verbose != 1 ? " &> /dev/null":""));
+    sys("$ssh mumble-$num.cs.wisc.edu 'killall proxy'".($verbose != 1 ? " &> /dev/null":""));
 }
 
 

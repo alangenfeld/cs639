@@ -68,7 +68,8 @@ func Init(masterAddress string, loggingFlag bool) {
 		log.Fatal("chunk dial error:", err)
 	}
 
-	err = master.Call("Master.BirthChunk", &args, &ret)
+	err = master.Call("Proxy.BirthChunk", &args, &ret)
+	//err = master.Call("Master.BirthChunk", &args, &ret)
 	if err != nil {
 		log.Fatal("chunk call error: ", err)
 	}
@@ -145,7 +146,8 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 			continue
 		}
 
-		err = client.Call("Server.Write", &args, &inRet)
+		err = client.Call("ChunkProxy.Write", &args, &inRet)
+		//err = client.Call("Server.Write", &args, &inRet)
 		if err != nil {
 			log.Fatal("chunk: server error: ", err)
 		}
@@ -248,7 +250,8 @@ func SendHeartbeat(masterAddress string){
 			addedChunkSlice[i] = addedChunks.At(i).(sfs.ChunkInfo)
 		}
 		args.AddedChunks = addedChunkSlice
-		err = master.Call("Master.BeatHeart", &args, &ret)
+		err = master.Call("Proxy.BeatHeart", &args, &ret)
+		//err = master.Call("Master.BeatHeart", &args, &ret)
 		if err != nil {
 			log.Fatal("chunk: heartbeat error: ", err)
 		}
@@ -265,7 +268,8 @@ func SendHeartbeat(masterAddress string){
 				bArgs.ChunkIDs[i] = k
 				i++
 			}
-			err = master.Call("Master.BirthChunk", &bArgs, &bRet)
+			err = master.Call("Proxy.BirthChunk", &bArgs, &bRet)
+			//err = master.Call("Master.BirthChunk", &bArgs, &bRet)
 			if err != nil {
 				log.Fatal("chunk call error: ", err)
 			}
@@ -312,7 +316,8 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		var readRet sfs.ReadReturn
 		readArgs.ChunkID = args.ChunkID
 		
-		err = replicationHost.Call("Server.Read", &readArgs, &readRet)
+		err = replicationHost.Call("ChunkProxy.Read", &readArgs, &readRet)
+		//err = replicationHost.Call("Server.Read", &readArgs, &readRet)
 		if err != nil {
 			log.Println("chunk: replication call:", err)
 			continue

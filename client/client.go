@@ -76,7 +76,8 @@ func Open(filename string , flag int ) (int){
 			} else {
 				fileArgs.NewFile = false
 			}
-			err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
+			err := client.Call("Proxy.ReadOpen", &fileArgs,&fileInfo)
+			//err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 			if(err != nil){
 				log.Printf("Client: Open fail ", err )
 				return sfs.FAIL
@@ -205,7 +206,8 @@ func Read (fd int, size int) ([]byte, int ){
 			if fileArgs.ChunkID == 0 {
 				log.Printf("Client: ChunkID = 0, invalid number so this shouldn't happen")
 			}
-			err = client.Call("Server.Read", &fileArgs, &fileInfo);
+			err = client.Call("ChunkProxy.Read", &fileArgs, &fileInfo);
+			//err = client.Call("Server.Read", &fileArgs, &fileInfo);
 
 			if err!=nil{
 				log.Printf("Client: error reading from Chunk Server - %s\n",chunkServerMirrors[j % numChunkServers].String());
@@ -295,7 +297,8 @@ func Write (fd int, data []byte) (int){
 		if fileArgsRead.ChunkID == 0 {
 			log.Printf("Client: ChunkID = 0, this shouldn't happen")
 		}
-		chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
+		chunkCall := client.Go("ChunkProxy.Read", &fileArgsRead,&fileInfoRead, nil);
+		//chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
 		replyCall:= <-chunkCall.Done
 		if replyCall.Error!=nil{
 			log.Printf("Client: Server.Read failed:\n");
@@ -328,7 +331,8 @@ func Write (fd int, data []byte) (int){
 				if fileArgsRead.ChunkID == 0 {
 					log.Printf("Client: ChunkID = 0, this shouldn't happen")
 				}
-				chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
+				chunkCall := client.Go("ChunkProxy.Read", &fileArgsRead,&fileInfoRead, nil);
+				//chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
 				replyCall:= <-chunkCall.Done
 				if replyCall.Error!=nil{
 					log.Println("Client: Server.Read Failed:", replyCall.Error);
@@ -378,7 +382,8 @@ func Write (fd int, data []byte) (int){
 
 
 
-			err = client.Call("Server.Write", &fileArgs,&fileInfo);
+			err = client.Call("ChunkProxy.Write", &fileArgs,&fileInfo);
+			//err = client.Call("Server.Write", &fileArgs,&fileInfo);
 			if err != nil{
 				log.Println("Client: Server.Write failed:", err);
 			}
@@ -399,7 +404,8 @@ func Write (fd int, data []byte) (int){
 				log.Printf("Client: dial fail: %s", err)
 				return FAIL
 			}
-			err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
+			//err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
+			err = masterServ.Call("Proxy.MapChunkToFile", &mapArgs,&mapRet);
 			if err != nil{
 				log.Println("Client: Master.MapChunkToFile failed:", err);
 				return FAIL
@@ -462,7 +468,8 @@ func Delete(filename string) (int){
 		fileArgs := new (sfs.DeleteArgs)
 		fileInfo := new (sfs.DeleteReturn)
 		fileArgs.Name = filename
-		err := client.Call("Master.DeleteFile", &fileArgs,&fileInfo)
+		err := client.Call("Proxy.DeleteFile", &fileArgs,&fileInfo)
+		//err := client.Call("Master.DeleteFile", &fileArgs,&fileInfo)
 		if(err != nil || !fileInfo.Status){
 			log.Printf("Client: Delete fail ", fileInfo.Status, err )
 			return FAIL
@@ -500,7 +507,8 @@ func ReadDir(path string) ([]string, int){
 		log.Printf("Client: Dial Error %s", err.String());
 		return readDirRet.FileNames,  FAIL
 	}else{
-		err = client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
+		err = client.Call("Proxy.ReadDir", &readDirArgs, &readDirRet)
+		//err = client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
 		if(err != nil){
 			log.Printf("Client: Read Dir fail ", err )
 			return readDirRet.FileNames,  FAIL
@@ -572,7 +580,8 @@ func MakeDir(path string) (int) {
 		os.Exit(1)
 	}
 
-	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
+	//err = masterConn.Call("Master.MakeDir",&args,&returnVal)
+	err = masterConn.Call("Proxy.MakeDir",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(MakeDir):", err.String())
 		os.Exit(1)
@@ -597,7 +606,8 @@ func RemoveDir(path string) (int) {
 		os.Exit(1)
 	}
 
-	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
+	err = masterConn.Call("Proxy.MakeDir",&args,&returnVal)
+	//err = masterConn.Call("Master.MakeDir",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(MakeDir):", err.String())
 		os.Exit(1)
@@ -623,7 +633,8 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 		os.Exit(1)
 	}
 
-	err = masterConn.Call("Master.GetNewChunk",&args,&returnVal)
+	err = masterConn.Call("Proxy.GetNewChunk",&args,&returnVal)
+	//err = masterConn.Call("Master.GetNewChunk",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(AddChunks):", err.String())
 		os.Exit(1)

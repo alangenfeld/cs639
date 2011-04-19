@@ -85,7 +85,7 @@ func init(){
 	m = new(master.Master);
 	//flag.Parse();
 	
-	delay =  100000000;
+	delay =  00000000;
 	//if err != nil{
 	//	fmt.Println(err)
 	//}

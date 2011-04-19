@@ -32,7 +32,7 @@ func Init(masterAddress string){
 	flag.Parse()
 	//chunkServ := new(chunk.Server)
 	chunk.Init(masterAddress,true)
-	delay = 1000000
+	delay = 000000
 	//go chunk.SendHeartBeat(flag.Arg(0))
 }
 
