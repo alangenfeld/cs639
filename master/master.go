@@ -138,7 +138,13 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 		return err
 	}
 	
-	cnt := dirs.Len()
+	var cnt int
+	if dirs != nil {
+		cnt = dirs.Len()		
+	} else {
+		cnt = 0
+	}
+	
 	retSlice := make([]string, cnt + len(files))
 
 	var i int
