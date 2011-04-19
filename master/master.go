@@ -121,15 +121,30 @@ func (m *Master) ReportWrite(args *sfs.ReportWriteArgs, ret *sfs.ReportWriteRetu
 }
 
 func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error {
-	log.Printf("ReadDir: prefix %s, trimmed: %s\n", args.Prefix, strings.TrimRight(args.Prefix, "/"))
-	dirs, files, err := t.ReadDir(strings.TrimRight(args.Prefix, "/"))
+	var lookupPath string
+	
+	if args.Prefix == "/" {
+		lookupPath = "/"
+	} else {
+		lookupPath = strings.TrimRight(args.Prefix, "/")
+	}
+	
+	log.Printf("ReadDir: prefix %s, trimmed: %s\n", args.Prefix, lookupPath)
+	
+	dirs, files, err := t.ReadDir(lookupPath)
 	
 	if err != nil {
 		log.Printf("ReadDir: err: %+v\n", err)
 		return err
 	}
 	
-	cnt := dirs.Len()
+	var cnt int
+	if dirs != nil {
+		cnt = dirs.Len()		
+	} else {
+		cnt = 0
+	}
+	
 	retSlice := make([]string, cnt + len(files))
 
 	var i int
@@ -137,11 +152,14 @@ func (m *Master) ReadDir(args *sfs.ReadDirArgs, ret *sfs.ReadDirReturn) os.Error
 		retSlice[i] = dirs.At(i) + "/"
 	}
 	
+	log.Printf("ReadDir: retSlice dirs -- %+v\n", retSlice)
+	log.Printf("ReadDir: retSlice file -- %+v\n", files)
+	
 	for k, _ := range files {
 		retSlice[i] = k
 		i++
 	}
-	
+		
 	ret.FileNames = retSlice
 	
 	log.Printf("ReadDir: retSlice -- %+v\n", retSlice)
@@ -396,7 +414,7 @@ func RemoveServer(serv *server) os.Error {
 func OpenFile(name string, create bool) (i *inode, newFile bool, err os.Error) {
 	err = nil
 
-	i, exists , error:= QueryFile(name)
+	i, exists, error := QueryFile(name)
 
 	if !exists && create {
 		log.Printf("OpenFile: file %s does not exist\n", name)
@@ -653,7 +671,7 @@ func init() {
 	go sHeap.Handler()
 	go sigHandler()
 
-	t.AddString("/")
+	t.AddDir("/")
 
 	//missingCh := make(chan uint64)
 

@@ -227,27 +227,32 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		return os.NewError("Path Length == 0\n")
 	}
 	
-	path_cor := fmt.Sprintf("%s%s", path_s, "/")
-	
-	directory_s, dir_name:= path.Split(path_s)
-	
-	if len(directory_s) == 0{
-		return os.NewError("AddDir - directory string is nothin, what what??")
-	}
-	
 	//check to make sure the dir doesn't already exist
 	leaf_test := p.find(strings.NewReader(path_s))
 	if leaf_test != nil {
 		//dir already exists
 		return os.NewError("AddDir - Directory Already Exists")
-	
+
 	}
-	//create the dir
-	p.addRunes(strings.NewReader(path_cor))
 	
-	//add dir record to parent dir
-	dir := p.find(strings.NewReader(directory_s))
-	dir.dirs.Push(dir_name)
+	if path_s == "/" {
+		p.addRunes(strings.NewReader("/"))
+		p.dirs.Push("/")
+	} else {
+		path_cor := fmt.Sprintf("%s%s", path_s, "/")
+
+		directory_s, dir_name:= path.Split(path_s)
+
+		if len(directory_s) == 0{
+			return os.NewError("AddDir - directory string is nothin, what what??")
+		}
+		//create the dir
+		p.addRunes(strings.NewReader(path_cor))
+
+		//add dir record to parent dir
+		dir := p.find(strings.NewReader(directory_s))
+		dir.dirs.Push(dir_name)
+	}
 
 	return nil
 
@@ -256,7 +261,13 @@ func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[str
 	if len(path_s) == 0 {
 		return nil, nil, os.NewError("Path Length == 0\n")
 	}
-	path_cor := fmt.Sprintf("%s%s", path_s, "/")
+	path_cor := ""
+	if len(path_s) == 1 {
+		path_cor = path_s
+	}else {
+		path_cor = fmt.Sprintf("%s%s", path_s, "/")
+	}
+		
 	//CHECK path_s SYNTAX to make sure it ends on a forward slash..
 	leaf := p.find(strings.NewReader(path_cor))
 	if leaf == nil {
