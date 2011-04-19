@@ -21,7 +21,7 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 const STATUS_CMD = "../stats.sh"
 const STATUS_ARGS = ""
 const STATUS_LEN = 17
-const THRESHOLD = 100 //arbitrary as fuck
+const THRESHOLD = 10000 //arbitrary as fuck
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
