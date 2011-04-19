@@ -154,6 +154,11 @@ func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error
 	
 	return err
 }
+func (m *Master) RemoveDir(args *sfs.RemoveDirArgs, ret *sfs.RemoveDirReturn) os.Error {
+	err := t.RemoveDir(args.DirName)
+	
+	return err
+}
 
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
 	result.Success = true
