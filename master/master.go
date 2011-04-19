@@ -367,6 +367,7 @@ func RemoveServer(serv *server) os.Error {
 			log.Printf("master: RemoveServer: unable to call %s\n", str)
 		}
 		log.Printf("%s", reply)
+		client.Close();
 	}
 
 	log.Printf("RemoveServer: removing %s\n", str1)
