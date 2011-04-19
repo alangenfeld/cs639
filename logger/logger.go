@@ -6,8 +6,9 @@ import(
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
-//	"strings"
+	"strings"
 	"time"
 )
 
@@ -110,17 +111,43 @@ func String(thisTask TaskId) string {
 
 /********************************************************
  * Load score:
- * +.25 points per user up to 3 pts
  * x/5pts for memory usage, so it would be usage % * 5
  * x/2pts for cpu usage, so it would be available cpu * 2
 *********************************************************/
-
 func GetLoad() int {
-/*****************************************************************************************************************
- ***DISCLAIMER***
- *This is the most horrible code I've ever written, attempts to read may result in blindness, constipation, or death.
-******************************************************************************************************************/
+	//first, get memory usage
+	mem_usage := getMem()
+	load := 5.0 * mem_usage
+	return int(load)
+}
 
+func getMem() float32 {
+	memFile, err := os.Open("/proc/meminfo", os.O_RDONLY, 0)
+	if err != nil {
+		log.Println("Error opening meminfo:" +  err.String())
+	}
+	info := make([]byte, 512)
+	_, err = memFile.Read(info)
+	if err != nil {
+		log.Println("Error reading meminfo:" + err.String())
+	}
+	infoString := string(info)
+	tokens := strings.Split(infoString, "\n", 3)
+	return memToFloat(tokens[1]) / memToFloat(tokens[0])
+}
+
+func memToFloat(memString string) float32 {
+	exp, err := regexp.Compile("[0-9]+")
+	resultString := exp.FindString(memString)
+	result, err := strconv.Atof32(resultString);
+	if err != nil {
+		log.Println(err.String());
+	}
+	return result
+}
+	
+
+/*func GetLoad() int {
 	result := make([]byte, WHO_LEN)
         args := make([]string, 1)
 	command, err := exec.Run(WHO, args, nil, statusDir, exec.PassThrough, exec.Pipe, exec.PassThrough)
@@ -158,7 +185,7 @@ func GetLoad() int {
 	mem_usage := (1 - (float32(freeResult) / float32(totalResult))) * 5
 	user_percent := float32(whoResult) * .25
 	return int(user_percent) + int(mem_usage)
-}
+}*/
 
 func commandToInt(result []byte) int {
 	index := bytes.IndexRune(result, 10)
