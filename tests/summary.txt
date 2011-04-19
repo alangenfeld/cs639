@@ -20,3 +20,4 @@ t19: Randomly generated test (kill pattern 1)
 t20: Simple looping I/O      (kill pattern 1)
 t21: Simple looping I/O      (kill pattern 2)
 t22: Randomly generated test (kill pattern 2)
+t23: A bunch of weird directory stuff that's supposed to fail
