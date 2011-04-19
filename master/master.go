@@ -671,7 +671,7 @@ func init() {
 	go sHeap.Handler()
 	go sigHandler()
 
-	t.AddString("/")
+	t.AddDir("/")
 
 	//missingCh := make(chan uint64)
 
