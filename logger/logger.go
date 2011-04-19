@@ -117,7 +117,7 @@ func String(thisTask TaskId) string {
 func GetLoad() int {
 	//first, get memory usage
 	mem_usage := getMem()
-	load := 5.0 * mem_usage
+	load := 10.0 * mem_usage
 	return int(load)
 }
 

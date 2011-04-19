@@ -5,7 +5,7 @@ use Cwd 'abs_path';
 my $mumbleBase = 20;
 my $ssh = 'ssh -o StrictHostKeyChecking=no ';
 my $chunkCount = 3;
-my $timeout = 30;
+my $timeout = 120;
 my $testdir;
 my $verbose = 0;
 my $master;
@@ -102,6 +102,7 @@ sub runTest {
     my $pid1 = fork();
     if($pid1 == 0) {
 	sleep($timeout);
+	print "TIMEOUT!!!";
 	sys("killall $test".($verbose != 1 ? " &> /dev/null":""));
 	exit(0);
     }
@@ -114,10 +115,8 @@ sub runTest {
 	if($pid2 == 0) {
 	    while(1) {
 		sleep(1);
-		print "Killing\n";
 		sys("$ssh $servers[1] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
 		sleep(1);
-		print "Restarting\n";
 		sys("$ssh $servers[1] ".
 		    "'$testdir/../chunk/serv $master ".
 		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
@@ -127,6 +126,35 @@ sub runTest {
     }
 
 
+
+
+    #start chaos proc (other chunk killer)
+    my $pid3 = -1;
+    if(killTest2($test)) {
+	$pid3 = fork();
+	if($pid3 == 0) {
+	    my $i = 0;
+	    while(1) {
+		$i++;
+		if($i == 0 or $i > $#servers) {
+		    $i == 1;
+		}
+		sleep(2);
+		print "Killing $i\n";
+		sys("$ssh $servers[$i] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
+		sleep(8);
+		print "Restarting $i\n";
+		sys("$ssh $servers[$i] ".
+		    "'$testdir/../chunk/serv $master ".
+		    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
+	    }
+	    exit(0);
+	}
+    }
+
+
+
+
     sys("$testdir/$test -m $master &> $testdir/$outputDir/$test.out");
     print "Done running $test\n";
 
@@ -134,6 +162,9 @@ sub runTest {
     kill 9, $pid1;
     if($pid2 > 0) {
 	kill 9, $pid2;
+    }
+    if($pid3 > 0) {
+	kill 9, $pid3;
     }
 
     #stop servers
@@ -161,15 +192,37 @@ sub killTest1 {
     $#_ == 0 or die;
     my ($test) = @_;
     my $ret = 0;
+    $test =~ s/t//;
 
     open KT1, "killtest1.txt" or die "Could not open file: $!\n";
-    while(my $line = <KT>) {
+    while(my $line = <KT1>) {
 	chomp($line);
+	$line =~ s/t//;
 	if($line eq $test) {
 	    $ret = 1;
 	}
     }
     close KT1;
+    return $ret;
+}
+
+
+
+sub killTest2 {
+    $#_ == 0 or die;
+    my ($test) = @_;
+    my $ret = 0;
+    $test =~ s/t//;
+
+    open KT2, "killtest2.txt" or die "Could not open file: $!\n";
+    while(my $line = <KT2>) {
+	chomp($line);
+	$line =~ s/t//;
+	if($line eq $test) {
+	    $ret = 2;
+	}
+    }
+    close KT2;
     return $ret;
 }
 

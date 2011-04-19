@@ -239,7 +239,7 @@ func SendHeartbeat(masterAddress string){
 	for {
 		var id logger.TaskId	
 		if logging {
-			id = logger.Start("Write")
+			id = logger.Start("Heart")
 		}
 
 		args.Capacity = capacity
@@ -327,8 +327,8 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 
 func ServerBusy() bool {
 
-//	index = logger.GetLoad() + requestLoad
-	index := requestLoad
+	index := (logger.GetLoad() * 10) + requestLoad
+	//index := requestLoad
 	log.Println("Chunk: server load index", index)
 	return index > THRESHOLD
 }

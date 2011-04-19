@@ -231,6 +231,10 @@ func (p *Trie) AddDir(path_s string) os.Error {
 	
 	directory_s, dir_name:= path.Split(path_s)
 	
+	if len(directory_s) == 0{
+		return os.NewError("AddDir - directory string is nothin, what what??")
+	}
+	
 	//check to make sure the dir doesn't already exist
 	leaf_test := p.find(strings.NewReader(path_s))
 	if leaf_test != nil {
