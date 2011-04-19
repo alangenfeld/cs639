@@ -22,7 +22,7 @@ sub doLaunch {
 
     for(my $i = 1; $i <= $chunkCount; $i++) {
 	sys("$ssh $servers[$i] ".
-	    "'$testdir/../chunk/serv -log $master ".
+	    "'$testdir/../chunk/serv $master ".
 	    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
     }
 }
@@ -98,18 +98,43 @@ sub runTest {
     doLaunch();
     sleep(1);
 
-    #run client with timeout
-    my $pid = fork();
-    if($pid == 0) {
+    #start timeout killer
+    my $pid1 = fork();
+    if($pid1 == 0) {
 	sleep($timeout);
 	sys("killall $test".($verbose != 1 ? " &> /dev/null":""));
 	exit(0);
     }
+
+
+    #start chaos proc (chunk killer)
+    my $pid2 = -1;
+    if(killTest1($test)) {
+	$pid2 = fork();
+	if($pid2 == 0) {
+	    while(1) {
+		sleep(1);
+		print "Killing\n";
+		sys("$ssh $servers[1] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
+		sleep(1);
+		print "Restarting\n";
+		sys("$ssh $servers[1] ".
+		    "'$testdir/../chunk/serv $master ".
+		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
+	    }
+	    exit(0);
+	}
+    }
+
+
     sys("$testdir/$test -m $master &> $testdir/$outputDir/$test.out");
     print "Done running $test\n";
 
     #kill the child that was supposed to kill us! (for the timeout)
-    kill 9, $pid;
+    kill 9, $pid1;
+    if($pid2 > 0) {
+	kill 9, $pid2;
+    }
 
     #stop servers
     sleep(1);
@@ -129,6 +154,23 @@ sub runTest {
 	print "$test result = failed\n";
 	return 0;
     }
+}
+
+
+sub killTest1 {
+    $#_ == 0 or die;
+    my ($test) = @_;
+    my $ret = 0;
+
+    open KT1, "killtest1.txt" or die "Could not open file: $!\n";
+    while(my $line = <KT>) {
+	chomp($line);
+	if($line eq $test) {
+	    $ret = 1;
+	}
+    }
+    close KT1;
+    return $ret;
 }
 
 
