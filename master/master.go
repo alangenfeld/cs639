@@ -163,6 +163,11 @@ func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error
 	
 	return err
 }
+func (m *Master) RemoveDir(args *sfs.RemoveDirArgs, ret *sfs.RemoveDirReturn) os.Error {
+	err := t.RemoveDir(args.DirName)
+	
+	return err
+}
 
 func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.Error {
 	result.Success = true
@@ -188,8 +193,10 @@ func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.E
 }
 
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
+
 	s := AddServer(args.ChunkServerIP, args.Capacity)
 	go s.monitorServerBeats(heartbeatMonitors[s.id])
+	
 	
 	if args.ChunkIDs != nil {
 		for _, id := range args.ChunkIDs {
@@ -287,7 +294,19 @@ func (s *server) monitorServerBeats(beats chan int64) int {
 }
 
 func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
+
+	
 	str := fmt.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
+	
+	old_server,check := addrToServerMap[servAddr.String()];
+	if check{
+		err := RemoveServer(old_server)
+		if err != nil {
+			log.Fatal(err.String())
+			return nil
+		}
+	}
+	
 	log.Printf("AddServer: adding %s\n", str)
 
 	s := new(server)
@@ -376,6 +395,7 @@ func RemoveServer(serv *server) os.Error {
 			log.Printf("master: RemoveServer: unable to call %s\n", str)
 		}
 		log.Printf("%s", reply)
+		client.Close();
 	}
 
 	log.Printf("RemoveServer: removing %s\n", str1)

@@ -21,7 +21,7 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 const STATUS_CMD = "../stats.sh"
 const STATUS_ARGS = ""
 const STATUS_LEN = 17
-const THRESHOLD = 100 //arbitrary as fuck
+const THRESHOLD = 10000 //arbitrary as fuck
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
@@ -239,7 +239,7 @@ func SendHeartbeat(masterAddress string){
 	for {
 		var id logger.TaskId	
 		if logging {
-			id = logger.Start("Write")
+			id = logger.Start("Heart")
 		}
 
 		args.Capacity = capacity
@@ -327,8 +327,8 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 
 func ServerBusy() bool {
 
-//	index = logger.GetLoad() + requestLoad
-	index := requestLoad
+	index := (logger.GetLoad() * 10) + requestLoad
+	//index := requestLoad
 	log.Println("Chunk: server load index", index)
 	return index > THRESHOLD
 }

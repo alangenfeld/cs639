@@ -14,6 +14,11 @@ t13: Read past end
 t14: Use O_RDWR, O_RDONLY, and O_WRONLY
 t15: Seek test
 t16: Delete test
-t17: Randomly generated test
-t18: Bigger randomly generated test
-t19: Bigger randomly generated test with elapsed times
+t17: Simple randomly generated test
+t18: Randomly generated test
+t19: Randomly generated test (kill pattern 1)
+t20: Simple looping I/O      (kill pattern 1)
+t21: Simple looping I/O      (kill pattern 2)
+t22: Randomly generated test (kill pattern 2)
+t23: A bunch of weird directory stuff that's supposed to fail
+t24: Create a directory and a file under root, and make sure they show up for a readdir on the root
