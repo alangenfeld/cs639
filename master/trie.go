@@ -256,7 +256,13 @@ func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[str
 	if len(path_s) == 0 {
 		return nil, nil, os.NewError("Path Length == 0\n")
 	}
-	path_cor := fmt.Sprintf("%s%s", path_s, "/")
+	path_cor := ""
+	if len(path_s) == 1 {
+		path_cor = path_s
+	}else {
+		path_cor = fmt.Sprintf("%s%s", path_s, "/")
+	}
+		
 	//CHECK path_s SYNTAX to make sure it ends on a forward slash..
 	leaf := p.find(strings.NewReader(path_cor))
 	if leaf == nil {
