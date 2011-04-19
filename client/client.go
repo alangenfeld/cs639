@@ -8,6 +8,7 @@ import (
 	"log"
 	"../include/sfs"
 	"math"
+	"time"
 )
 
 const(
@@ -16,7 +17,7 @@ const(
  O_RDONLY = 1
  O_WRONLY = 2
  O_RDWR = 3
- O_CREATE =4
+ O_CREATE = 4
  SEEK_SET = 1
  SEEK_CURR = 2
  SEEK_END = 4
@@ -78,18 +79,20 @@ func Open(filename string , flag int ) (int){
 			err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 			if(err != nil){
 				log.Printf("Client: Open fail ", err )
-				return FAIL
+				return sfs.FAIL
 			}
-			if fileInfo.New {
+			if fileInfo.New && (flag & O_CREATE) == O_CREATE {
 				log.Printf("Client: New file!\n")
 
-			}else{
+			}else if !fileInfo.New  && (flag & O_CREATE) != O_CREATE   {
 				log.Printf("Client: Old file!\n")
+			}else {
+				return sfs.FAIL
 			}
+
 			fd++
 			var nextFile file
 			nextFile.size = 0
-		//	nextFile.filePtr = 0
 			nextFile.name = filename
 
 			nextFile.chunkInfo = new(vector.Vector)
@@ -115,13 +118,14 @@ func Open(filename string , flag int ) (int){
 		}
 		return fd;
 	}
-	
-	return FAIL
+
+	return sfs.FAIL
 }
 
 /* read */
 func Read (fd int, size int) ([]byte, int ){
-	
+
+
 	log.Printf("Client: **********READ BEGIN***********\n");
 	fileInfo := new (sfs.ReadReturn)
 	fileArgs := new (sfs.ReadArgs)
@@ -173,10 +177,10 @@ func Read (fd int, size int) ([]byte, int ){
 
 
 	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
-		
+
 		chunkServerMirrors := fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers
 		numChunkServers := len(chunkServerMirrors)
-		
+
 		if (numChunkServers < 1) {
 				log.Printf("Client: Dial Failed in Read")
 				return entireRead, FAIL
@@ -199,7 +203,7 @@ func Read (fd int, size int) ([]byte, int ){
 
 			fileArgs.ChunkID= fdFile.chunkInfo.At(i).(sfs.ChunkInfo).ChunkID;
 			if fileArgs.ChunkID == 0 {
-				log.Printf("Client: ChunkID = 0, this shouldn't happen")
+				log.Printf("Client: ChunkID = 0, invalid number so this shouldn't happen")
 			}
 			err = client.Call("Server.Read", &fileArgs, &fileInfo);
 
@@ -208,12 +212,14 @@ func Read (fd int, size int) ([]byte, int ){
 				continue
 			}
 
-			if(fileInfo.Status == sfs.SUCCESS || fileInfo.Status == 2){ //// this should be changed at some point
+	log.Printf("Client: fileArgs.Nice = %d", fileArgs.Nice)
+	log.Printf("Client: fileInfo.status = %d", fileInfo.Status)
+			if(fileInfo.Status == sfs.SUCCESS ){
 				for k:=0; k<sfs.CHUNK_SIZE ; k++{
 					if (index< endIndex && index>= startIndex ) {
 						entireRead[index-startIndex] = fileInfo.Data.Data[k];
 					}
-					index++;
+					index++
 				}
 
 				break //successfully read chunk.
@@ -223,7 +229,12 @@ func Read (fd int, size int) ([]byte, int ){
 
 		}
 
-		if fileInfo.Status != sfs.SUCCESS { //case where chunk was never read successfully. 
+		if fileInfo.Status == sfs.BUSY{
+			time.Sleep(100000000)
+		}
+
+		if fileInfo.Status == sfs.FAIL { //case where chunk was never read successfully. 
+			log.Printf("Client: chunk returned bad status\n");
 			return entireRead, fileInfo.Status //return early b/c we failed to read chunk
 		}
 
@@ -350,7 +361,7 @@ func Write (fd int, data []byte) (int){
 			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
 			client,err  := rpc.Dial("tcp",servers[0].String())
 			defer client.Close()
-			if err != nil {
+/*			if err != nil {
 				for j:=1 ; j<len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers) ; j++ {
 					client,err  = rpc.Dial("tcp",servers[j].String())
 					if (err == nil){
@@ -362,6 +373,7 @@ func Write (fd int, data []byte) (int){
 					return FAIL
 				}
 			}
+*/
 
 
 
@@ -382,6 +394,7 @@ func Write (fd int, data []byte) (int){
 			var mapRet sfs.MapChunkToFileReturn
 
 			masterServ,err  := rpc.Dial("tcp",master + ":1338")
+			defer masterServ.Close()
 			if err != nil {
 				log.Printf("Client: dial fail: %s", err)
 				return FAIL
@@ -553,6 +566,7 @@ func MakeDir(path string) (int) {
 	args.DirName = path
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	defer masterConn.Close()
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
 		os.Exit(1)
@@ -577,6 +591,7 @@ func RemoveDir(path string) (int) {
 	args.DirName = path
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	defer masterConn.Close()
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
 		os.Exit(1)
@@ -602,6 +617,7 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 	args.Count = numChunks
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
+	defer masterConn.Close()
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
 		os.Exit(1)
