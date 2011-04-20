@@ -81,14 +81,18 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if logging {
 		id = logger.Start("Read")
 	}
+	log.Println("chunk: Reading from chunk ", args.ChunkID)
+
 	data,present := chunkTable[args.ChunkID]
 	if !present{
 		ret.Status = sfs.FAIL
+		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
 		return nil
 	}
-	log.Println("chunk: Reading from chunk ", args.ChunkID)
+
 
 	if args.Nice == sfs.NICE && ServerBusy() {
+		log.Println("chunk: BUSY")
 		ret.Status = sfs.BUSY
 		return nil
 	}
@@ -141,10 +145,10 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		defer client.Close()
 		if err != nil {
-			log.Printf("chunk: dialing:", err)
+			log.Printf("chunk: dialing error: ", err)
 			continue
 		}
-
+		log.Printf("chunk: forwarding write to ", args.Info.Servers[0])
 		err = client.Call("Server.Write", &args, &inRet)
 		if err != nil {
 			log.Fatal("chunk: server error: ", err)
@@ -265,6 +269,7 @@ func SendHeartbeat(masterAddress string){
 				bArgs.ChunkIDs[i] = k
 				i++
 			}
+			log.Println("chunk: heartbeat")
 			err = master.Call("Master.BirthChunk", &bArgs, &bRet)
 			if err != nil {
 				log.Fatal("chunk call error: ", err)
@@ -296,25 +301,23 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		return nil
 	}
 
-	log.Printf("replication request for site %s and chunk %d\n",
-		args.Servers[0].String(),args.ChunkID);
-
+	log.Println("chunk: replication request chunk ", args.ChunkID);
 
 	for i := 0; i < len(args.Servers); i++ {
 		replicationHost, err := rpc.Dial("tcp", args.Servers[i].String())
 		defer replicationHost.Close()
 		if err != nil {
-			log.Println("chunk: replication call:", err)
+			log.Println("chunk: replication error ", err)
 			continue
 		}
 		
 		var readArgs sfs.ReadArgs
 		var readRet sfs.ReadReturn
 		readArgs.ChunkID = args.ChunkID
-		
+		log.Println("chunk: replicating from ", args.Servers[i]);
 		err = replicationHost.Call("Server.Read", &readArgs, &readRet)
 		if err != nil {
-			log.Println("chunk: replication call:", err)
+			log.Println("chunk: replication error ", err)
 			continue
 		}
 		
