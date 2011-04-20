@@ -27,9 +27,10 @@ var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
 var addedChunks vector.Vector
 var chunkServerID uint64
-//var logging *bool = flag.Bool("log", false, "enables logging")
 var logging bool
 var requestLoad int
+var loadArray []int
+var loadArrayIndex int
 
 
 func Init(masterAddress string, loggingFlag bool) {
@@ -38,6 +39,11 @@ func Init(masterAddress string, loggingFlag bool) {
 	var ret sfs.ChunkBirthReturn 
 
 	requestLoad = 0
+	loadArray = make([]int, 10)
+	for i:=0; i < 10; i ++ {
+		loadArray[i] = 0
+	}
+	loadArrayIndex = 0
 	logging = loggingFlag
 
 	capacity = CHUNK_TABLE_SIZE
@@ -288,6 +294,7 @@ func SendHeartbeat(masterAddress string){
 				logging = false
 			}
 		}
+		addCount(requestLoad)
 		requestLoad = 0
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
@@ -330,8 +337,34 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 
 func ServerBusy() bool {
 
-	index := (logger.GetLoad() * 10) + requestLoad
+	index := logger.GetLoad() + getAvgReq()
 	//index := requestLoad
 	log.Println("Chunk: server load index", index)
 	return index > THRESHOLD
+}
+
+func getAvgReq() int {
+	var avg float64
+	for i:=0; i < 10; i ++ {
+		avg += float64(loadArray[i])
+	}
+	//use loadArrayIndex -1 for most recent reading
+	var currentVal float64
+	if loadArrayIndex == 0 {
+		currentVal = float64(loadArray[9])
+	} else {
+		currentVal = float64(loadArray[loadArrayIndex -1])
+	}
+	if currentVal > avg {
+		return int(10.0 * (currentVal - avg)/avg)
+	}
+	return 0
+}
+
+func addCount(currReq int) {
+	loadArray[loadArrayIndex] = currReq
+	loadArrayIndex ++
+	if loadArrayIndex > 9 {
+		loadArrayIndex = 0;
+	}
 }
