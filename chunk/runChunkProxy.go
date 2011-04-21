@@ -6,12 +6,12 @@ import (
 	"./chunkProxy"
 //	"http"
 	"rpc"
-//	"os"
+	"os"
 	"log"
 	"net"
-//	"fmt"
+	"fmt"
 	"flag"
-//	"strconv"
+	"strconv"
 )
 
 var logging *bool = flag.Bool("log", false, "enables logging")
@@ -20,13 +20,25 @@ func main() {
 
 	flag.Parse()
 	masterAddress := flag.Arg(0)
-
+	delaystr := flag.Arg(1)
+	delay_prob_str := flag.Arg(2)
+	delay,e := strconv.Atoi64(delaystr)
+	if e != nil{
+		log.Fatal("string conversion error",e)
+		fmt.Print(e)
+		os.Exit(2)
+	}
+	delay_prob,e := strconv.Atoi64(delay_prob_str)
+	if e != nil{
+		fmt.Print(e)
+		os.Exit(2)
+	}
 	chunkServ := new(chunkProxy.ChunkProxy)
 
 	if *logging {
-		chunkProxy.Init(masterAddress)
+		chunkProxy.Init(masterAddress,delay,delay_prob)
 	}else{
-		chunkProxy.Init(masterAddress)
+		chunkProxy.Init(masterAddress,delay,delay_prob)
 	}
 	go chunk.SendHeartbeat(masterAddress)
 	rpc.Register(chunkServ)

@@ -9,20 +9,22 @@ my $timeout = 120;
 my $testdir;
 my $verbose = 0;
 my $master;
+my $prob = 0;
+my $lag = 0;
 my $divide = 1;
 my @servers;
 my $outputDir = 'output';
 
 sub doLaunch {
     sys("ssh $master ".
-	"'$testdir/../master/proxy ".
+	"'$testdir/../master/proxy $lag $prob".
 	"&> $testdir/$outputDir/master.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 
     sleep(1);
 
     for(my $i = 1; $i <= $chunkCount; $i++) {
 	sys("$ssh $servers[$i] ".
-	    "'$testdir/../chunk/cproxy $master ".
+	    "'$testdir/../chunk/cproxy $master $lag $prob".
 	    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
     }
 }
@@ -53,7 +55,6 @@ sub superKill {
 	killOne($i);
     }
 }
-
 
 sub printFailSummary {
     my (@failList) = @_;
@@ -115,10 +116,10 @@ sub runTest {
 	if($pid2 == 0) {
 	    while(1) {
 		sleep(1);
-		sys("$ssh $servers[1] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
+		sys("$ssh $servers[1] 'killall cproxy'".($verbose != 1 ? " &> /dev/null":""));
 		sleep(1);
 		sys("$ssh $servers[1] ".
-		    "'$testdir/../chunk/serv $master ".
+		    "'$testdir/../chunk/cproxy $master $lag $prob ".
 		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 	    }
 	    exit(0);
@@ -141,11 +142,11 @@ sub runTest {
 		}
 		sleep(2);
 		print "Killing $i\n";
-		sys("$ssh $servers[$i] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
+		sys("$ssh $servers[$i] 'killall cproxy'".($verbose != 1 ? " &> /dev/null":""));
 		sleep(8);
 		print "Restarting $i\n";
 		sys("$ssh $servers[$i] ".
-		    "'$testdir/../chunk/serv $master ".
+		    "'$testdir/../chunk/cproxy $master $lag $prob".
 		    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 	    }
 	    exit(0);
@@ -228,7 +229,7 @@ sub killTest2 {
 
 
 sub usage {
-    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n\t[-b mumbleBase]\n\t[-d divide]\n ";
+    die "Usage:\n./run.pl \n\t[-k (all|mumbleIndex)] \n\t[-t (all|testName)] \n\t[-c chunkCount] \n\t[-v (1|0)] \n\t[-s timeoutSeconds]\n\t[-b mumbleBase]\n\t[-d divide]\n\t[-l lag in milliseconds]\n\t[-p lag probability in %] ";
 }
 
 
@@ -258,6 +259,10 @@ sub main {
 	    $mumbleBase = $ARGV[$i+1];
 	} elsif($ARGV[$i] eq '-d') {
 	    $divide = $ARGV[$i+1];
+	} elsif($ARGV[$i] eq '-l') {
+	    $lag = $ARGV[$i+1] * 1000000;
+	} elsif($ARGV[$i] eq '-p') {
+	    $prob = $ARGV[$i+1];
 	} else {
 	    usage();
 	}
