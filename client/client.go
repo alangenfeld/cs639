@@ -209,11 +209,14 @@ func Read (fd int, size int) ([]byte, int ){
 			if fileArgs.ChunkID == 0 {
 				log.Printf("Client: ChunkID = 0, invalid number so this shouldn't happen")
 			}
+		log.Printf("Client: 212")
 			err = client.Call("Server.Read", &fileArgs, &fileInfo);
+		log.Printf("Client: 214")
 
 			if err!=nil{
 				log.Printf("Client: error reading from Chunk Server - %s\n",chunkServerMirrors[j % numChunkServers].String());
 				if i == endChunk-1 {
+					log.Printf("Client: i == endChunk -1 ???")
 					return entireRead, fileInfo.Status
 
 				}
@@ -237,7 +240,9 @@ func Read (fd int, size int) ([]byte, int ){
 
 				break //successfully read chunk.
 			}
-
+			if fileInfo.Status != sfs.SUCCESS {
+				client.Close()
+			}
 			log.Printf("Client: Chunk returned status %d\n",fileInfo.Status);
 
 		}
@@ -295,8 +300,10 @@ func Write (fd int, data []byte) (int){
 		fileArgsRead := new (sfs.ReadArgs)
 		fileInfoRead := new (sfs.ReadReturn)
 		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
-		defer client.Close()
-		if err != nil{
+		if client != nil {
+			defer client.Close()
+		}
+		if err != nil {
 			log.Printf("Client: Dial Failed in Write 1")
 			return FAIL
 		}
