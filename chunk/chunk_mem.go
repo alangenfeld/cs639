@@ -21,7 +21,7 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 const STATUS_CMD = "../stats.sh"
 const STATUS_ARGS = ""
 const STATUS_LEN = 17
-const THRESHOLD = 10000 //arbitrary as fuck
+const THRESHOLD = 15 //represents value out of 20
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
@@ -39,8 +39,8 @@ func Init(masterAddress string, loggingFlag bool) {
 	var ret sfs.ChunkBirthReturn 
 
 	requestLoad = 0
-	loadArray = make([]int, 10)
-	for i:=0; i < 10; i ++ {
+	loadArray = make([]int, 3)
+	for i:=0; i < 3; i ++ {
 		loadArray[i] = 0
 	}
 	loadArrayIndex = 0
@@ -67,6 +67,7 @@ func Init(masterAddress string, loggingFlag bool) {
 			logging = false
 		}
 	}
+    logger.QuickInit()
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	defer master.Close()
@@ -119,9 +120,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	ret.Status = sfs.FAIL
 	var id logger.TaskId
 
-	if logging {
-		id = logger.Start("Write")
-	}
+	id = logger.Start("Write")
 	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
 	if (capacity < 1) {
 		log.Println("chunk: Server Full!")
@@ -171,12 +170,8 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 			ret.Info.Servers[i] = tempServ		
 		}
 	}
-	if logging {
-		errString := logger.End(id, false)
-		if errString != "" {
-			logging = false
-		}
-	}
+
+    logger.End(id, false)
 
 	ret.Status = sfs.SUCCESS
 	return nil	
@@ -346,8 +341,13 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 
 func ServerBusy() bool {
 	log.Println("Chunk: calculating load...")
-//	index := logger.GetLoad() + getAvgReq()
-	index := requestLoad
+    loggerLoad := logger.GetLoad()
+    chunkLoad := getAvgReq()
+    log.Println("Chunk: logger metric says: ", loggerLoad)
+    log.Println("Chunk: chunk metric says: ", chunkLoad)
+
+	index := logger.GetLoad() + getAvgReq()
+//	index := requestLoad
 	log.Println("Chunk: server load index", index)
 
 	return index > THRESHOLD
@@ -356,26 +356,35 @@ func ServerBusy() bool {
 func getAvgReq() int {
 	var avg float64
 	avg = 1
-	for i:=0; i < 10; i ++ {
+	for i:=0; i < 3; i ++ {
 		avg += float64(loadArray[i])
 	}
+    avg = avg/3.0
+    log.Println("avg is: ", avg)
 	//use loadArrayIndex -1 for most recent reading
 	var currentVal float64
 	if loadArrayIndex == 0 {
-		currentVal = float64(loadArray[9])
+		currentVal = float64(loadArray[2])
 	} else {
 		currentVal = float64(loadArray[loadArrayIndex -1])
 	}
+    log.Println("currentVal is: ", currentVal)
 	if currentVal > avg {
-		return int(10.0 * (currentVal - avg)/avg)
+		retVal := int(10.0 * (currentVal - avg)/avg)
+        if (retVal > 10){
+           return 10
+        }
+        return retVal
 	}
 	return 0
 }
 
 func addCount(currReq int) {
+    log.Println("Index is: ", loadArrayIndex)
 	loadArray[loadArrayIndex] = currReq
 	loadArrayIndex ++
-	if loadArrayIndex > 9 {
-		loadArrayIndex = 0;
+	if loadArrayIndex >= len(loadArray) {
+        log.Println("We flip when index is: ", loadArrayIndex)
+		loadArrayIndex = 0
 	}
 }
