@@ -69,7 +69,9 @@ func Init(masterAddress string, loggingFlag bool) {
 	}
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
-	defer master.Close()
+	if master != nil {
+		defer master.Close()
+	}
 	if err != nil {
 		log.Fatal("chunk dial error:", err)
 	}
@@ -149,7 +151,9 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
-		defer client.Close()
+		if(client != nil){
+			defer client.Close()
+		}
 		if err != nil {
 			log.Printf("chunk: dialing error: ", err)
 			continue
@@ -235,7 +239,9 @@ func SendHeartbeat(masterAddress string){
 	var ret  sfs.HeartbeatReturn
 	
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
-	defer master.Close()
+	if(master != nil){
+		defer master.Close()
+	}
 	if err != nil {
 		log.Fatal("chunk: dialing:", err)
 	}
@@ -321,7 +327,9 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		}
 		
 		replicationHost, err := rpc.Dial("tcp", args.Servers[i].String())
-		defer replicationHost.Close()
+		if(replicationHost != nil){
+			defer replicationHost.Close()
+		}
 		if err != nil {
 			log.Println("chunk: replication error ", err)
 			continue
