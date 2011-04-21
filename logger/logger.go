@@ -125,7 +125,9 @@ func String(thisTask TaskId) string {
 func GetLoad() int {
 	//first, get memory usage
 	load := 5.0 * getMem()
+	log.println("done getting mem in logger");
 	load += 5.0 * getCallTime()
+	log.println("done getting calltime in logger");
 	return int(load)
 }
 
