@@ -31,7 +31,7 @@ var logging bool
 var requestLoad int
 var loadArray []int
 var loadArrayIndex int
-
+var tcpAddr *net.TCPAddr
 
 func Init(masterAddress string, loggingFlag bool) {
 
@@ -51,7 +51,7 @@ func Init(masterAddress string, loggingFlag bool) {
 
 	host,_ := os.Hostname()
 	_,iparray,_ := net.LookupHost(host)
-	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
+	tcpAddr,_ = net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	log.Println("Chunk: Server addr: ", args.ChunkServerIP)
 	
@@ -307,10 +307,19 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		log.Printf("chunk: replication call: nil address.")
 		return nil
 	}
-
+	
 	log.Println("chunk: replication request chunk ", args.ChunkID);
-
+	_,present := chunkTable[args.ChunkID]
+	if present {
+		log.Println("chunk: already have it!");
+		return nil
+	}
+	
 	for i := 0; i < len(args.Servers); i++ {
+		if(args.Servers[i].String() == tcpAddr.String()) {
+			continue;
+		}
+		
 		replicationHost, err := rpc.Dial("tcp", args.Servers[i].String())
 		defer replicationHost.Close()
 		if err != nil {
@@ -336,15 +345,17 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 }
 
 func ServerBusy() bool {
-
-	index := logger.GetLoad() + getAvgReq()
-	//index := requestLoad
+	log.Println("Chunk: calculating load...")
+//	index := logger.GetLoad() + getAvgReq()
+	index := requestLoad
 	log.Println("Chunk: server load index", index)
+
 	return index > THRESHOLD
 }
 
 func getAvgReq() int {
 	var avg float64
+	avg = 1
 	for i:=0; i < 10; i ++ {
 		avg += float64(loadArray[i])
 	}
