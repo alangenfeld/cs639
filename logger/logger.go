@@ -12,7 +12,7 @@ import(
 	"time"
 )
 
-type TaskId uint64
+type TaskId int64
 type taskInfo struct{
 	TaskName string
 	StartTime int64
@@ -47,11 +47,25 @@ func Init(Filename string, Directory string) os.Error{
 	statusDir = Directory
 	//initialize task id numbers
 	currTaskId = 0;
-	currVals = make([]float64, 5)
+	currVals = make([]float64, 6)
+    for i:= 0; i < 5; i ++ {
+       currVals[i] = 0
+    }
 	currValIndex = 0
 	notFull = true
 	startId = 0
 	return nil;
+}
+
+func QuickInit() {
+	currTaskId = 0;
+	currVals = make([]float64, 5)
+    for i:= 0; i < 5; i ++ {
+       currVals[i] = 0
+    }
+	currValIndex = 0
+	notFull = true
+	startId = 0
 }
 
 func Start(TaskName string) TaskId{
@@ -62,8 +76,9 @@ func Start(TaskName string) TaskId{
 	info.TaskName = TaskName
 	taskMap[currTaskId] = info
 	//make sure you don't overwrite another task
+    retval := currTaskId
 	currTaskId ++
-	return (currTaskId - 1)
+	return retval
 }
 
 func End(thisTask TaskId, SysStats bool) string{
@@ -125,7 +140,9 @@ func String(thisTask TaskId) string {
 func GetLoad() int {
 	//first, get memory usage
 	load := 5.0 * getMem()
+	log.Println("done getting mem in logger");
 	load += 5.0 * getCallTime()
+	log.Println("done getting calltime in logger");
 	return int(load)
 }
 
@@ -159,7 +176,7 @@ func getCallTime() float64 {
 	ourId := startId;
 	var retVal float64;
 	for notFull && (ourId <= lastId) { 
-		//log.Println("In initial phase ...")
+		log.Println("In initial phase ...")
 		info, _ := taskMap[ourId]
 		if info.EndTime != 0 && info.TaskName == "Write" {
 			timeSpent := info.EndTime - info.StartTime
@@ -168,7 +185,7 @@ func getCallTime() float64 {
 			//log.Println("Adding: " + fmt.Sprintf("%f", niceTimeSpent))
 			currValIndex ++;
 			if currValIndex >= 5 {
-			//	log.Println("flipping notFul1!")
+				log.Println("flipping notFul1!")
 				notFull = false
 				currValIndex = 0
 			}
@@ -180,15 +197,17 @@ func getCallTime() float64 {
 	retVal = 0
 	ourId = startId
 	needSample := !notFull
+    log.Println("sample: " + fmt.Sprintf("%b", needSample) + " " + fmt.Sprintf("%d", ourId) + " " + fmt.Sprintf("%d", lastId));
 	for needSample && (ourId <= lastId) {
-		//log.Println("In checking phase")
+		log.Println("In checking phase")
+        log.Println("sample: " + fmt.Sprintf("%b", needSample) + " " + fmt.Sprintf("%d", ourId) + " " + fmt.Sprintf("%d", lastId));
 		info, _ := taskMap[ourId]
 		if info.EndTime != 0 && info.TaskName == "Write" {
 			timeSpent := info.EndTime - info.StartTime
 			niceTimeSpent := float64(timeSpent) / float64(1000000000)
 			needSample = false
 			avg := (currVals[0] + currVals[1] + currVals[2] + currVals[3] + currVals[4])/5
-			//log.Println("avg: " + fmt.Sprintf("%f", avg) + " niceTime: " + fmt.Sprintf("%f", niceTimeSpent))
+			log.Println("avg: " + fmt.Sprintf("%f", avg) + " niceTime: " + fmt.Sprintf("%f", niceTimeSpent))
 			if (niceTimeSpent - avg) > 0 {
 				retVal = (niceTimeSpent - avg) / avg
 			}
@@ -202,7 +221,7 @@ func getCallTime() float64 {
 			ourId ++;
 		}
 	}
-	startId = ourId
+	startId = lastId
 	//log.Println("retVal of call: " + fmt.Sprintf("%f", retVal))
 	return retVal
 }

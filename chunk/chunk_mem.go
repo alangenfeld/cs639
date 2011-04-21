@@ -21,16 +21,17 @@ const CHUNK_TABLE_SIZE = 1024*1024*1024 / sfs.CHUNK_SIZE
 const STATUS_CMD = "../stats.sh"
 const STATUS_ARGS = ""
 const STATUS_LEN = 17
-const THRESHOLD = 10000 //arbitrary as fuck
+const THRESHOLD = 15 //represents value out of 20
 
 var chunkTable = map[uint64] sfs.Chunk {}
 var capacity uint64
 var addedChunks vector.Vector
 var chunkServerID uint64
-//var logging *bool = flag.Bool("log", false, "enables logging")
 var logging bool
 var requestLoad int
-
+var loadArray []int
+var loadArrayIndex int
+var tcpAddr *net.TCPAddr
 
 func Init(masterAddress string, loggingFlag bool) {
 
@@ -38,6 +39,11 @@ func Init(masterAddress string, loggingFlag bool) {
 	var ret sfs.ChunkBirthReturn 
 
 	requestLoad = 0
+	loadArray = make([]int, 3)
+	for i:=0; i < 3; i ++ {
+		loadArray[i] = 0
+	}
+	loadArrayIndex = 0
 	logging = loggingFlag
 
 	capacity = CHUNK_TABLE_SIZE
@@ -45,7 +51,7 @@ func Init(masterAddress string, loggingFlag bool) {
 
 	host,_ := os.Hostname()
 	_,iparray,_ := net.LookupHost(host)
-	tcpAddr,_ := net.ResolveTCPAddr(iparray[0] + ":1337")
+	tcpAddr,_ = net.ResolveTCPAddr(iparray[0] + ":1337")
 	args.ChunkServerIP = *tcpAddr
 	log.Println("Chunk: Server addr: ", args.ChunkServerIP)
 	
@@ -61,9 +67,12 @@ func Init(masterAddress string, loggingFlag bool) {
 			logging = false
 		}
 	}
+    logger.QuickInit()
 
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
-	defer master.Close()
+	if master != nil {
+		defer master.Close()
+	}
 	if err != nil {
 		log.Fatal("chunk dial error:", err)
 	}
@@ -81,14 +90,18 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if logging {
 		id = logger.Start("Read")
 	}
+	log.Println("chunk: Reading from chunk ", args.ChunkID)
+
 	data,present := chunkTable[args.ChunkID]
 	if !present{
 		ret.Status = sfs.FAIL
+		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
 		return nil
 	}
-	log.Println("chunk: Reading from chunk ", args.ChunkID)
+
 
 	if args.Nice == sfs.NICE && ServerBusy() {
+		log.Println("chunk: BUSY")
 		ret.Status = sfs.BUSY
 		return nil
 	}
@@ -109,9 +122,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	ret.Status = sfs.FAIL
 	var id logger.TaskId
 
-	if logging {
-		id = logger.Start("Write")
-	}
+	id = logger.Start("Write")
 	log.Println("chunk: Writing to chunk ", args.Info.ChunkID)
 	if (capacity < 1) {
 		log.Println("chunk: Server Full!")
@@ -139,12 +150,14 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
-		defer client.Close()
+		if(client != nil){
+			defer client.Close()
+		}
 		if err != nil {
-			log.Printf("chunk: dialing:", err)
+			log.Printf("chunk: dialing error: ", err)
 			continue
 		}
-
+		log.Printf("chunk: forwarding write to ", args.Info.Servers[0])
 		err = client.Call("Server.Write", &args, &inRet)
 		if err != nil {
 			log.Fatal("chunk: server error: ", err)
@@ -161,12 +174,8 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 			ret.Info.Servers[i] = tempServ		
 		}
 	}
-	if logging {
-		errString := logger.End(id, false)
-		if errString != "" {
-			logging = false
-		}
-	}
+
+    logger.End(id, false)
 
 	ret.Status = sfs.SUCCESS
 	return nil	
@@ -225,7 +234,9 @@ func SendHeartbeat(masterAddress string){
 	var ret  sfs.HeartbeatReturn
 	
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
-	defer master.Close()
+	if(master != nil){
+		defer master.Close()
+	}
 	if err != nil {
 		log.Fatal("chunk: dialing:", err)
 	}
@@ -265,6 +276,7 @@ func SendHeartbeat(masterAddress string){
 				bArgs.ChunkIDs[i] = k
 				i++
 			}
+			log.Println("chunk: heartbeat")
 			err = master.Call("Master.BirthChunk", &bArgs, &bRet)
 			if err != nil {
 				log.Fatal("chunk call error: ", err)
@@ -283,6 +295,7 @@ func SendHeartbeat(masterAddress string){
 				logging = false
 			}
 		}
+		addCount(requestLoad)
 		requestLoad = 0
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
@@ -295,26 +308,35 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		log.Printf("chunk: replication call: nil address.")
 		return nil
 	}
-
-	log.Printf("replication request for site %s and chunk %d\n",
-		args.Servers[0].String(),args.ChunkID);
-
-
+	
+	log.Println("chunk: replication request chunk ", args.ChunkID);
+	_,present := chunkTable[args.ChunkID]
+	if present {
+		log.Println("chunk: already have it!");
+		return nil
+	}
+	
 	for i := 0; i < len(args.Servers); i++ {
+		if(args.Servers[i].String() == tcpAddr.String()) {
+			continue;
+		}
+		
 		replicationHost, err := rpc.Dial("tcp", args.Servers[i].String())
-		defer replicationHost.Close()
+		if(replicationHost != nil){
+			defer replicationHost.Close()
+		}
 		if err != nil {
-			log.Println("chunk: replication call:", err)
+			log.Println("chunk: replication error ", err)
 			continue
 		}
 		
 		var readArgs sfs.ReadArgs
 		var readRet sfs.ReadReturn
 		readArgs.ChunkID = args.ChunkID
-		
+		log.Println("chunk: replicating from ", args.Servers[i]);
 		err = replicationHost.Call("Server.Read", &readArgs, &readRet)
 		if err != nil {
-			log.Println("chunk: replication call:", err)
+			log.Println("chunk: replication error ", err)
 			continue
 		}
 		
@@ -326,9 +348,51 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 }
 
 func ServerBusy() bool {
+	log.Println("Chunk: calculating load...")
+    loggerLoad := logger.GetLoad()
+    chunkLoad := getAvgReq()
+    log.Println("Chunk: logger metric says: ", loggerLoad)
+    log.Println("Chunk: chunk metric says: ", chunkLoad)
 
-	index := (logger.GetLoad() * 10) + requestLoad
-	//index := requestLoad
+	index := logger.GetLoad() + getAvgReq()
+//	index := requestLoad
 	log.Println("Chunk: server load index", index)
+
 	return index > THRESHOLD
+}
+
+func getAvgReq() int {
+	var avg float64
+	avg = 1
+	for i:=0; i < 3; i ++ {
+		avg += float64(loadArray[i])
+	}
+    avg = avg/3.0
+    log.Println("avg is: ", avg)
+	//use loadArrayIndex -1 for most recent reading
+	var currentVal float64
+	if loadArrayIndex == 0 {
+		currentVal = float64(loadArray[2])
+	} else {
+		currentVal = float64(loadArray[loadArrayIndex -1])
+	}
+    log.Println("currentVal is: ", currentVal)
+	if currentVal > avg {
+		retVal := int(10.0 * (currentVal - avg)/avg)
+        if (retVal > 10){
+           return 10
+        }
+        return retVal
+	}
+	return 0
+}
+
+func addCount(currReq int) {
+    log.Println("Index is: ", loadArrayIndex)
+	loadArray[loadArrayIndex] = currReq
+	loadArrayIndex ++
+	if loadArrayIndex >= len(loadArray) {
+        log.Println("We flip when index is: ", loadArrayIndex)
+		loadArrayIndex = 0
+	}
 }
