@@ -159,7 +159,7 @@ func getCallTime() float64 {
 	ourId := startId;
 	var retVal float64;
 	for notFull && (ourId <= lastId) { 
-		//log.Println("In initial phase ...")
+		log.Println("In initial phase ...")
 		info, _ := taskMap[ourId]
 		if info.EndTime != 0 && info.TaskName == "Write" {
 			timeSpent := info.EndTime - info.StartTime
@@ -168,7 +168,7 @@ func getCallTime() float64 {
 			//log.Println("Adding: " + fmt.Sprintf("%f", niceTimeSpent))
 			currValIndex ++;
 			if currValIndex >= 5 {
-			//	log.Println("flipping notFul1!")
+				log.Println("flipping notFul1!")
 				notFull = false
 				currValIndex = 0
 			}
@@ -181,14 +181,14 @@ func getCallTime() float64 {
 	ourId = startId
 	needSample := !notFull
 	for needSample && (ourId <= lastId) {
-		//log.Println("In checking phase")
+		log.Println("In checking phase")
 		info, _ := taskMap[ourId]
 		if info.EndTime != 0 && info.TaskName == "Write" {
 			timeSpent := info.EndTime - info.StartTime
 			niceTimeSpent := float64(timeSpent) / float64(1000000000)
 			needSample = false
 			avg := (currVals[0] + currVals[1] + currVals[2] + currVals[3] + currVals[4])/5
-			//log.Println("avg: " + fmt.Sprintf("%f", avg) + " niceTime: " + fmt.Sprintf("%f", niceTimeSpent))
+			log.Println("avg: " + fmt.Sprintf("%f", avg) + " niceTime: " + fmt.Sprintf("%f", niceTimeSpent))
 			if (niceTimeSpent - avg) > 0 {
 				retVal = (niceTimeSpent - avg) / avg
 			}
