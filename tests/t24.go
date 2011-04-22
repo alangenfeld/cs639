@@ -6,7 +6,6 @@ import (
 	"flag"
 	"os"
 	"sort"
-	"strings"
 )
 
 func createPath(path string) {
