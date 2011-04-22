@@ -175,7 +175,8 @@ func (p *Trie) AddFile(path_s string, i interface{}) os.Error {
 	} else {
 		leaf.files[file] = i
 	}
-	
+
+/*	
 	var tmpCont string
 	for k, _ := range leaf.files {
 		tmpCont = tmpCont + k + " "
@@ -183,6 +184,7 @@ func (p *Trie) AddFile(path_s string, i interface{}) os.Error {
 
 	log.Printf("trie.AddFile: leaf.files: %+v\n", leaf.files)
 	log.Printf("trie.AddFile: leaf.files (string): %s\n", tmpCont)
+*/
 
 	return nil
 }
