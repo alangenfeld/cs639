@@ -88,7 +88,7 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	requestLoad++
 	var id logger.TaskId
 	if logging {
-		id = logger.Start("Read")
+	//	id = logger.Start("Read")
 	}
 	log.Println("chunk: Reading from chunk ", args.ChunkID)
 
@@ -100,11 +100,11 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	}
 
 
-	if args.Nice == sfs.NICE && ServerBusy() {
+	/*if args.Nice == sfs.NICE && ServerBusy() {
 		log.Println("chunk: BUSY")
 		ret.Status = sfs.BUSY
 		return nil
-	}
+	}*/
 	
 	ret.Data.Data = data.Data
 	ret.Status = sfs.SUCCESS
