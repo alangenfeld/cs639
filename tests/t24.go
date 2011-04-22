@@ -41,7 +41,7 @@ func main(){
 		panic("makedir should work")
 	}
 
-	fd := client.Open("b", client.O_WRONLY|client.O_CREATE)
+	fd := client.Open("/b", client.O_WRONLY|client.O_CREATE)
 	if(fd < 0) {
 		panic("open failed")
 	}
