@@ -154,7 +154,6 @@ func (p *Trie) QueryFile(path_s string)  (i interface{}, exists bool, r os.Error
 
 }
 
-
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
 func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	if len(path_s) == 0 {
@@ -175,9 +174,8 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 		leaf.files[file] = i
 	}
 	return nil
-
-
 }
+
 func (p *Trie) DeleteFile(path_s string) os.Error{
 	if len(path_s) == 0{
 		return os.NewError("Path Length == 0\n")
@@ -199,10 +197,8 @@ func (p *Trie) DeleteFile(path_s string) os.Error{
 	//DELETE INODE IN MASTER???
 	
 	return nil
-
-
-
 }
+
 func (p *Trie) GetFile(path_s string) (i interface{}, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, os.NewError("Path Length == 0\n")
@@ -222,6 +218,7 @@ func (p *Trie) GetFile(path_s string) (i interface{}, r os.Error) {
 	}
 	return leaf.files[file], nil
 }
+
 func (p *Trie) AddDir(path_s string) os.Error {
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
@@ -255,13 +252,15 @@ func (p *Trie) AddDir(path_s string) os.Error {
 	}
 
 	return nil
-
 }
-func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[string] interface{}, r os.Error) {
+
+func (p *Trie) ReadDir(path_s string) (dirs *vector.StringVector, files map[string]interface{}, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, nil, os.NewError("Path Length == 0\n")
 	}
+	
 	path_cor := ""
+	
 	if len(path_s) == 1 {
 		path_cor = path_s
 	}else {
@@ -274,13 +273,13 @@ func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[str
 		//bad path_s
 		return nil, nil, os.NewError("ReadDir - Dir doesn't exist\n")
 	}
-	if leaf.dirs.Len() == 0 {
-		return nil, nil, nil
-	}
+	
+	log.Printf("trie.ReadDir: %+v\n", *leaf)
+	
 	//TRAVERSE FILES STRUCTURE??
 	return leaf.dirs, leaf.files, nil
-
 }
+
 func (p *Trie) RemoveDir(path_s string) os.Error {
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
@@ -300,9 +299,8 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 	parent.children['/'] = nil
 	
 	return nil
-
-
 }
+
 func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 	
 	new_path_cor := fmt.Sprintf("%s%s", newpath_s, "/")
@@ -378,10 +376,10 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 			olddir.dirs.Delete(i)
 		}
 	}
-	return nil
 	
-
+	return nil
 }
+
 // Internal function: adds items to the trie, reading runes from a strings.Reader.  It returns
 // the leaf node at which the addition ends.
 func (p *Trie) addRunes(r *strings.Reader) *Trie {
@@ -470,9 +468,6 @@ func (p *Trie) find(r *strings.Reader) *Trie {
 	return child.find(r)
 }
 
-
-
-
 // Internal string inclusion function.
 func (p *Trie) includes(r *strings.Reader) *Trie {
 	rune, _, err := r.ReadRune()
@@ -536,6 +531,7 @@ func (p *Trie) buildMembers(prefix string) *vector.StringVector {
 func (p *Trie) Members() (members *vector.StringVector) {
 	members = p.buildMembers(``)
 	sort.Sort(members)
+	
 	return
 }
 
