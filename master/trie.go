@@ -162,6 +162,8 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	}
 	dir, file := path.Split(path_s)
 	
+	log.Printf("trie.AddFile: dir: %s file: %s\n", dir, file)
+	
 	// append the runes to the trie
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil{
@@ -174,6 +176,9 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	} else {
 		leaf.files[file] = i
 	}
+
+	log.Printf("trie.AddFile: leaf.files: %+v\n", leaf.files)
+
 	return nil
 }
 
