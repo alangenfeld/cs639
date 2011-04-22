@@ -51,7 +51,7 @@ func main(){
 	if(err != 0) {
 		panic("readdir failed")
 	}
-	lsExpected := []string{"a/", "b")
+	lsExpected := []string{"a/", "b"}
 	sort.SortStrings(lsExpected)
 	sort.SortStrings(ls)
 	if(! ArrEquals(ls, lsExpected)) {
