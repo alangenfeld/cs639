@@ -6,7 +6,6 @@ import (
 	"flag"
 	"os"
 	"sort"
-	"strings"
 )
 
 func createPath(path string) {
@@ -41,7 +40,7 @@ func main(){
 		panic("makedir should work")
 	}
 
-	fd := client.Open("b", client.O_WRONLY|client.O_CREATE)
+	fd := client.Open("/b", client.O_WRONLY|client.O_CREATE)
 	if(fd < 0) {
 		panic("open failed")
 	}
@@ -51,10 +50,11 @@ func main(){
 	if(err != 0) {
 		panic("readdir failed")
 	}
-	lsExpected := strings.Split(":","a/:b",-1)
+	lsExpected := []string{"a/", "b"}
 	sort.SortStrings(lsExpected)
 	sort.SortStrings(ls)
 	if(! ArrEquals(ls, lsExpected)) {
+		fmt.Printf("Actual:\t%+v\nExpected:\t%+v\n", ls, lsExpected)
 		panic("readir results differ")
 	}
 
