@@ -286,8 +286,19 @@ func (p *Trie) ReadDir(path_s string) (dirs *vector.StringVector, files map[stri
 		//bad path_s
 		return nil, nil, os.NewError("ReadDir - Dir doesn't exist\n")
 	}
+	
+	var tmpDirs string
+	for i := 0; i < leaf.dirs.Len(); i++{
+		tmpDirs = tmpDirs + leaf.dirs.At(i) + " "
+	}
 
-	log.Printf("trie.ReadDir: %+v\n", *leaf)
+	var tmpFiles string
+	for k, _ := range leaf.files {
+		tmpFiles = tmpFiles + k + " "
+	}
+
+
+	log.Printf("trie.ReadDir:\n\tdirs : %s\n\tfiles: %s\n", tmpDirs, tmpFiles)
 
 	//TRAVERSE FILES STRUCTURE??
 	return leaf.dirs, leaf.files, nil
