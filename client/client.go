@@ -268,6 +268,15 @@ func Write (fd int, data []byte) (int){
 
 	log.Printf("Client: *************WRITE BEGIN**********\n");
 
+	masterServ,masterErr  := rpc.Dial("tcp",master + ":1338")
+	if masterErr != nil {
+		log.Printf("Client: dial fail: %s", masterErr)
+		return FAIL
+	}
+	if masterServ == nil {
+	//	log.Printf("Client: nil connection to master in write", masterErr)
+		return FAIL
+	}
 
 	nameAndPointer, inMap :=  openDescriptors[fd]
 	if !inMap {
@@ -338,7 +347,6 @@ func Write (fd int, data []byte) (int){
 
 				if client!= nil{
 					log.Printf("Client: nil client...")
-					defer client.Close()
 				}
 
 
@@ -352,6 +360,11 @@ func Write (fd int, data []byte) (int){
 				}
 				chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
 				replyCall:= <-chunkCall.Done
+
+				if client!= nil{
+					client.Close()
+				}
+
 				if replyCall.Error!=nil{
 					log.Println("Client: Server.Read Failed:", replyCall.Error);
 					return FAIL
@@ -403,10 +416,10 @@ func Write (fd int, data []byte) (int){
 					time.Sleep(sfs.HEARTBEAT_WAIT/15)
 					continue
 				}
-				defer client.Close()
 
 
 				err = client.Call("Server.Write", &fileArgs,&fileInfo);
+				client.Close()
 				if err != nil{
 					log.Println("Client: Server.Write failed:", err);
 					continue
@@ -424,17 +437,9 @@ func Write (fd int, data []byte) (int){
 			mapArgs := &sfs.MapChunkToFileArgs{fdFile.name, chunkOffset, fileInfo.Info}
 			var mapRet sfs.MapChunkToFileReturn
 
-			masterServ,err  := rpc.Dial("tcp",master + ":1338")
-			defer masterServ.Close()
-			if err != nil {
-				log.Printf("Client: dial fail: %s", err)
-				return FAIL
-			}
-			if masterServ == nil {
-				log.Printf("Client: nil connection to master in write", err)
-				return FAIL
-			}
-			err = masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
+
+
+			err := masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
 			if err != nil{
 				log.Println("Client: Master.MapChunkToFile failed:", err);
 				return FAIL
@@ -451,6 +456,10 @@ func Write (fd int, data []byte) (int){
 				}
 			}
 		}
+	}
+
+	if masterServ != nil {
+		masterServ.Close()
 	}
 
 
@@ -649,7 +658,6 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 	args.Count = numChunks
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
-	defer masterConn.Close()
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
 		os.Exit(1)
@@ -660,7 +668,7 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 		log.Printf("Error Calling Master(AddChunks):", err.String())
 		os.Exit(1)
 	}
-
+	masterConn.Close()
 	return returnVal.Info
 
 }
