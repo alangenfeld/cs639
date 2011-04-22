@@ -434,7 +434,7 @@ func Write (fd int, data []byte) (int){
 	return fileInfo.Status
 }
 
-func GetChunk(fdFile file,  chunkOffset int)(int, [32]byte){
+func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 		log.Printf("Client: in Get Chunk\n")
 		fileArgsRead := new (sfs.ReadArgs)
 		fileInfoRead := new (sfs.ReadReturn)
