@@ -123,7 +123,6 @@ func Open(filename string , flag int ) (int){
 /* read */
 func Read (fd int, size int) ([]byte, int ){
 
-
 	log.Printf("Client: **********READ BEGIN***********\n");
 	fileInfo := new (sfs.ReadReturn)
 	fileArgs := new (sfs.ReadArgs)
@@ -171,8 +170,6 @@ func Read (fd int, size int) ([]byte, int ){
 		endChunk = int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE)))
 		log.Printf("Client: file was smaller than read size")
 	}
-
-
 
 	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
 
@@ -265,7 +262,6 @@ func Read (fd int, size int) ([]byte, int ){
 
 /* write */
 func Write (fd int, data []byte) (int){
-
 	log.Printf("Client: *************WRITE BEGIN**********\n");
 
 	masterServ,masterErr  := rpc.Dial("tcp",master + ":1338")
@@ -274,7 +270,6 @@ func Write (fd int, data []byte) (int){
 		return FAIL
 	}
 	if masterServ == nil {
-	//	log.Printf("Client: nil connection to master in write", masterErr)
 		return FAIL
 	}
 
@@ -286,8 +281,11 @@ func Write (fd int, data []byte) (int){
 	filename := nameAndPointer.name
 	filePtr := nameAndPointer.filePtr
 
-
 	fdFile, inMap := openFiles[filename]
+	if !inMap {
+		log.Printf("Client: File not in open list!\n")
+		return FAIL
+	}
 
 	log.Printf("Client: filestarting size = %d",fdFile.size)
 	log.Printf("Client: fileName   %s",fdFile.name)
@@ -296,38 +294,19 @@ func Write (fd int, data []byte) (int){
 		return FAIL
 	}
 
-	if !inMap {
-		log.Printf("Client: File not in open list!\n")
-		return FAIL
-	}
-	var indexWithinChunk int
-	indexWithinChunk = int( filePtr)%int(sfs.CHUNK_SIZE)
+	indexWithinChunk := int( filePtr)%int(sfs.CHUNK_SIZE)
 	chunkOffset := int(filePtr)/int(sfs.CHUNK_SIZE)
 	var toWrite sfs.Chunk
 
 	if  indexWithinChunk  > 0 {
-		fileArgsRead := new (sfs.ReadArgs)
-		fileInfoRead := new (sfs.ReadReturn)
-		client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
-		if client != nil {
-			defer client.Close()
-		}
-		if err != nil {
-			log.Printf("Client: Dial Failed in Write 1")
+		returned, bytesRead := GetChunk(*fdFile, chunkOffset)
+		if(returned == sfs.SUCCESS){
+			for i:= 0 ; i < indexWithinChunk ; i++ {
+				toWrite.Data[i] = bytesRead[i]
+			}
+		}else{
+			log.Printf("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
 			return FAIL
-		}
-		fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
-		if fileArgsRead.ChunkID == 0 {
-			log.Printf("Client: ChunkID = 0, this shouldn't happen")
-		}
-		chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
-		replyCall:= <-chunkCall.Done
-		if replyCall.Error!=nil{
-			log.Printf("Client: Server.Read failed:\n");
-			return FAIL
-		}
-		for i:= 0 ; i < indexWithinChunk ; i++ {
-			toWrite.Data[i] = fileInfoRead.Data.Data[i]
 		}
 	}
 	fileArgs := new (sfs.WriteArgs);
@@ -337,44 +316,20 @@ func Write (fd int, data []byte) (int){
 		indexWithinChunk++
 		if (indexWithinChunk == sfs.CHUNK_SIZE || i == len(data)-1 ){
 
-
-
-
+//special case if write to middle of last chunk
 			if  i == len(data)-1  && fdFile.size > filePtr && indexWithinChunk != sfs.CHUNK_SIZE {
-				fileArgsRead := new (sfs.ReadArgs)
-				fileInfoRead := new (sfs.ReadReturn)
-				client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[0].String())
 
-				if client!= nil{
-					log.Printf("Client: nil client...")
-				}
-
-
-				if err != nil{
-					log.Printf("Client: Dial Failed in Write 2")
+				returned, bytesRead := GetChunk(*fdFile, chunkOffset)
+				if(returned == sfs.SUCCESS){
+					for i:= indexWithinChunk ; i < sfs.CHUNK_SIZE ; i++ {
+						toWrite.Data[i] = bytesRead[i]
+					}
+				}else{
+					log.Printf("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
 					return FAIL
 				}
-				fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
-				if fileArgsRead.ChunkID == 0 {
-					log.Printf("Client: ChunkID = 0, this shouldn't happen")
-				}
-				chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
-				replyCall:= <-chunkCall.Done
 
-				if client!= nil{
-					client.Close()
-				}
-
-				if replyCall.Error!=nil{
-					log.Println("Client: Server.Read Failed:", replyCall.Error);
-					return FAIL
-				}
-				log.Printf("data returned in write for special case %v ", fileInfoRead.Data.Data)
-				for i:= indexWithinChunk ; i < sfs.CHUNK_SIZE ; i++ {
-					toWrite.Data[i] = fileInfoRead.Data.Data[i]
-				}
 			}
-
 
 			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
 				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
@@ -406,7 +361,6 @@ func Write (fd int, data []byte) (int){
 				if err != nil ||  client == nil{
 					log.Println("Client: Dial to chunk failed, returned bad client");
 					log.Println("Client: retrying dial in one second");
-
 
 					tmp := fileArgs.Info.Servers[sfs.NREPLICAS-1]
 					for n:=0 ; n<sfs.NREPLICAS-1 ; n++{
@@ -478,6 +432,46 @@ func Write (fd int, data []byte) (int){
 	log.Printf("Client: fileInfo.Status = %d \n", fileInfo.Status);
 	log.Printf("Client: ************WRITE END**************\n");
 	return fileInfo.Status
+}
+
+func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
+		log.Printf("Client: in Get Chunk\n")
+		fileArgsRead := new (sfs.ReadArgs)
+		fileInfoRead := new (sfs.ReadReturn)
+		fileArgsRead.Nice = 1 // try things nicely first
+		for i:= 0 ; i < (sfs.NREPLICAS*2) ; i ++ {
+			if i == sfs.NREPLICAS {
+				fileArgsRead.Nice = 0
+			}
+			client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[i%sfs.NREPLICAS].String())
+			if client == nil {
+				log.Printf("Client: Dial Failed in GetChunk client == nil %s", err.String())
+				if i != (sfs.NREPLICAS*2-1) {
+					continue
+				}
+				return FAIL, fileInfoRead.Data.Data
+			}
+			defer client.Close()
+			if err != nil {
+				log.Printf("Client: Dial Failed in GetChunk err != nil %s", err.String())
+				if i != (sfs.NREPLICAS*2-1) {
+					continue
+				}
+				return FAIL, fileInfoRead.Data.Data
+			}
+			fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
+			if fileArgsRead.ChunkID == 0 {
+				log.Printf("Client: ChunkID = 0, Chunk ID should never be 0")
+			}
+			chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
+			replyCall:= <-chunkCall.Done
+			if replyCall.Error!=nil{
+				log.Printf("Client: Server.Read failed:\n");
+				return FAIL, fileInfoRead.Data.Data
+			}
+		}
+		return sfs.SUCCESS, fileInfoRead.Data.Data
+
 }
 
 /* delete */
@@ -648,7 +642,6 @@ func RemoveDir(path string) (int) {
 
 }
 
-
 func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 
 	var args sfs.GetNewChunkArgs
@@ -672,5 +665,4 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 	return returnVal.Info
 
 }
-
 
