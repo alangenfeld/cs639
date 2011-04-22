@@ -55,6 +55,7 @@ import (
 	"path"
 	"os"
 	"rand"
+	"log"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
