@@ -195,7 +195,7 @@ func Read (fd int, size int) ([]byte, int ){
 				log.Printf("Client: returned error or nil client\n")
 				log.Printf("Client: retrying dial in one second\n")
 				time.Sleep(sfs.HEARTBEAT_WAIT/15)
-				if i == endChunk-1 {
+				if j == (numChunkServers*2-1)  {
 					return entireRead, fileInfo.Status
 				}
 				continue
@@ -298,6 +298,7 @@ func Write (fd int, data []byte) (int){
 	chunkOffset := int(filePtr)/int(sfs.CHUNK_SIZE)
 	var toWrite sfs.Chunk
 
+//special case if writing to middle of first chunk
 	if  indexWithinChunk  > 0 {
 		returned, bytesRead := GetChunk(*fdFile, chunkOffset)
 		if(returned == sfs.SUCCESS){
@@ -318,7 +319,6 @@ func Write (fd int, data []byte) (int){
 
 //special case if write to middle of last chunk
 			if  i == len(data)-1  && fdFile.size > filePtr && indexWithinChunk != sfs.CHUNK_SIZE {
-
 				returned, bytesRead := GetChunk(*fdFile, chunkOffset)
 				if(returned == sfs.SUCCESS){
 					for i:= indexWithinChunk ; i < sfs.CHUNK_SIZE ; i++ {
@@ -345,18 +345,14 @@ func Write (fd int, data []byte) (int){
 				log.Printf("fdFile.chunkInfo %v", fdFile.chunkInfo)
 			}
 
-
 			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
-
 			numChunkServers := len(servers)
-
 			if (numChunkServers < 1) {
-					log.Printf("Client: Dial Failed in Read")
-					return FAIL
+					log.Printf("Client: Dial Failed in Write")
+					return sfs.FAIL
 			}
 
 			for j:=0; j < (numChunkServers); j++ {
-
 				client,err  := rpc.Dial("tcp",servers[j].String())
 				if err != nil ||  client == nil{
 					log.Println("Client: Dial to chunk failed, returned bad client");
@@ -368,30 +364,32 @@ func Write (fd int, data []byte) (int){
 					}
 					fileArgs.Info.Servers[0] = tmp
 					time.Sleep(sfs.HEARTBEAT_WAIT/15)
+					if j == numChunkServers-1 {
+						return sfs.FAIL
+					}
 					continue
 				}
-
 
 				err = client.Call("Server.Write", &fileArgs,&fileInfo);
 				client.Close()
 				if err != nil{
 					log.Println("Client: Server.Write failed:", err);
+					if j == numChunkServers-1 {
+						return sfs.FAIL
+					}
 					continue
 				}
 				if(fileInfo.Status!=0){
 					log.Println("Client: Server.Write status non zero=",fileInfo.Status)
-					return FAIL
+					return sfs.FAIL
 				}
 			}
-
 
 			// reply to master
 			fileInfo.Info.ChunkID = fileArgs.Info.ChunkID
 			fileInfo.Info.Size = uint64(((indexWithinChunk-1)%int(sfs.CHUNK_SIZE)) +1)
 			mapArgs := &sfs.MapChunkToFileArgs{fdFile.name, chunkOffset, fileInfo.Info}
 			var mapRet sfs.MapChunkToFileReturn
-
-
 
 			err := masterServ.Call("Master.MapChunkToFile", &mapArgs,&mapRet);
 			if err != nil{
@@ -411,11 +409,9 @@ func Write (fd int, data []byte) (int){
 			}
 		}
 	}
-
 	if masterServ != nil {
 		masterServ.Close()
 	}
-
 
 	if fileInfo.Status !=FAIL && (openDescriptors[fd].filePtr+uint64(len(data)) > openFiles[filename].size) {
 		openFiles[filename].size = openDescriptors[fd].filePtr + uint64(len(data))
@@ -428,7 +424,6 @@ func Write (fd int, data []byte) (int){
 		openDescriptors[fd].filePtr = fdFile.size
 	}
 	log.Printf("Client: file ending size %d", openFiles[filename].size);
-	log.Printf("Client: ************WRITE END**************\n");
 	log.Printf("Client: fileInfo.Status = %d \n", fileInfo.Status);
 	log.Printf("Client: ************WRITE END**************\n");
 	return fileInfo.Status
@@ -475,7 +470,6 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 }
 
 /* delete */
-//TODO
 func Delete(filename string) (int){
 
 	_ , present := openFiles[filename]
@@ -523,7 +517,6 @@ func Close(fd int) (int){
 	return WIN
 }
 
-//TODO
 func ReadDir(path string) ([]string, int){
 
 	readDirArgs := new (sfs.ReadDirArgs)
@@ -548,7 +541,6 @@ func ReadDir(path string) ([]string, int){
 }
 
 /* seek */
-//TODO
 func Seek (fd int, offset int, whence int) (int){
 	n, inMap :=  openDescriptors[fd]
 	filename := n.name
