@@ -195,7 +195,7 @@ func Read (fd int, size int) ([]byte, int ){
 				log.Printf("Client: returned error or nil client\n")
 				log.Printf("Client: retrying dial in one second\n")
 				time.Sleep(sfs.HEARTBEAT_WAIT/15)
-				if i == endChunk-1 {
+				if j == (numChunkServers*2-1)  {
 					return entireRead, fileInfo.Status
 				}
 				continue
