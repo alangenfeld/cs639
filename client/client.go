@@ -124,8 +124,6 @@ func Open(filename string , flag int ) (int){
 func Read (fd int, size int) ([]byte, int ){
 
 	log.Printf("Client: **********READ BEGIN***********\n");
-	fileInfo := new (sfs.ReadReturn)
-	fileArgs := new (sfs.ReadArgs)
 	nameAndPointer, present :=  openDescriptors[fd]
 	var entireRead []byte
 
@@ -170,84 +168,26 @@ func Read (fd int, size int) ([]byte, int ){
 		endChunk = int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE)))
 		log.Printf("Client: file was smaller than read size")
 	}
-
+	var returned int
 	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
-
 		chunkServerMirrors := fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers
 		numChunkServers := len(chunkServerMirrors)
-
 		if (numChunkServers < 1) {
 				log.Printf("Client: Dial Failed in Read")
-				return entireRead, FAIL
+				return entireRead, sfs.FAIL
 		}
 
-		fileArgs.Nice = 1 //default to reading "nicely"
+		returned, bytesRead := GetChunk(*fdFile, i)
 
-		for j:=0; j < (numChunkServers*2); j++ {
-
-			if(j >= numChunkServers) {//if we have tried all servers "nicely", start forcing reads
-				fileArgs.Nice = 0
-			}
-
-			client,err := dialServer(chunkServerMirrors[j % numChunkServers].String())
-			log.Printf( " dialed server : %s", chunkServerMirrors[j % numChunkServers].String())
-			if err != nil || client == nil{
-				log.Printf("Client: returned error or nil client\n")
-				log.Printf("Client: retrying dial in one second\n")
-				time.Sleep(sfs.HEARTBEAT_WAIT/15)
-				if j == (numChunkServers*2-1)  {
-					return entireRead, fileInfo.Status
+		if(returned == sfs.SUCCESS ){
+			for k:=0; k<sfs.CHUNK_SIZE ; k++{
+				if (index< endIndex && index>= startIndex ) {
+					entireRead[index-startIndex] = bytesRead[k]
 				}
-				continue
+				index++
 			}
-			defer client.Close()
-
-			fileArgs.ChunkID= fdFile.chunkInfo.At(i).(sfs.ChunkInfo).ChunkID;
-			if fileArgs.ChunkID == 0 {
-				log.Printf("Client: ChunkID = 0, invalid number so this shouldn't happen")
-			}
-		log.Printf("Client: 212")
-			err = client.Call("Server.Read", &fileArgs, &fileInfo);
-		log.Printf("Client: 214")
-
-			if err!=nil{
-				log.Printf("Client: error reading from Chunk Server - %s\n",chunkServerMirrors[j % numChunkServers].String());
-				if i == endChunk-1 {
-					log.Printf("Client: i == endChunk -1 ???")
-					return entireRead, fileInfo.Status
-
-				}
-				continue
-			}
-			if fileInfo.Status == sfs.BUSY{
-				log.Printf("Client: retrying dial to new server in one second\n")
-				time.Sleep(sfs.HEARTBEAT_WAIT/15)
-				client.Close()
-			}
-
-	log.Printf("Client: fileArgs.Nice = %d", fileArgs.Nice)
-	log.Printf("Client: fileInfo.status = %d", fileInfo.Status)
-			if(fileInfo.Status == sfs.SUCCESS ){
-				for k:=0; k<sfs.CHUNK_SIZE ; k++{
-					if (index< endIndex && index>= startIndex ) {
-						entireRead[index-startIndex] = fileInfo.Data.Data[k]
-					}
-					index++
-				}
-
-				break //successfully read chunk.
-			}
-			if fileInfo.Status != sfs.SUCCESS {
-				client.Close()
-			}
-			log.Printf("Client: Chunk returned status %d\n",fileInfo.Status);
-
-		}
-
-
-		if fileInfo.Status == sfs.FAIL { //case where chunk was never read successfully. 
-			log.Printf("Client: chunk returned bad status\n");
-			return entireRead, fileInfo.Status //return early b/c we failed to read chunk
+		}else {
+			return entireRead, sfs.FAIL
 		}
 	}
 
@@ -257,7 +197,7 @@ func Read (fd int, size int) ([]byte, int ){
 	}
 	printByteSlice(entireRead)
 	log.Printf("Client: *********READ END*************\n");
-	return  entireRead, fileInfo.Status;
+	return  entireRead, returned;
 }
 
 /* write */
@@ -352,7 +292,9 @@ func Write (fd int, data []byte) (int){
 					return sfs.FAIL
 			}
 
+			log.Printf("Client: numChunkServers %d", numChunkServers);
 			for j:=0; j < (numChunkServers); j++ {
+				log.Printf("Client:  j %d", j);
 				client,err  := rpc.Dial("tcp",servers[j].String())
 				if err != nil ||  client == nil{
 					log.Println("Client: Dial to chunk failed, returned bad client");
@@ -381,8 +323,12 @@ func Write (fd int, data []byte) (int){
 				}
 				if(fileInfo.Status!=0){
 					log.Println("Client: Server.Write status non zero=",fileInfo.Status)
-					return sfs.FAIL
+					if j == numChunkServers-1 {
+						return sfs.FAIL
+					}
+					continue
 				}
+				break
 			}
 
 			// reply to master
@@ -434,35 +380,51 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 		fileArgsRead := new (sfs.ReadArgs)
 		fileInfoRead := new (sfs.ReadReturn)
 		fileArgsRead.Nice = 1 // try things nicely first
+		Servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers
 		for i:= 0 ; i < (sfs.NREPLICAS*2) ; i ++ {
-			if i == sfs.NREPLICAS {
+			if i >= sfs.NREPLICAS {
 				fileArgsRead.Nice = 0
 			}
-			client,err :=rpc.Dial("tcp",fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers[i%sfs.NREPLICAS].String())
+//			for j := 0 ; j < sfs.NREPLICAS ; j ++ {
+//				log.Printf("Client: server: %s", Servers[j%sfs.NREPLICAS].String())
+//			}
+			client,err :=rpc.Dial("tcp",Servers[i%sfs.NREPLICAS].String())
 			if client == nil {
-				log.Printf("Client: Dial Failed in GetChunk client == nil %s", err.String())
-				if i != (sfs.NREPLICAS*2-1) {
+				log.Printf("Client: Dial Failed in GetChunk client == nil ")
+				if i != (sfs.NREPLICAS*2)-1 {
 					continue
+				}else {
+					log.Printf("Client: missed continue in GetChunk ")
+					return sfs.FAIL, fileInfoRead.Data.Data
 				}
-				return FAIL, fileInfoRead.Data.Data
 			}
 			defer client.Close()
 			if err != nil {
 				log.Printf("Client: Dial Failed in GetChunk err != nil %s", err.String())
 				if i != (sfs.NREPLICAS*2-1) {
 					continue
+				}else{
+					log.Printf("Client: missed continue in GetChunk ")
+					return sfs.FAIL, fileInfoRead.Data.Data
 				}
-				return FAIL, fileInfoRead.Data.Data
 			}
 			fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
 			if fileArgsRead.ChunkID == 0 {
 				log.Printf("Client: ChunkID = 0, Chunk ID should never be 0")
 			}
-			chunkCall := client.Go("Server.Read", &fileArgsRead,&fileInfoRead, nil);
-			replyCall:= <-chunkCall.Done
-			if replyCall.Error!=nil{
-				log.Printf("Client: Server.Read failed:\n");
-				return FAIL, fileInfoRead.Data.Data
+			err = client.Call("Server.Read", &fileArgsRead,&fileInfoRead);
+			if err!=nil{
+				log.Printf("Client: Server.Read failed: %s, on server %s\n", err.String(),Servers[i%sfs.NREPLICAS].String());
+				if i != (sfs.NREPLICAS*2-1) {
+					continue
+				}
+				return sfs.FAIL, fileInfoRead.Data.Data
+			}
+
+			if fileInfoRead.Status != sfs.SUCCESS {
+				log.Printf("Client: retrying dial to new server in one second\n")
+			//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
+				client.Close()
 			}
 		}
 		return sfs.SUCCESS, fileInfoRead.Data.Data
