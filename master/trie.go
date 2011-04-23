@@ -258,6 +258,8 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		}
 
 		directory_s, dir_name := path.Split(path_s)
+		
+		log.Printf("trie.AddDir: path: %s parent: %s dir: %s\n", dir_name, directory_s, dir_name)
 
 		if len(directory_s) == 0 {
 			return os.NewError("AddDir - directory string is nothin, what what??")
@@ -272,14 +274,15 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		for i := 0; i < dir.dirs.Len(); i++{
 			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
 		}
-		log.Printf("trie.AddDir: before: %+v\n", tmpDirs)
-		
+		log.Printf("trie.AddDir: before: len: %d\n\t%+v\n", dir.dirs.Len(), tmpDirs)
+		log.Printf("trie.AddDir: pushing: %s\n", dir_name)
+				
 		dir.dirs.Push(dir_name)
 		
 		for i := 0; i < dir.dirs.Len(); i++{
 			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
 		}
-		log.Printf("trie.AddDir: after : %+v\n", tmpDirs)
+		log.Printf("trie.AddDir: after : len: %d\n\t%+v\n", dir.dirs.Len(), tmpDirs)
 	}
 
 	return nil
