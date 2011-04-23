@@ -24,109 +24,109 @@ func main(){
 /*
 TREE:
 /
-/La3LFT/
-/w9FouU/
-/w9FouU/67iAM_/
-/La3LFT/Z4CuPz/
-/La3LFT/pQZOdo/
-/La3LFT/pQZOdo/kL3PUG/
-/La3LFT/pQZOdo/njHo3G/
-/La3LFT/pQZOdo/r4Z4Hb/
-/La3LFT/pQZOdo/kL3PUG/JInFKn/
-/La3LFT/pQZOdo/njHo3G/NSSZkg/
+/HKBFBe/
+/YisZFh/
+/HKBFBe/xA9o_c/
+/HKBFBe/9O1cEa/
+/YisZFh/TWciId/
+/YisZFh/fmCxop/
+/YisZFh/GRro57/
+/YisZFh/J_PhjQ/
+/YisZFh/_wIEZz/
+/YisZFh/_wIEZz/lUGH0D/
 */
 
-ret = client.MakeDir("/La3LFT/")
+ret = client.MakeDir("/HKBFBe/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/w9FouU/")
+ret = client.MakeDir("/YisZFh/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/w9FouU/67iAM_/")
+ret = client.MakeDir("/HKBFBe/xA9o_c/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/Z4CuPz/")
+ret = client.MakeDir("/HKBFBe/9O1cEa/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/pQZOdo/")
+ret = client.MakeDir("/YisZFh/TWciId/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/pQZOdo/kL3PUG/")
+ret = client.MakeDir("/YisZFh/fmCxop/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/pQZOdo/njHo3G/")
+ret = client.MakeDir("/YisZFh/GRro57/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/pQZOdo/r4Z4Hb/")
+ret = client.MakeDir("/YisZFh/J_PhjQ/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/pQZOdo/kL3PUG/JInFKn/")
+ret = client.MakeDir("/YisZFh/_wIEZz/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-ret = client.MakeDir("/La3LFT/pQZOdo/njHo3G/NSSZkg/")
+ret = client.MakeDir("/YisZFh/_wIEZz/lUGH0D/")
 if(ret != 0) {
   panic("MakeDir failed")
 }
 
-createPath("/rkE42a.txt")
+createPath("/YisZFh/_wIEZz/Gj46DI.txt")
 
-createPath("/La3LFT/pQZOdo/kL3PUG/gzOmTW.txt")
+createPath("/HKBFBe/9O1cEa/bTg0uN.txt")
 
-createPath("/La3LFT/pQZOdo/kL3PUG/RDA6ux.txt")
+createPath("/1mf6P2.txt")
 
-createPath("/La3LFT/jgJiEV.txt")
+createPath("/YisZFh/TWciId/6CBF7G.txt")
 
-createPath("/Mcn_0P.txt")
+createPath("/YisZFh/J_PhjQ/0s4gx2.txt")
 
-createPath("/La3LFT/pQZOdo/njHo3G/NSSZkg/p9LNpw.txt")
+createPath("/HKBFBe/8aBbjb.txt")
 
-createPath("/La3LFT/pQZOdo/x0fRwt.txt")
+createPath("/YisZFh/fmCxop/pHoiDi.txt")
 
-createPath("/La3LFT/Z4CuPz/VdAcKu.txt")
+createPath("/54EkC7.txt")
 
-createPath("/bUl52u.txt")
+createPath("/HKBFBe/_S_mGz.txt")
 
-createPath("/w9FouU/67iAM_/GxhNt0.txt")
+createPath("/YisZFh/H2OC3g.txt")
 
-createPath("/La3LFT/pQZOdo/njHo3G/NSSZkg/bDgIwU.txt")
+createPath("/YisZFh/GRro57/ReMWv5.txt")
 
-createPath("/La3LFT/Z4CuPz/tj5hfp.txt")
+createPath("/HKBFBe/4eYB6n.txt")
 
-createPath("/La3LFT/pQZOdo/kL3PUG/JInFKn/m4Nm2S.txt")
+createPath("/HKBFBe/xA9o_c/wz8XZV.txt")
 
-createPath("/w9FouU/67iAM_/cR_oUB.txt")
+createPath("/YisZFh/fmCxop/HzdYke.txt")
 
-createPath("/La3LFT/pQZOdo/njHo3G/xoj_h9.txt")
+createPath("/HKBFBe/xA9o_c/hTgTyW.txt")
 
-createPath("/La3LFT/pQZOdo/kL3PUG/JInFKn/xkHUZh.txt")
+createPath("/YisZFh/TWciId/_wfEZr.txt")
 
-createPath("/La3LFT/pQZOdo/njHo3G/w3m6rq.txt")
+createPath("/YisZFh/_wIEZz/Yomrr6.txt")
 
-createPath("/La3LFT/pQZOdo/kL3PUG/JInFKn/jthx9V.txt")
+createPath("/HKBFBe/xA9o_c/cRxezL.txt")
 
-createPath("/w9FouU/t0Rc1T.txt")
+createPath("/YisZFh/J_PhjQ/QI0UTJ.txt")
 
-createPath("/La3LFT/pQZOdo/r4Z4Hb/gQ_aYr.txt")
+createPath("/YisZFh/fmCxop/wwSkkm.txt")
 
-lsExpected = []string{"La3LFT","w9FouU","rkE42a.txt","Mcn_0P.txt","bUl52u.txt"}
+lsExpected = []string{"YisZFh/","HKBFBe/","1mf6P2.txt","54EkC7.txt"}
 
 ls, ret = client.ReadDir("/")
 if(ret != 0) {
@@ -139,9 +139,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"pQZOdo","Z4CuPz","jgJiEV.txt"}
+lsExpected = []string{"xA9o_c/","9O1cEa/","8aBbjb.txt","_S_mGz.txt","4eYB6n.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/")
+ls, ret = client.ReadDir("/HKBFBe/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -152,9 +152,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"67iAM_","t0Rc1T.txt"}
+lsExpected = []string{"_wIEZz/","GRro57/","fmCxop/","TWciId/","J_PhjQ/","H2OC3g.txt"}
 
-ls, ret = client.ReadDir("/w9FouU/")
+ls, ret = client.ReadDir("/YisZFh/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -165,9 +165,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"GxhNt0.txt","cR_oUB.txt"}
+lsExpected = []string{"wz8XZV.txt","hTgTyW.txt","cRxezL.txt"}
 
-ls, ret = client.ReadDir("/w9FouU/67iAM_/")
+ls, ret = client.ReadDir("/HKBFBe/xA9o_c/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -178,9 +178,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"VdAcKu.txt","tj5hfp.txt"}
+lsExpected = []string{"bTg0uN.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/Z4CuPz/")
+ls, ret = client.ReadDir("/HKBFBe/9O1cEa/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -191,9 +191,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"r4Z4Hb","kL3PUG","njHo3G","x0fRwt.txt"}
+lsExpected = []string{"6CBF7G.txt","_wfEZr.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/pQZOdo/")
+ls, ret = client.ReadDir("/YisZFh/TWciId/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -204,9 +204,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"JInFKn","gzOmTW.txt","RDA6ux.txt"}
+lsExpected = []string{"pHoiDi.txt","HzdYke.txt","wwSkkm.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/pQZOdo/kL3PUG/")
+ls, ret = client.ReadDir("/YisZFh/fmCxop/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -217,9 +217,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"NSSZkg","xoj_h9.txt","w3m6rq.txt"}
+lsExpected = []string{"ReMWv5.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/pQZOdo/njHo3G/")
+ls, ret = client.ReadDir("/YisZFh/GRro57/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -230,9 +230,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"gQ_aYr.txt"}
+lsExpected = []string{"0s4gx2.txt","QI0UTJ.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/pQZOdo/r4Z4Hb/")
+ls, ret = client.ReadDir("/YisZFh/J_PhjQ/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -243,9 +243,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"m4Nm2S.txt","xkHUZh.txt","jthx9V.txt"}
+lsExpected = []string{"lUGH0D/","Gj46DI.txt","Yomrr6.txt"}
 
-ls, ret = client.ReadDir("/La3LFT/pQZOdo/kL3PUG/JInFKn/")
+ls, ret = client.ReadDir("/YisZFh/_wIEZz/")
 if(ret != 0) {
   panic("ReadDir failed")
 }
@@ -256,9 +256,9 @@ if(! ArrEquals(ls, lsExpected)) {
   panic("Unexpected ReadDir results")
 }
 
-lsExpected = []string{"p9LNpw.txt","bDgIwU.txt"}
+lsExpected = []string{}
 
-ls, ret = client.ReadDir("/La3LFT/pQZOdo/njHo3G/NSSZkg/")
+ls, ret = client.ReadDir("/YisZFh/_wIEZz/lUGH0D/")
 if(ret != 0) {
   panic("ReadDir failed")
 }

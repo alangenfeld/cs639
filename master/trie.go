@@ -175,7 +175,8 @@ func (p *Trie) AddFile(path_s string, i interface{}) os.Error {
 	} else {
 		leaf.files[file] = i
 	}
-	
+
+/*	
 	var tmpCont string
 	for k, _ := range leaf.files {
 		tmpCont = tmpCont + k + " "
@@ -183,6 +184,7 @@ func (p *Trie) AddFile(path_s string, i interface{}) os.Error {
 
 	log.Printf("trie.AddFile: leaf.files: %+v\n", leaf.files)
 	log.Printf("trie.AddFile: leaf.files (string): %s\n", tmpCont)
+*/
 
 	return nil
 }
@@ -247,19 +249,41 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		p.addRunes(strings.NewReader("/"))
 		p.dirs.Push("/")
 	} else {
-		path_cor := fmt.Sprintf("%s%s", path_s, "/")
+		var path_cor string
+		
+		if path_s[len(path_s)-1] == '/' {
+			path_cor = strings.TrimRight(path_s, "/")
+		} else {
+			path_cor = path_s
+		}
 
-		directory_s, dir_name := path.Split(path_s)
+		directory_s, dir_name := path.Split(path_cor)
+		
+		log.Printf("trie.AddDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
 		if len(directory_s) == 0 {
 			return os.NewError("AddDir - directory string is nothin, what what??")
 		}
 		//create the dir
-		p.addRunes(strings.NewReader(path_cor))
+		p.addRunes(strings.NewReader(path_cor + "/"))
 
 		//add dir record to parent dir
 		dir := p.find(strings.NewReader(directory_s))
+		
+		var tmpDirs string
+		for i := 0; i < dir.dirs.Len(); i++{
+			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
+		}
+		log.Printf("trie.AddDir: before: len: %d\n\t%+v\n", dir.dirs.Len(), tmpDirs)
+		log.Printf("trie.AddDir: pushing: %s\n", dir_name)
+				
 		dir.dirs.Push(dir_name)
+		
+		tmpDirs = ""
+		for i := 0; i < dir.dirs.Len(); i++{
+			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
+		}
+		log.Printf("trie.AddDir: after : len: %d\n\t%+v\n", dir.dirs.Len(), tmpDirs)
 	}
 
 	return nil
@@ -284,8 +308,19 @@ func (p *Trie) ReadDir(path_s string) (dirs *vector.StringVector, files map[stri
 		//bad path_s
 		return nil, nil, os.NewError("ReadDir - Dir doesn't exist\n")
 	}
+	
+	var tmpDirs string
+	for i := 0; i < leaf.dirs.Len(); i++{
+		tmpDirs = tmpDirs + leaf.dirs.At(i) + " "
+	}
 
-	log.Printf("trie.ReadDir: %+v\n", *leaf)
+	var tmpFiles string
+	for k, _ := range leaf.files {
+		tmpFiles = tmpFiles + k + " "
+	}
+
+
+	log.Printf("trie.ReadDir:\n\tdirs : %s\n\tfiles: %s\n", tmpDirs, tmpFiles)
 
 	//TRAVERSE FILES STRUCTURE??
 	return leaf.dirs, leaf.files, nil

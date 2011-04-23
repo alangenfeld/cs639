@@ -36,7 +36,13 @@ lsExpected = []string{}
     } else {
 	my @lsArr = split(':',$dirs{$path});
 	for(my $i = 0; $i <= $#lsArr; $i++) {
-	    $lsArr[$i] = '"'.$lsArr[$i].'"';
+		if($lsArr[$i] =~ /.txt$/){
+			$lsArr[$i] = '"'.$lsArr[$i].'"';
+		}
+		else {
+			$lsArr[$i] = '"'.$lsArr[$i].'/"';
+		}
+	    	
 	}
 	print '
 lsExpected = []string{'.join(',',@lsArr).'}
