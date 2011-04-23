@@ -251,8 +251,8 @@ func (p *Trie) AddDir(path_s string) os.Error {
 	} else {
 		var path_cor string
 		
-		if path_s[len(path_s)-1] != '/' {
-			path_cor = path_s + "/"
+		if path_s[len(path_s)-1] == '/' {
+			path_cor = strings.TrimRight(path_s, "/")
 		} else {
 			path_cor = path_s
 		}
@@ -265,7 +265,7 @@ func (p *Trie) AddDir(path_s string) os.Error {
 			return os.NewError("AddDir - directory string is nothin, what what??")
 		}
 		//create the dir
-		p.addRunes(strings.NewReader(path_cor))
+		p.addRunes(strings.NewReader(path_cor + "/"))
 
 		//add dir record to parent dir
 		dir := p.find(strings.NewReader(directory_s))
