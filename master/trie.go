@@ -249,7 +249,13 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		p.addRunes(strings.NewReader("/"))
 		p.dirs.Push("/")
 	} else {
-		path_cor := fmt.Sprintf("%s%s", path_s, "/")
+		var path_cor string
+		
+		if path_s[len(path_s)-1] != '/' {
+			path_cor = path_s + "/"
+		} else {
+			path_cor = path_s
+		}
 
 		directory_s, dir_name := path.Split(path_s)
 
