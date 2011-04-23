@@ -279,6 +279,7 @@ func (p *Trie) AddDir(path_s string) os.Error {
 				
 		dir.dirs.Push(dir_name)
 		
+		tmpDirs = ""
 		for i := 0; i < dir.dirs.Len(); i++{
 			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
 		}
