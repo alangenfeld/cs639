@@ -257,9 +257,9 @@ func (p *Trie) AddDir(path_s string) os.Error {
 			path_cor = path_s
 		}
 
-		directory_s, dir_name := path.Split(path_s)
+		directory_s, dir_name := path.Split(path_cor)
 		
-		log.Printf("trie.AddDir: path: %s parent: %s dir: %s\n", path_s, directory_s, dir_name)
+		log.Printf("trie.AddDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
 		if len(directory_s) == 0 {
 			return os.NewError("AddDir - directory string is nothin, what what??")
