@@ -331,6 +331,10 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 		return os.NewError("Path Length == 0\n")
 	}
 	
+	if path_s == "/" {
+		return os.NewError("RemoveDir -- cannot remove root dir\n")
+	}
+	
 	var path_cor string
 	
 	if path_s[len(path_s)-1] == '/' {
