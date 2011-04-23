@@ -558,13 +558,13 @@ func MakeDir(path string) (int) {
 	defer masterConn.Close()
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
-		os.Exit(1)
+		return sfs.FAIL
 	}
 
 	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(MakeDir):", err.String())
-		os.Exit(1)
+		return sfs.FAIL
 	}
 
 	return returnVal.Status
@@ -583,13 +583,13 @@ func RemoveDir(path string) (int) {
 	defer masterConn.Close()
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
-		os.Exit(1)
+		return sfs.FAIL
 	}
 
 	err = masterConn.Call("Master.RemoveDir",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(RemoveDir):", err.String())
-		os.Exit(1)
+		return sfs.FAIL
 	}
 
 	return returnVal.Status
