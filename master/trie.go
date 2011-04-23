@@ -330,19 +330,38 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
+	
+	var path_cor string
+	
+	if path_s[len(path_s)-1] == '/' {
+		path_cor = strings.TrimRight(path_s, "/")
+	} else {
+		path_cor = path_s
+	}
+
+	directory_s, dir_name := path.Split(path_cor)
+	
+	log.Printf("trie.RemoveDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
+
+	if len(directory_s) == 0 {
+		return os.NewError("RemoveDir - directory string is nothin, what what??")
+	}
 
 	//path_s_cor := fmt.Sprintf("%s%s",path_s, "/")
 	//get the parent directory
 
 	//remove the dir from the parent
-	parent := p.find(strings.NewReader(path_s))
-	if parent == nil {
+	dir := p.find(strings.NewReader(path_cor + "/"))
+	if dir == nil {
 		//error finding directory
 		return os.NewError("RemoveDir - Dir doesn't exist\n")
 	}
-
-	//remove path from parent
-	parent.children['/'] = nil
+	
+	if dir.dirs.Len() != 0 || len(dir.files) != 0 {
+		return os.NewError("RemoveDir - Dir is not empty -- cannot remove\n")
+	}
+	
+	p.Remove(path_cor + "/")
 
 	return nil
 }
