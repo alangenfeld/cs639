@@ -261,7 +261,19 @@ func (p *Trie) AddDir(path_s string) os.Error {
 
 		//add dir record to parent dir
 		dir := p.find(strings.NewReader(directory_s))
+		
+		var tmpDirs string
+		for i := 0; i < dir.dirs.Len(); i++{
+			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
+		}
+		log.Printf("trie.AddDir: before: %+v\n", tmpDirs)
+		
 		dir.dirs.Push(dir_name)
+		
+		for i := 0; i < dir.dirs.Len(); i++{
+			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
+		}
+		log.Printf("trie.AddDir: after : %+v\n", tmpDirs)
 	}
 
 	return nil
