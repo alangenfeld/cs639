@@ -175,6 +175,8 @@ func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error
 func (m *Master) RemoveDir(args *sfs.RemoveDirArgs, ret *sfs.RemoveDirReturn) os.Error {
 	err := t.RemoveDir(args.DirName)
 	
+	DumpTrie()
+	
 	return err
 }
 
@@ -655,7 +657,7 @@ func DumpTrie(){
 	for i := 0; i < cnt; i++ {
 		log.Printf("dumpTrie: %d: %s\n", i, dump.At(i))
 	}
-	log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
+	//log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
 }
 
 func init() {

@@ -344,8 +344,6 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 	}
 
 	directory_s, dir_name := path.Split(path_cor)
-	
-	
 
 	if len(directory_s) == 0 {
 		return os.NewError("RemoveDir - directory string is nothin, what what??")
