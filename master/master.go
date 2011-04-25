@@ -472,9 +472,9 @@ func QueryFile(name string) (i *inode, fileExists bool, err os.Error) {
 func DeleteFile(name string) (err os.Error) {
 	inode, exists ,_:= QueryFile(name)
 	if exists {
-		t.DeleteFile(name)
+		err := t.DeleteFile(name)
 		
-		if !ok {
+		if err != nil {
 			log.Printf("Delete: file %s does not exist\n", name)
 			return os.NewError("file does not exist")
 		}
