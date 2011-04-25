@@ -382,6 +382,8 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 		fileArgsRead.Nice = 1 // try things nicely first
 		Servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers
 		for i:= 0 ; i < (sfs.NREPLICAS*2) ; i ++ {
+					log.Printf("trying server %s\n",Servers[i%sfs.NREPLICAS].String())
+					log.Printf("On try %d out of %d with %d# of servers\n",i,(sfs.NREPLICAS*2-1),sfs.NREPLICAS);
 			if i >= sfs.NREPLICAS {
 				fileArgsRead.Nice = 0
 			}
@@ -391,6 +393,7 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 			client,err :=rpc.Dial("tcp",Servers[i%sfs.NREPLICAS].String())
 			if client == nil {
 				log.Printf("Client: Dial Failed in GetChunk client == nil ")
+					log.Printf("On try %d out of %d with %d# of servers\n",i,(sfs.NREPLICAS*2-1),sfs.NREPLICAS);
 				if i != (sfs.NREPLICAS*2)-1 {
 					continue
 				}else {
@@ -398,7 +401,7 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 					return sfs.FAIL, fileInfoRead.Data.Data
 				}
 			}
-			defer client.Close()
+			//defer client.Close()
 			if err != nil {
 				log.Printf("Client: Dial Failed in GetChunk err != nil %s", err.String())
 				if i != (sfs.NREPLICAS*2-1) {
@@ -408,13 +411,18 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 					return sfs.FAIL, fileInfoRead.Data.Data
 				}
 			}
+			log.Println("Dial succeeded")
 			fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
 			if fileArgsRead.ChunkID == 0 {
 				log.Printf("Client: ChunkID = 0, Chunk ID should never be 0")
 			}
+			log.Println("calling")
 			err = client.Call("Server.Read", &fileArgsRead,&fileInfoRead);
+			log.Println("back from call")
+			client.Close();
 			if err!=nil{
 				log.Printf("Client: Server.Read failed: %s, on server %s\n", err.String(),Servers[i%sfs.NREPLICAS].String());
+					log.Printf("On try %d out of %d with %d# of servers\n",i,(sfs.NREPLICAS*2-1),sfs.NREPLICAS);
 				if i != (sfs.NREPLICAS*2-1) {
 					continue
 				}
@@ -424,8 +432,12 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 			if fileInfoRead.Status != sfs.SUCCESS {
 				log.Printf("Client: retrying dial to new server in one second\n")
 			//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
-				client.Close()
+				//client.Close()
+			}else{
+				break
 			}
+
+			log.Printf("At end of function with status %d\n",fileInfoRead.Status)
 		}
 		return sfs.SUCCESS, fileInfoRead.Data.Data
 

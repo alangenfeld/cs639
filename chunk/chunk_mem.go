@@ -13,6 +13,7 @@ import (
 	"exec"
 //	"flag"
 	"../logger/logger"
+	"os/signal"
 )
 
 type Server int
@@ -82,11 +83,12 @@ func Init(masterAddress string, loggingFlag bool) {
 		log.Fatal("chunk call error: ", err)
 	}
 	chunkServerID = ret.ChunkServerID
+	go sigHandler();
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	requestLoad++
-	var id logger.TaskId
+	//var id logger.TaskId
 	if logging {
 	//	id = logger.Start("Read")
 	}
@@ -96,6 +98,10 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if !present{
 		ret.Status = sfs.FAIL
 		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
+		log.Println("1");
+		for key,_ := range chunkTable {
+			log.Println("I have chunk ",key);
+		}
 		return nil
 	}
 
@@ -108,12 +114,16 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	
 	ret.Data.Data = data.Data
 	ret.Status = sfs.SUCCESS
-	if logging {
+	/*if logging {
 		errString := logger.End(id, false)
 		if errString != "" {
 			logging = false
 		}
-	}
+	}*/
+	log.Println("2");
+		for key,_ := range chunkTable {
+			log.Println("I have chunk ",key);
+		}
 	return nil	
 }
 
@@ -147,18 +157,16 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		}
 		
 
-		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
+		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)-1]
 
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
-		if(client != nil){
-			defer client.Close()
-		}
 		if err != nil {
 			log.Printf("chunk: dialing error: ", err)
 			continue
 		}
 		log.Printf("chunk: forwarding write to ", args.Info.Servers[0])
 		err = client.Call("Server.Write", &args, &inRet)
+	        client.Close()
 		if err != nil {
 			log.Fatal("chunk: server error: ", err)
 		}
@@ -394,5 +402,19 @@ func addCount(currReq int) {
 	if loadArrayIndex >= len(loadArray) {
         log.Println("We flip when index is: ", loadArrayIndex)
 		loadArrayIndex = 0
+	}
+}
+
+func sigHandler() {
+	for {
+		sig := <- signal.Incoming
+		
+		log.Printf("Signal received: %d!\n", sig)
+		
+		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
+			log.Println("Chunk Server going down ", (*tcpAddr).String())
+			os.Exit(1)
+		}
+
 	}
 }
