@@ -44,11 +44,6 @@ func main(){
 		panic("readdir shouldn't work")
 	}
 
-	ls, err = client.ReadDir("/");
-	if(err != 0 || len(ls) != 0) {
-		panic("readdir shouldn't work")
-	}
-
 	fmt.Printf("\n{{{{{pass}}}}}\n")
 	os.Exit(0)
 }
