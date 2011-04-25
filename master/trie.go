@@ -195,6 +195,8 @@ func (p *Trie) DeleteFile(path_s string) os.Error {
 	}
 
 	dir, file := path.Split(path_s)
+	
+	log.Printf("trie.DeleteFile: path: %s dir: %s file: %s\n", path_s, dir, file)
 
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil {
@@ -205,7 +207,7 @@ func (p *Trie) DeleteFile(path_s string) os.Error {
 		//file doesn't exist.. (maybe don't return?)
 		return os.NewError("DeleteFile - File Doesn't Exist\n")
 	}
-	leaf.files[file] = nil
+	leaf.files[file] = nil, false
 
 	//DELETE INODE IN MASTER???
 
