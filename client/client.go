@@ -272,10 +272,20 @@ func Write (fd int, data []byte) (int){
 			}
 
 			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
-				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
+				returned, toPush := AddChunks(fdFile.name, 1)
+				if returned == sfs.FAIL {
+					log.Printf("AddChunk failed 1")
+					return sfs.FAIL
+				}
+				fdFile.chunkInfo.Push(toPush)
 				log.Printf("Client: adding chunk x")
 			}else{
-				fdFile.chunkInfo.Set(chunkOffset, AddChunks(fdFile.name, 1))
+				returned, toSet := AddChunks(fdFile.name, 1)
+				if returned == sfs.FAIL {
+					log.Printf("AddChunk failed 1")
+					return sfs.FAIL
+				}
+				fdFile.chunkInfo.Set(chunkOffset, toSet )
 				log.Printf("Client: adding chunk y")
 			}
 			fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
@@ -347,8 +357,12 @@ func Write (fd int, data []byte) (int){
 			indexWithinChunk =0
 
 			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
+				returned, toPush := AddChunks(fdFile.name, 1)
+				if returned == sfs.FAIL {
+					return sfs.FAIL
+				}
 				log.Printf("Client: adding chunk zz")
-				fdFile.chunkInfo.Push(AddChunks(fdFile.name, 1))
+				fdFile.chunkInfo.Push(toPush)
 				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
 					toWrite.Data[c] = 0;
 				}
@@ -569,14 +583,14 @@ func MakeDir(path string) (int) {
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 	defer masterConn.Close()
 	if(err != nil){
-		log.Printf("Error Dialing Master(AddChunks):", err.String())
-		os.Exit(1)
+		log.Printf("Error Dialing Master(MakeDir):", err.String())
+		return sfs.FAIL
 	}
 
 	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(MakeDir):", err.String())
-		os.Exit(1)
+		return sfs.FAIL
 	}
 
 	return returnVal.Status
@@ -594,21 +608,21 @@ func RemoveDir(path string) (int) {
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 	defer masterConn.Close()
 	if(err != nil){
-		log.Printf("Error Dialing Master(AddChunks):", err.String())
-		os.Exit(1)
+		log.Printf("Error Dialing Master(Remove Dir):", err.String())
+		return sfs.FAIL
 	}
 
 	err = masterConn.Call("Master.RemoveDir",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(RemoveDir):", err.String())
-		os.Exit(1)
+		return sfs.FAIL
 	}
 
 	return returnVal.Status
 
 }
 
-func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
+func AddChunks(fileName string, numChunks uint64) (int, sfs.ChunkInfo) {
 
 	var args sfs.GetNewChunkArgs
 	var returnVal sfs.GetNewChunkReturn
@@ -617,18 +631,19 @@ func AddChunks(fileName string, numChunks uint64) (sfs.ChunkInfo) {
 	args.Count = numChunks
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
+
 	if(err != nil){
 		log.Printf("Error Dialing Master(AddChunks):", err.String())
-		os.Exit(1)
+		return sfs.FAIL, returnVal.Info
 	}
 
 	err = masterConn.Call("Master.GetNewChunk",&args,&returnVal)
 	if(err != nil){
 		log.Printf("Error Calling Master(AddChunks):", err.String())
-		os.Exit(1)
+		return sfs.FAIL, returnVal.Info
 	}
 	masterConn.Close()
-	return returnVal.Info
+	return sfs.SUCCESS, returnVal.Info
 
 }
 
