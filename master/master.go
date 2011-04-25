@@ -242,6 +242,8 @@ func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Erro
 	err := DeleteFile(args.Name)
 	
 	ret.Status = (err == nil)
+	
+	DumpTrie()
 	 
 	return err
 }
