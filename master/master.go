@@ -175,6 +175,8 @@ func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error
 func (m *Master) RemoveDir(args *sfs.RemoveDirArgs, ret *sfs.RemoveDirReturn) os.Error {
 	err := t.RemoveDir(args.DirName)
 	
+	DumpTrie()
+	
 	return err
 }
 
@@ -240,6 +242,8 @@ func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Erro
 	err := DeleteFile(args.Name)
 	
 	ret.Status = (err == nil)
+	
+	DumpTrie()
 	 
 	return err
 }
@@ -470,9 +474,9 @@ func QueryFile(name string) (i *inode, fileExists bool, err os.Error) {
 func DeleteFile(name string) (err os.Error) {
 	inode, exists ,_:= QueryFile(name)
 	if exists {
-		ok := t.Remove(name)
+		err := t.DeleteFile(name)
 		
-		if !ok {
+		if err != nil {
 			log.Printf("Delete: file %s does not exist\n", name)
 			return os.NewError("file does not exist")
 		}
@@ -655,7 +659,7 @@ func DumpTrie(){
 	for i := 0; i < cnt; i++ {
 		log.Printf("dumpTrie: %d: %s\n", i, dump.At(i))
 	}
-	log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
+	//log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
 }
 
 func init() {
