@@ -309,9 +309,9 @@ func Write (fd int, data []byte) (int){
 				if err != nil ||  client == nil{
 					log.Println("Client: Dial to chunk failed, returned bad client");
 					log.Println("Client: retrying dial in one second");
-
-					tmp := fileArgs.Info.Servers[sfs.NREPLICAS-1]
-					for n:=0 ; n<sfs.NREPLICAS-1 ; n++{
+					numServers := len(fileArgs.Info.Servers)
+					tmp := fileArgs.Info.Servers[numServers-1]
+					for n:=0 ; n<numServers-1 ; n++{
 						fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
 					}
 					fileArgs.Info.Servers[0] = tmp
@@ -390,25 +390,26 @@ func Write (fd int, data []byte) (int){
 }
 
 func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
-		log.Printf("Client: in Get Chunk\n")
-		fileArgsRead := new (sfs.ReadArgs)
-		fileInfoRead := new (sfs.ReadReturn)
-		fileArgsRead.Nice = 1 // try things nicely first
-		Servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers
-		for i:= 0 ; i < (sfs.NREPLICAS*2) ; i ++ {
-					log.Printf("trying server %s\n",Servers[i%sfs.NREPLICAS].String())
-					log.Printf("On try %d out of %d with %d# of servers\n",i,(sfs.NREPLICAS*2-1),sfs.NREPLICAS);
-			if i >= sfs.NREPLICAS {
+	log.Printf("Client: in Get Chunk\n")
+	fileArgsRead := new (sfs.ReadArgs)
+	fileInfoRead := new (sfs.ReadReturn)
+	fileArgsRead.Nice = 1 // try things nicely first
+	Servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers
+	numServers := len(Servers)
+		for i:= 0 ; i < (numServers*2) ; i ++ {
+		log.Printf("trying server %s\n",Servers[i%numServers].String())
+		log.Printf("On try %d out of %d with %d# of servers\n",i,((numServers*2)-1),numServers);
+			if i >= numServers {
 				fileArgsRead.Nice = 0
 			}
-//			for j := 0 ; j < sfs.NREPLICAS ; j ++ {
-//				log.Printf("Client: server: %s", Servers[j%sfs.NREPLICAS].String())
+//			for j := 0 ; j < numServers ; j ++ {
+//				log.Printf("Client: server: %s", Servers[j%numServers].String())
 //			}
-			client,err :=rpc.Dial("tcp",Servers[i%sfs.NREPLICAS].String())
+			client,err :=rpc.Dial("tcp",Servers[i%numServers].String())
 			if client == nil {
 				log.Printf("Client: Dial Failed in GetChunk client == nil ")
-					log.Printf("On try %d out of %d with %d# of servers\n",i,(sfs.NREPLICAS*2-1),sfs.NREPLICAS);
-				if i != (sfs.NREPLICAS*2)-1 {
+					log.Printf("On try %d out of %d with %d# of servers\n",i,(numServers*2-1),numServers);
+				if i != (numServers*2)-1 {
 					continue
 				}else {
 					log.Printf("Client: missed continue in GetChunk ")
@@ -418,7 +419,7 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 			//defer client.Close()
 			if err != nil {
 				log.Printf("Client: Dial Failed in GetChunk err != nil %s", err.String())
-				if i != (sfs.NREPLICAS*2-1) {
+				if i != (numServers*2-1) {
 					continue
 				}else{
 					log.Printf("Client: missed continue in GetChunk ")
@@ -435,9 +436,9 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 			log.Println("back from call")
 			client.Close();
 			if err!=nil{
-				log.Printf("Client: Server.Read failed: %s, on server %s\n", err.String(),Servers[i%sfs.NREPLICAS].String());
-					log.Printf("On try %d out of %d with %d# of servers\n",i,(sfs.NREPLICAS*2-1),sfs.NREPLICAS);
-				if i != (sfs.NREPLICAS*2-1) {
+				log.Printf("Client: Server.Read failed: %s, on server %s\n", err.String(),Servers[i%numServers].String());
+					log.Printf("On try %d out of %d with %d# of servers\n",i,(numServers*2-1), numServers);
+				if i != (numServers*2-1) {
 					continue
 				}
 				return sfs.FAIL, fileInfoRead.Data.Data

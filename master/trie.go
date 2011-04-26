@@ -195,6 +195,8 @@ func (p *Trie) DeleteFile(path_s string) os.Error {
 	}
 
 	dir, file := path.Split(path_s)
+	
+	log.Printf("trie.DeleteFile: path: %s dir: %s file: %s\n", path_s, dir, file)
 
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil {
@@ -205,7 +207,7 @@ func (p *Trie) DeleteFile(path_s string) os.Error {
 		//file doesn't exist.. (maybe don't return?)
 		return os.NewError("DeleteFile - File Doesn't Exist\n")
 	}
-	leaf.files[file] = nil
+	leaf.files[file] = "", false
 
 	//DELETE INODE IN MASTER???
 
@@ -264,11 +266,17 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		if len(directory_s) == 0 {
 			return os.NewError("AddDir - directory string is nothin, what what??")
 		}
+		
+		
+		//make sure the parent exists
+		dir := p.find(strings.NewReader(directory_s))
+		if dir == nil {
+			return os.NewError("AddDir - parent directory doesn't exist");
+		}
+		
 		//create the dir
 		p.addRunes(strings.NewReader(path_cor + "/"))
 
-		//add dir record to parent dir
-		dir := p.find(strings.NewReader(directory_s))
 		
 		var tmpDirs string
 		for i := 0; i < dir.dirs.Len(); i++{
@@ -345,7 +353,7 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 
 	directory_s, dir_name := path.Split(path_cor)
 	
-	
+	log.Printf("trie.RemoveDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
 	if len(directory_s) == 0 {
 		return os.NewError("RemoveDir - directory string is nothin, what what??")
@@ -361,14 +369,14 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 		log.Printf("trie.RemoveDir fail (could not find dir): path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 		return os.NewError("RemoveDir - Dir doesn't exist\n")
 	}
-	
+
 	if dir.dirs.Len() != 0 || len(dir.files) != 0 {
 		log.Printf("trie.RemoveDir fail (not empty): path: %s parent: %s dir: %s\n\tfiles: %+v\n\tdirs : %+v\n", path_cor, directory_s, dir_name, dir.files, dir.dirs)
 		return os.NewError("RemoveDir - Dir is not empty -- cannot remove\n")
 	}
-	
+
 	p.Remove(path_cor + "/")
-	
+
 	log.Printf("trie.RemoveDir success: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
 	return nil
