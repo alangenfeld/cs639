@@ -217,7 +217,12 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 				AssociateChunkAndServer(c, s)
 			}
 		}
-	}	
+	}else{
+		err := PopulateServer(s)
+		if err != nil {
+			log.Fatal("error populating server %v\n", s);
+		}
+	}
 
 	info.ChunkServerID = s.id
 
@@ -338,7 +343,38 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	return s
 }
+func PopulateServer(serv *server) os.Error {
+	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 
+	client, err := rpc.Dial("tcp", str)
+	
+	for _,chunk := range chunks {
+	
+		if chunk.servers.Len() < sfs.NREPLICAS {
+		
+			//populate chunk location list
+			chunklist := make([]net.TCPAddr, chunk.servers.Len())
+			for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
+				chunklist[cnt1] = chunk.servers.At(cnt1).(*server).addr
+			}
+
+			//send rpc call off
+			args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
+			reply := new(sfs.ReplicateChunkReturn)
+			log.Printf("master: PopulateServer: issuing replication req to %s\n", str)
+			err = client.Call("Server.ReplicateChunk", args, reply)
+			if err != nil {
+				log.Printf("master: PopulateServer: unable to call %s\n", str)
+			}
+			log.Printf("%s", reply)
+		}
+	}
+	client.Close()
+	
+	return nil
+
+
+}
 func RemoveServer(serv *server) os.Error {
 
 	//Remove the Server
