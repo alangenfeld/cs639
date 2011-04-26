@@ -218,7 +218,7 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 			}
 		}
 	}else{
-		err := PopulateServer(s)
+		err := populateServer(s)
 		if err != nil {
 			log.Fatal("error populating server %v\n", s);
 		}
@@ -343,10 +343,17 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	return s
 }
-func PopulateServer(serv *server) os.Error {
+func populateServer(serv *server) os.Error {
 	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 
+	if len(chunks) == 0 {
+		return nil
+	}
 	client, err := rpc.Dial("tcp", str)
+	if(client == nil){
+		log.Printf("master: PopulateServer: dialing client %s, nil\n" str)
+		return nil
+	}
 	
 	for _,chunk := range chunks {
 	
