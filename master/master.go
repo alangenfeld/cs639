@@ -351,7 +351,7 @@ func populateServer(serv *server) os.Error {
 	}
 	client, err := rpc.Dial("tcp", str)
 	if(client == nil){
-		log.Printf("master: PopulateServer: dialing client %s, nil\n" str)
+		log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
 		return nil
 	}
 	
