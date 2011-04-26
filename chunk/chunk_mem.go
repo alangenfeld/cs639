@@ -98,10 +98,10 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if !present{
 		ret.Status = sfs.FAIL
 		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
-//		log.Println("1");
-//		for key,_ := range chunkTable {
-//			log.Println("I have chunk ",key);
-//		}
+		log.Println("1");
+		for key,_ := range chunkTable {
+			log.Println("I have chunk ",key);
+		}
 		return nil
 	}
 
@@ -114,18 +114,16 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	
 	ret.Data.Data = data.Data
 	ret.Status = sfs.SUCCESS
-	log.Println("chunk: Read success")
 	/*if logging {
 		errString := logger.End(id, false)
 		if errString != "" {
 			logging = false
 		}
 	}*/
-//	log.Println("2");
-//		for key,_ := range chunkTable {
-//			log.Println("I have chunk ",key);
-//		}
-	
+	log.Println("2");
+		for key,_ := range chunkTable {
+			log.Println("I have chunk ",key);
+		}
 	return nil	
 }
 
@@ -166,7 +164,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 			log.Printf("chunk: dialing error: ", err)
 			continue
 		}
-		log.Println("chunk: forwarding write to", args.Info.Servers[0])
+		log.Printf("chunk: forwarding write to ", args.Info.Servers[0])
 		err = client.Call("Server.Write", &args, &inRet)
 	        client.Close()
 		if err != nil {
@@ -186,7 +184,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 	}
 
     logger.End(id, false)
-	log.Println("chunk: Write success")
+
 	ret.Status = sfs.SUCCESS
 	return nil	
 }
@@ -364,7 +362,7 @@ func ServerBusy() bool {
     log.Println("Chunk: logger metric says: ", loggerLoad)
     log.Println("Chunk: chunk metric says: ", chunkLoad)
 
-	index := logger.GetLoad() + getAvgReq()
+	index := loggerLoad * 2
 //	index := requestLoad
 	log.Println("Chunk: server load index", index)
 
