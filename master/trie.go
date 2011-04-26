@@ -207,7 +207,7 @@ func (p *Trie) DeleteFile(path_s string) os.Error {
 		//file doesn't exist.. (maybe don't return?)
 		return os.NewError("DeleteFile - File Doesn't Exist\n")
 	}
-	leaf.files[file] = nil
+	leaf.files[file] = "", false
 
 	//DELETE INODE IN MASTER???
 
