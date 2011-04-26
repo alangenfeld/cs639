@@ -107,8 +107,16 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 
 	nextChunk++
 
-	ret.Info.Servers = make([]net.TCPAddr, sfs.NREPLICAS)
-	for i := 0; i < sfs.NREPLICAS && i < sHeap.vec.Len(); i++ {
+	var nreps int
+	
+	if sHeap.vec.Len() < sfs.NREPLICAS {
+		nreps = sHeap.vec.Len()
+	} else {
+		nreps = sfs.NREPLICAS
+	}
+
+	ret.Info.Servers = make([]net.TCPAddr, nreps)
+	for i := 0; i < nreps; i++ {
 		ret.Info.Servers[i] = sHeap.vec.At(i).(*server).addr
 	}
 
