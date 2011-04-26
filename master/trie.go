@@ -374,8 +374,13 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 		log.Printf("trie.RemoveDir fail (not empty): path: %s parent: %s dir: %s\n\tfiles: %+v\n\tdirs : %+v\n", path_cor, directory_s, dir_name, dir.files, dir.dirs)
 		return os.NewError("RemoveDir - Dir is not empty -- cannot remove\n")
 	}
+	
+	parent := p.find(strings.NewReader(directory_s))
+	if parent == nil {
+		return os.NewError("RemoveDir - cannot find parent")
+	}
 
-	p.Remove(path_cor + "/")
+	parent.Remove(dir_name + "/")
 
 	log.Printf("trie.RemoveDir success: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
