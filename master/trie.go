@@ -353,7 +353,7 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 
 	directory_s, dir_name := path.Split(path_cor)
 	
-	log.Printf("trie.RemoveDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
+	//log.Printf("trie.RemoveDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
 	if len(directory_s) == 0 {
 		return os.NewError("RemoveDir - directory string is nothin, what what??")
@@ -381,7 +381,15 @@ func (p *Trie) RemoveDir(path_s string) os.Error {
 	}
 
 	parent.Remove(dir_name + "/")
-
+	
+	cnt := parent.dirs.Len()
+	for i := 0; i < cnt; i++ {
+		if parent.dirs.At(i) == dir_name {
+			parent.dirs.Delete(i)
+			break
+		}
+	}
+	
 	log.Printf("trie.RemoveDir success: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
 
 	return nil
