@@ -114,9 +114,9 @@ sub runTest {
 	$pid2 = fork();
 	if($pid2 == 0) {
 	    while(1) {
-		sleep(1);
+		sleep(10);
 		sys("$ssh $servers[1] 'killall serv'".($verbose != 1 ? " &> /dev/null":""));
-		sleep(1);
+		sleep(10);
 		sys("$ssh $servers[1] ".
 		    "'$testdir/../chunk/serv $master ".
 		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
