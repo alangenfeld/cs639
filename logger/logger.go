@@ -223,6 +223,9 @@ func getCallTime() float64 {
 	}
 	startId = lastId
 	//log.Println("retVal of call: " + fmt.Sprintf("%f", retVal))
+    if retVal > 1.0 {
+       retVal = 1.0
+    }
 	return retVal
 }
 		

@@ -115,9 +115,9 @@ sub runTest {
 	$pid2 = fork();
 	if($pid2 == 0) {
 	    while(1) {
-		sleep(1);
+		sleep(10);
 		sys("$ssh $servers[1] 'killall cproxy'".($verbose != 1 ? " &> /dev/null":""));
-		sleep(1);
+		sleep(10);
 		sys("$ssh $servers[1] ".
 		    "'$testdir/../chunk/cproxy $master $lag $prob ".
 		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");

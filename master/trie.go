@@ -55,14 +55,15 @@ import (
 	"path"
 	"os"
 	"rand"
+	"log"
 )
 
 // A Trie uses runes rather than characters for indexing, therefore its child key values are integers.
 type Trie struct {
-	leaf     bool          // whether the node is a leaf (the end of an input string).
-	value    interface{}   // the value associated with the string up to this leaf node.
-	files map[string] interface{}
-	dirs  * vector.StringVector
+	leaf     bool        // whether the node is a leaf (the end of an input string).
+	value    interface{} // the value associated with the string up to this leaf node.
+	files    map[string]interface{}
+	dirs     *vector.StringVector
 	children map[int]*Trie // a map if len(s) == 0 {
 }
 
@@ -79,7 +80,7 @@ func NewTrie() *Trie {
 	t := new(Trie)
 	t.leaf = false
 	t.value = nil
-	t.files = make(map[string] interface{})
+	t.files = make(map[string]interface{})
 	t.dirs = new(vector.StringVector)
 	t.children = make(map[int]*Trie)
 	return t
@@ -88,17 +89,17 @@ func NewTrie() *Trie {
 func (p *Trie) GetDotString() string {
 	rsrc := rand.NewSource(140209)
 	rgen := rand.New(rsrc)
-	
+
 	outStr := "digraph Trie {"
 	vec := new(vector.StringVector)
-	
+
 	p.outputDot(vec, 0, -1, rgen)
-	
+
 	cnt := vec.Len()
 	for i := 0; i < cnt; i++ {
 		outStr = strings.Join([]string{outStr, vec.At(i)}, "\n")
 	}
-	
+
 	return strings.Join([]string{outStr, "}"}, "\n")
 }
 
@@ -107,20 +108,19 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 	child := make([]byte, 10)
 
 	utf8.EncodeRune(this, rune)
-	
+
 	thisChar := string(this[0])
-	
+
 	if serial == -1 {
 		thisChar = "root"
 	}
-	
-	
+
 	for childRune, childNode := range p.children {
 		utf8.EncodeRune(child, childRune)
 		childSerial := rgen.Int63()
 		childNodeStr := fmt.Sprintf("\"%s(%d)\"", string(child[0]), childSerial)
 		var notation string
-		
+
 		if string(child[0]) == "/" {
 			notation = fmt.Sprintf("[label=\"%s\" shape=box color=red]", string(child[0]))
 		} else {
@@ -131,40 +131,41 @@ func (p *Trie) outputDot(vec *vector.StringVector, rune int, serial int64, rgen 
 	}
 }
 
-func (p *Trie) QueryFile(path_s string)  (i interface{}, exists bool, r os.Error){
+func (p *Trie) QueryFile(path_s string) (i interface{}, exists bool, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, false, os.NewError("Path Length == 0\n")
 	}
-	
+
 	dir, file := path.Split(path_s)
-	
+
 	// append the runes to the trie
 	leaf := p.find(strings.NewReader(dir))
-	if leaf == nil{
+	if leaf == nil {
 		return nil, false, os.NewError("Cannot find Path to File\n")
 	}
 
-	inode , check := leaf.files[file]
+	inode, check := leaf.files[file]
 	if check && inode != nil {
 		//file already exists
 		return inode, true, nil
 	}
-	
+
 	return nil, false, os.NewError("File does not exist")
 
 }
 
-
 // NEEDS FUNCTION TO VALIDATE path_s SYNTAX
-func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
+func (p *Trie) AddFile(path_s string, i interface{}) os.Error {
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
 	dir, file := path.Split(path_s)
-	
+
+	log.Printf("trie.AddFile: path: %s dir: %s file: %s\n", path_s, dir, file)
+
 	// append the runes to the trie
 	leaf := p.find(strings.NewReader(dir))
-	if leaf == nil{
+	if leaf == nil {
 		return os.NewError("AddFile - Directory Doesn't Exist\n")
 	}
 	inode, check := leaf.files[file]
@@ -174,19 +175,31 @@ func (p *Trie) AddFile(path_s string, i  interface{}) os.Error{
 	} else {
 		leaf.files[file] = i
 	}
+
+/*	
+	var tmpCont string
+	for k, _ := range leaf.files {
+		tmpCont = tmpCont + k + " "
+	}
+
+	log.Printf("trie.AddFile: leaf.files: %+v\n", leaf.files)
+	log.Printf("trie.AddFile: leaf.files (string): %s\n", tmpCont)
+*/
+
 	return nil
-
-
 }
-func (p *Trie) DeleteFile(path_s string) os.Error{
-	if len(path_s) == 0{
+
+func (p *Trie) DeleteFile(path_s string) os.Error {
+	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
-	
+
 	dir, file := path.Split(path_s)
 	
+	log.Printf("trie.DeleteFile: path: %s dir: %s file: %s\n", path_s, dir, file)
+
 	leaf := p.find(strings.NewReader(dir))
-	if leaf == nil{
+	if leaf == nil {
 		return os.NewError("DeleteFile - Directory Doesn't Exist\n")
 	}
 	i, check := leaf.files[file]
@@ -194,39 +207,38 @@ func (p *Trie) DeleteFile(path_s string) os.Error{
 		//file doesn't exist.. (maybe don't return?)
 		return os.NewError("DeleteFile - File Doesn't Exist\n")
 	}
-	leaf.files[file] = nil
-	
+	leaf.files[file] = "", false
+
 	//DELETE INODE IN MASTER???
-	
+
 	return nil
-
-
-
 }
+
 func (p *Trie) GetFile(path_s string) (i interface{}, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, os.NewError("Path Length == 0\n")
 	}
-	
+
 	dir, file := path.Split(path_s)
-	
+
 	leaf := p.find(strings.NewReader(dir))
 	if leaf == nil {
 		//bad path_s
 		return nil, os.NewError("GetFile - directory doesn't exist\n")
-	}	
+	}
 	i, check := leaf.files[file]
-	if !check || i == nil{
+	if !check || i == nil {
 		//bad file name
 		return nil, os.NewError("GetFile - File doesn't exist\n")
 	}
 	return leaf.files[file], nil
 }
+
 func (p *Trie) AddDir(path_s string) os.Error {
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
-	
+
 	//check to make sure the dir doesn't already exist
 	leaf_test := p.find(strings.NewReader(path_s))
 	if leaf_test != nil {
@@ -234,77 +246,157 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		return os.NewError("AddDir - Directory Already Exists")
 
 	}
-	
+
 	if path_s == "/" {
 		p.addRunes(strings.NewReader("/"))
 		p.dirs.Push("/")
 	} else {
-		path_cor := fmt.Sprintf("%s%s", path_s, "/")
+		var path_cor string
+		
+		if path_s[len(path_s)-1] == '/' {
+			path_cor = strings.TrimRight(path_s, "/")
+		} else {
+			path_cor = path_s
+		}
 
-		directory_s, dir_name:= path.Split(path_s)
-			
-		if len(directory_s) == 0{
+		directory_s, dir_name := path.Split(path_cor)
+		
+		log.Printf("trie.AddDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
+
+		if len(directory_s) == 0 {
 			return os.NewError("AddDir - directory string is nothin, what what??")
 		}
-		//create the dir
-		p.addRunes(strings.NewReader(path_cor))
-
-		//add dir record to parent dir
+		
+		
+		//make sure the parent exists
 		dir := p.find(strings.NewReader(directory_s))
+		if dir == nil {
+			return os.NewError("AddDir - parent directory doesn't exist");
+		}
+		
+		//create the dir
+		p.addRunes(strings.NewReader(path_cor + "/"))
+
+		
+		var tmpDirs string
+		for i := 0; i < dir.dirs.Len(); i++{
+			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
+		}
+		log.Printf("trie.AddDir: before: len: %d\n\t%+v\n", dir.dirs.Len(), tmpDirs)
+		log.Printf("trie.AddDir: pushing: %s\n", dir_name)
+				
 		dir.dirs.Push(dir_name)
+		
+		tmpDirs = ""
+		for i := 0; i < dir.dirs.Len(); i++{
+			tmpDirs = tmpDirs + dir.dirs.At(i) + " "
+		}
+		log.Printf("trie.AddDir: after : len: %d\n\t%+v\n", dir.dirs.Len(), tmpDirs)
 	}
 
 	return nil
-
 }
-func (p *Trie) ReadDir(path_s string) (dirs * vector.StringVector, files map[string] interface{}, r os.Error) {
+
+func (p *Trie) ReadDir(path_s string) (dirs *vector.StringVector, files map[string]interface{}, r os.Error) {
 	if len(path_s) == 0 {
 		return nil, nil, os.NewError("Path Length == 0\n")
 	}
+
 	path_cor := ""
+
 	if len(path_s) == 1 {
 		path_cor = path_s
-	}else {
+	} else {
 		path_cor = fmt.Sprintf("%s%s", path_s, "/")
 	}
-		
+
 	//CHECK path_s SYNTAX to make sure it ends on a forward slash..
 	leaf := p.find(strings.NewReader(path_cor))
 	if leaf == nil {
 		//bad path_s
 		return nil, nil, os.NewError("ReadDir - Dir doesn't exist\n")
 	}
-	if leaf.dirs.Len() == 0 {
-		return nil, nil, nil
+	
+	var tmpDirs string
+	for i := 0; i < leaf.dirs.Len(); i++{
+		tmpDirs = tmpDirs + leaf.dirs.At(i) + " "
 	}
+
+	var tmpFiles string
+	for k, _ := range leaf.files {
+		tmpFiles = tmpFiles + k + " "
+	}
+
+
+	log.Printf("trie.ReadDir:\n\tdirs : %s\n\tfiles: %s\n", tmpDirs, tmpFiles)
+
 	//TRAVERSE FILES STRUCTURE??
 	return leaf.dirs, leaf.files, nil
-
 }
+
 func (p *Trie) RemoveDir(path_s string) os.Error {
 	if len(path_s) == 0 {
 		return os.NewError("Path Length == 0\n")
 	}
 	
-	//path_s_cor := fmt.Sprintf("%s%s",path_s, "/")
-	//get the parent directory
-	
-	//remove the dir from the parent
-	parent := p.find(strings.NewReader(path_s))
-	if parent == nil {
-		//error finding directory
-		return os.NewError("RemoveDir - Dir doesn't exist\n")
+	if path_s == "/" {
+		return os.NewError("RemoveDir -- cannot remove root dir\n")
 	}
 	
-	//remove path from parent
-	parent.children['/'] = nil
+	var path_cor string
 	
+	if path_s[len(path_s)-1] == '/' {
+		path_cor = strings.TrimRight(path_s, "/")
+	} else {
+		path_cor = path_s
+	}
+
+	directory_s, dir_name := path.Split(path_cor)
+	
+	//log.Printf("trie.RemoveDir: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
+
+	if len(directory_s) == 0 {
+		return os.NewError("RemoveDir - directory string is nothin, what what??")
+	}
+
+	//path_s_cor := fmt.Sprintf("%s%s",path_s, "/")
+	//get the parent directory
+
+	//remove the dir from the parent
+	dir := p.find(strings.NewReader(path_cor + "/"))
+	if dir == nil {
+		//error finding directory
+		log.Printf("trie.RemoveDir fail (could not find dir): path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
+		return os.NewError("RemoveDir - Dir doesn't exist\n")
+	}
+
+	if dir.dirs.Len() != 0 || len(dir.files) != 0 {
+		log.Printf("trie.RemoveDir fail (not empty): path: %s parent: %s dir: %s\n\tfiles: %+v\n\tdirs : %+v\n", path_cor, directory_s, dir_name, dir.files, dir.dirs)
+		return os.NewError("RemoveDir - Dir is not empty -- cannot remove\n")
+	}
+	
+	parent := p.find(strings.NewReader(directory_s))
+	if parent == nil {
+		return os.NewError("RemoveDir - cannot find parent")
+	}
+
+	parent.Remove(dir_name + "/")
+	
+	cnt := parent.dirs.Len()
+	for i := 0; i < cnt; i++ {
+		if parent.dirs.At(i) == dir_name {
+			parent.dirs.Delete(i)
+			break
+		}
+	}
+	
+	log.Printf("trie.RemoveDir success: path: %s parent: %s dir: %s\n", path_cor, directory_s, dir_name)
+
 	return nil
-
-
 }
+
 func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
-	
+
 	new_path_cor := fmt.Sprintf("%s%s", newpath_s, "/")
 	old_path_cor := fmt.Sprintf("%s%s", oldpath_s, "/")
 	overwrite_check := p.find(strings.NewReader(new_path_cor))
@@ -312,7 +404,7 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 		//new path already exists
 		return os.NewError("New path already exists\n")
 	}
-	
+
 	movingnode := p.includes(strings.NewReader(old_path_cor))
 	if movingnode == nil {
 		//invalid old path_s
@@ -323,13 +415,13 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 	//and the name keys of the new and old nodes..
 	new_dir_s, new_name := path.Split(newpath_s)
 	old_dir_s, old_name := path.Split(oldpath_s)
-	
+
 	new_length := len(newpath_s)
 	old_length := len(oldpath_s)
-	
+
 	old_key := oldpath_s[old_length]
 	new_key := newpath_s[new_length]
-	
+
 	//get the new parent node, create if necessary
 	newparent := p.addRunes(strings.NewReader(newpath_s))
 	oldparent := p.find(strings.NewReader(oldpath_s))
@@ -342,46 +434,45 @@ func (p *Trie) MoveDir(oldpath_s string, newpath_s string) os.Error {
 		//what the what??
 		return os.NewError("Couldn't find new dir node... What the what??\n")
 	}
-	
+
 	//uniqueness check in newdir..
 	unq_length := newdir.dirs.Len()
-	for i := 0 ; i < unq_length ; i++ {
+	for i := 0; i < unq_length; i++ {
 		if newdir.dirs.At(i) == new_name {
 			//failed uniquness check
 			return os.NewError("New Dir failed uniqueness check\n")
 		}
 	}
-	
-	
+
 	olddir := p.find(strings.NewReader(old_dir_s))
 	if olddir == nil {
 		//lies
 		return os.NewError("Couldn't find old dir node.. ?!??!\n")
 	}
-	
+
 	//first add movingnode to new parent
 	newparent.children[int(new_key)] = movingnode
-	
+
 	//then add it to the new directory
 	newdir.dirs.Push(new_name)
-	
+
 	//then remove it from the old parent
 	oldparent.children[int(old_key)] = nil
-	if(oldparent.dirs.Len() == 0){
+	if oldparent.dirs.Len() == 0 {
 		oldparent.leaf = true
 	}
-	
+
 	//then remove it from the old directory (expensive)
 	remove_length := olddir.dirs.Len()
-	for i := 0 ; i < remove_length ; i++ {
+	for i := 0; i < remove_length; i++ {
 		if olddir.dirs.At(i) == old_name {
 			olddir.dirs.Delete(i)
 		}
 	}
-	return nil
-	
 
+	return nil
 }
+
 // Internal function: adds items to the trie, reading runes from a strings.Reader.  It returns
 // the leaf node at which the addition ends.
 func (p *Trie) addRunes(r *strings.Reader) *Trie {
@@ -456,7 +547,7 @@ func (p *Trie) find(r *strings.Reader) *Trie {
 	rune, _, err := r.ReadRune()
 	if err != nil {
 		//if p.leaf {
-			return p
+		return p
 		//}
 		//return nil
 	}
@@ -469,9 +560,6 @@ func (p *Trie) find(r *strings.Reader) *Trie {
 	// recurse down to the next node with the remainder of the string
 	return child.find(r)
 }
-
-
-
 
 // Internal string inclusion function.
 func (p *Trie) includes(r *strings.Reader) *Trie {
@@ -536,6 +624,7 @@ func (p *Trie) buildMembers(prefix string) *vector.StringVector {
 func (p *Trie) Members() (members *vector.StringVector) {
 	members = p.buildMembers(``)
 	sort.Sort(members)
+
 	return
 }
 
@@ -577,22 +666,22 @@ func (p *Trie) AllSubstrings(s string) *vector.StringVector {
 func (p *Trie) AllSubstringsAndValues(s string) (*vector.StringVector, *vector.Vector) {
 	sv := new(vector.StringVector)
 	vv := new(vector.Vector)
-	
+
 	for pos, rune := range s {
 		child, ok := p.children[rune]
 		if !ok {
 			// return whatever we have so far
 			break
 		}
-		
+
 		// if this is a leaf node, add the string so far and its value
 		if child.leaf {
-			sv.Push(s[0:pos+utf8.RuneLen(rune)])
+			sv.Push(s[0 : pos+utf8.RuneLen(rune)])
 			vv.Push(child.value)
 		}
-		
+
 		p = child
 	}
-	
+
 	return sv, vv
 }

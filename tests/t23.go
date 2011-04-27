@@ -39,13 +39,8 @@ func main(){
 		panic("makedir shouldn't work")
 	}
 
-	ls, err := client.ReadDir("");
+	_, err := client.ReadDir("");
 	if(err == 0) {
-		panic("readdir shouldn't work")
-	}
-
-	ls, err = client.ReadDir("/");
-	if(err != 0 || len(ls) != 0) {
 		panic("readdir shouldn't work")
 	}
 

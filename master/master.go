@@ -107,8 +107,16 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 
 	nextChunk++
 
-	ret.Info.Servers = make([]net.TCPAddr, sfs.NREPLICAS)
-	for i := 0; i < sfs.NREPLICAS && i < sHeap.vec.Len(); i++ {
+	var nreps int
+	
+	if sHeap.vec.Len() < sfs.NREPLICAS {
+		nreps = sHeap.vec.Len()
+	} else {
+		nreps = sfs.NREPLICAS
+	}
+
+	ret.Info.Servers = make([]net.TCPAddr, nreps)
+	for i := 0; i < nreps; i++ {
 		ret.Info.Servers[i] = sHeap.vec.At(i).(*server).addr
 	}
 
@@ -175,6 +183,8 @@ func (m *Master) MakeDir(args *sfs.MakeDirArgs, ret *sfs.MakeDirReturn) os.Error
 func (m *Master) RemoveDir(args *sfs.RemoveDirArgs, ret *sfs.RemoveDirReturn) os.Error {
 	err := t.RemoveDir(args.DirName)
 	
+	DumpTrie()
+	
 	return err
 }
 
@@ -215,7 +225,12 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 				AssociateChunkAndServer(c, s)
 			}
 		}
-	}	
+	}else{
+		err := populateServer(s)
+		if err != nil {
+			log.Fatal("error populating server %v\n", s);
+		}
+	}
 
 	info.ChunkServerID = s.id
 
@@ -240,6 +255,8 @@ func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Erro
 	err := DeleteFile(args.Name)
 	
 	ret.Status = (err == nil)
+	
+	DumpTrie()
 	 
 	return err
 }
@@ -334,7 +351,45 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	return s
 }
+func populateServer(serv *server) os.Error {
+	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 
+	if len(chunks) == 0 {
+		return nil
+	}
+	client, err := rpc.Dial("tcp", str)
+	if(client == nil){
+		log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
+		return nil
+	}
+	
+	for _,chunk := range chunks {
+	
+		if chunk.servers.Len() < sfs.NREPLICAS {
+		
+			//populate chunk location list
+			chunklist := make([]net.TCPAddr, chunk.servers.Len())
+			for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
+				chunklist[cnt1] = chunk.servers.At(cnt1).(*server).addr
+			}
+
+			//send rpc call off
+			args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
+			reply := new(sfs.ReplicateChunkReturn)
+			log.Printf("master: PopulateServer: issuing replication req to %s\n", str)
+			err = client.Call("Server.ReplicateChunk", args, reply)
+			if err != nil {
+				log.Printf("master: PopulateServer: unable to call %s\n", str)
+			}
+			log.Printf("%s", reply)
+		}
+	}
+	client.Close()
+	
+	return nil
+
+
+}
 func RemoveServer(serv *server) os.Error {
 
 	//Remove the Server
@@ -470,9 +525,9 @@ func QueryFile(name string) (i *inode, fileExists bool, err os.Error) {
 func DeleteFile(name string) (err os.Error) {
 	inode, exists ,_:= QueryFile(name)
 	if exists {
-		ok := t.Remove(name)
+		err := t.DeleteFile(name)
 		
-		if !ok {
+		if err != nil {
 			log.Printf("Delete: file %s does not exist\n", name)
 			return os.NewError("file does not exist")
 		}
@@ -655,7 +710,7 @@ func DumpTrie(){
 	for i := 0; i < cnt; i++ {
 		log.Printf("dumpTrie: %d: %s\n", i, dump.At(i))
 	}
-	log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
+	//log.Printf("dumpTrie: DOT file follows\n******\n%s\n******\n", t.GetDotString())
 }
 
 func init() {
