@@ -292,7 +292,7 @@ func SendHeartbeat(masterAddress string){
 				logging = false
 			}
 		}
-		addCount(requestLoad)
+		//addCount(requestLoad)
 		requestLoad = 0
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
@@ -385,7 +385,7 @@ func getAvgReq() int {
 }
 
 func addCount(currReq int) {
-    log.Println("Index is: ", loadArrayIndex)
+    log.Println("in addCount: Index is: ", loadArrayIndex)
 	loadArray[loadArrayIndex] = currReq
 	loadArrayIndex ++
 	if loadArrayIndex >= len(loadArray) {
