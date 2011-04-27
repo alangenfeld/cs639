@@ -369,7 +369,7 @@ func RemoveServer(serv *server) os.Error {
 	rep_size := int(math.Floor(rep_factor * network_size))
 
 	//for each chunk in the server, make a replication call.
-	for cnt := 0; cnt < serv.chunks.Len(); cnt++ {
+	for cnt := 0; cnt < serv.chunks.Len(); {
 
 		index := rand.Intn(rep_size)
 
@@ -383,6 +383,7 @@ func RemoveServer(serv *server) os.Error {
 
 		if err != nil {
 			log.Printf("master: RemoveServer: unable to dial %s\n", str)
+			continue
 		} else {
 			log.Printf("master: RemoveServer: dial %s succeeded\n", str)
 		}
@@ -405,6 +406,7 @@ func RemoveServer(serv *server) os.Error {
 		}
 		log.Printf("%s", reply)
 		client.Close();
+		cnt++
 	}
 
 	log.Printf("RemoveServer: removing %s\n", str1)

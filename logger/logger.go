@@ -12,7 +12,7 @@ import(
 	"time"
 )
 
-type TaskId uint64
+type TaskId int64
 type taskInfo struct{
 	TaskName string
 	StartTime int64
@@ -23,6 +23,10 @@ var logFile *os.File
 var taskMap = map[TaskId] taskInfo{}
 var currTaskId TaskId
 var statusDir string
+var currVals []float64
+var currValIndex int
+var notFull bool
+var startId TaskId
 
 const STATUS_LEN = 82
 const STATUS_CMD = "./stats.sh"
@@ -43,7 +47,25 @@ func Init(Filename string, Directory string) os.Error{
 	statusDir = Directory
 	//initialize task id numbers
 	currTaskId = 0;
+	currVals = make([]float64, 6)
+    for i:= 0; i < 5; i ++ {
+       currVals[i] = 0
+    }
+	currValIndex = 0
+	notFull = true
+	startId = 0
 	return nil;
+}
+
+func QuickInit() {
+	currTaskId = 0;
+	currVals = make([]float64, 5)
+    for i:= 0; i < 5; i ++ {
+       currVals[i] = 0
+    }
+	currValIndex = 0
+	notFull = true
+	startId = 0
 }
 
 func Start(TaskName string) TaskId{
@@ -54,8 +76,9 @@ func Start(TaskName string) TaskId{
 	info.TaskName = TaskName
 	taskMap[currTaskId] = info
 	//make sure you don't overwrite another task
+    retval := currTaskId
 	currTaskId ++
-	return (currTaskId - 1)
+	return retval
 }
 
 func End(thisTask TaskId, SysStats bool) string{
@@ -72,7 +95,7 @@ func End(thisTask TaskId, SysStats bool) string{
 		return err.String()
 	}
 	if SysStats {
-		systemStats()
+		//systemStats()
 	}	
 	return ""
 }
@@ -112,16 +135,18 @@ func String(thisTask TaskId) string {
 /********************************************************
  * Load score:
  * x/5pts for memory usage, so it would be usage % * 5
- * x/2pts for cpu usage, so it would be available cpu * 2
+ * x/5pts for call time
 *********************************************************/
 func GetLoad() int {
 	//first, get memory usage
-	mem_usage := getMem()
-	load := 10.0 * mem_usage
+	load := 5.0 * getMem()
+	log.Println("done getting mem in logger");
+	load += 5.0 * getCallTime()
+	log.Println("done getting calltime in logger");
 	return int(load)
 }
 
-func getMem() float32 {
+func getMem() float64 {
 	memFile, err := os.Open("/proc/meminfo", os.O_RDONLY, 0)
 	if err != nil {
 		log.Println("Error opening meminfo:" +  err.String())
@@ -136,15 +161,73 @@ func getMem() float32 {
 	return memToFloat(tokens[1]) / memToFloat(tokens[0])
 }
 
-func memToFloat(memString string) float32 {
+func memToFloat(memString string) float64 {
 	exp, err := regexp.Compile("[0-9]+")
 	resultString := exp.FindString(memString)
-	result, err := strconv.Atof32(resultString);
+	result, err := strconv.Atof64(resultString);
 	if err != nil {
 		log.Println(err.String());
 	}
 	return result
 }
+
+func getCallTime() float64 {
+	lastId := currTaskId - 1
+	ourId := startId;
+	var retVal float64;
+	for notFull && (ourId <= lastId) { 
+		log.Println("In initial phase ...")
+		info, _ := taskMap[ourId]
+		if info.EndTime != 0 && info.TaskName == "Write" {
+			timeSpent := info.EndTime - info.StartTime
+			niceTimeSpent := float64(timeSpent) / float64(1000000000)
+			currVals[currValIndex] = niceTimeSpent
+			//log.Println("Adding: " + fmt.Sprintf("%f", niceTimeSpent))
+			currValIndex ++;
+			if currValIndex >= 5 {
+				log.Println("flipping notFul1!")
+				notFull = false
+				currValIndex = 0
+			}
+			ourId++
+		} else {
+			ourId ++
+		}
+	}	
+	retVal = 0
+	ourId = startId
+	needSample := !notFull
+    log.Println("sample: " + fmt.Sprintf("%b", needSample) + " " + fmt.Sprintf("%d", ourId) + " " + fmt.Sprintf("%d", lastId));
+	for needSample && (ourId <= lastId) {
+		log.Println("In checking phase")
+        log.Println("sample: " + fmt.Sprintf("%b", needSample) + " " + fmt.Sprintf("%d", ourId) + " " + fmt.Sprintf("%d", lastId));
+		info, _ := taskMap[ourId]
+		if info.EndTime != 0 && info.TaskName == "Write" {
+			timeSpent := info.EndTime - info.StartTime
+			niceTimeSpent := float64(timeSpent) / float64(1000000000)
+			needSample = false
+			avg := (currVals[0] + currVals[1] + currVals[2] + currVals[3] + currVals[4])/5
+			log.Println("avg: " + fmt.Sprintf("%f", avg) + " niceTime: " + fmt.Sprintf("%f", niceTimeSpent))
+			if (niceTimeSpent - avg) > 0 {
+				retVal = (niceTimeSpent - avg) / avg
+			}
+			currVals[currValIndex] = niceTimeSpent
+			currValIndex ++
+			if currValIndex >= 5 {
+				currValIndex = 0
+			}
+			ourId++;
+		} else {
+			ourId ++;
+		}
+	}
+	startId = lastId
+	//log.Println("retVal of call: " + fmt.Sprintf("%f", retVal))
+	return retVal
+}
+		
+			
+	
 	
 
 /*func GetLoad() int {

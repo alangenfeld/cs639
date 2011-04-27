@@ -22,3 +22,5 @@ t21: Simple looping I/O      (kill pattern 2)
 t22: Randomly generated test (kill pattern 2)
 t23: A bunch of weird directory stuff that's supposed to fail
 t24: Create a directory and a file under root, and make sure they show up for a readdir on the root
+t25: Short randomly generated directory test (10 dirs, 20 files)
+t26: Long randomly generated directory test (1000 dirs, 2000 files)

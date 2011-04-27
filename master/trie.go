@@ -242,7 +242,7 @@ func (p *Trie) AddDir(path_s string) os.Error {
 		path_cor := fmt.Sprintf("%s%s", path_s, "/")
 
 		directory_s, dir_name:= path.Split(path_s)
-
+			
 		if len(directory_s) == 0{
 			return os.NewError("AddDir - directory string is nothin, what what??")
 		}
@@ -467,7 +467,7 @@ func (p *Trie) find(r *strings.Reader) *Trie {
 	}
 
 	// recurse down to the next node with the remainder of the string
-	return child.includes(r)
+	return child.find(r)
 }
 
 
