@@ -98,11 +98,6 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if !present{
 		ret.Status = sfs.FAIL
 		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
-		log.Println("1");
-		for key,_ := range chunkTable {
-			log.Println("I have chunk ",key);
-		}
-		return nil
 	}
 
 
@@ -114,16 +109,13 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	
 	ret.Data.Data = data.Data
 	ret.Status = sfs.SUCCESS
+	log.Println("chunk: Read success")
 	/*if logging {
 		errString := logger.End(id, false)
 		if errString != "" {
 			logging = false
 		}
 	}*/
-	log.Println("2");
-		for key,_ := range chunkTable {
-			log.Println("I have chunk ",key);
-		}
 	return nil	
 }
 
@@ -158,13 +150,13 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		
 
 		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)-1]
-
+		log.Println(args.Info.Servers)
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		if err != nil {
-			log.Printf("chunk: dialing error: ", err)
+			log.Println("chunk: dialing error: ", err)
 			continue
 		}
-		log.Printf("chunk: forwarding write to ", args.Info.Servers[0])
+		log.Println("chunk: forwarding write to ", args.Info.Servers[0])
 		err = client.Call("Server.Write", &args, &inRet)
 	        client.Close()
 		if err != nil {
@@ -303,7 +295,7 @@ func SendHeartbeat(masterAddress string){
 				logging = false
 			}
 		}
-		addCount(requestLoad)
+		//addCount(requestLoad)
 		requestLoad = 0
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
@@ -313,7 +305,7 @@ func SendHeartbeat(masterAddress string){
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
 	requestLoad++
 	if args.Servers == nil {
-		log.Printf("chunk: replication call: nil address.")
+		log.Println("chunk: replication call: nil address.")
 		return nil
 	}
 	
@@ -396,7 +388,7 @@ func getAvgReq() int {
 }
 
 func addCount(currReq int) {
-    log.Println("Index is: ", loadArrayIndex)
+    log.Println("in addCount: Index is: ", loadArrayIndex)
 	loadArray[loadArrayIndex] = currReq
 	loadArrayIndex ++
 	if loadArrayIndex >= len(loadArray) {
@@ -409,7 +401,7 @@ func sigHandler() {
 	for {
 		sig := <- signal.Incoming
 		
-		log.Printf("Signal received: %d!\n", sig)
+		log.Println("Signal received: %d!\n", sig)
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
 			log.Println("Chunk Server going down ", (*tcpAddr).String())

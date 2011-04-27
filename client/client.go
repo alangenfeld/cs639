@@ -12,15 +12,15 @@ import (
 )
 
 const(
- FAIL = -1
- WIN  = 0
- O_RDONLY = 1
- O_WRONLY = 2
- O_RDWR = 3
- O_CREATE = 4
- SEEK_SET = 1
- SEEK_CURR = 2
- SEEK_END = 4
+	FAIL = -1
+	WIN  = 0
+	O_RDONLY = 1
+	O_WRONLY = 2
+	O_RDWR = 3
+	O_CREATE = 4
+	SEEK_SET = 1
+	SEEK_CURR = 2
+	SEEK_END = 4
 )
 
 type nameAndPtr struct {
@@ -42,24 +42,24 @@ var openDescriptors = map[int] (*nameAndPtr){}
 
 func Initialize(masterAddr string){
 	fd = 0
-	log.Printf("Client: Master IP = %s", masterAddr);
+	log.Println("Client: Master IP = ", masterAddr);
 	master = masterAddr
 }
 
 func dialServer(address string) (*rpc.Client, os.Error){
 	server,err := rpc.Dial("tcp", address)
 	if(err != nil){
-		log.Printf("Client: Dial Error to %s - %s", address, err.String())
+		log.Println("Client: Dial Error to", address, err.String())
 	}
 	return server,err
 }
 
 func Open(filename string , flag int ) (int){
-	log.Printf("Client: opening %s!!\n", filename)
+	log.Println("Client: opening ", filename)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	defer client.Close()
 	if err != nil{
-		log.Printf("Client: Dial Error %s", err.String());
+		log.Println("Client: Dial Error ", err);
 		return FAIL
 	}else{
 		_,openF :=  openFiles[filename]
@@ -70,21 +70,21 @@ func Open(filename string , flag int ) (int){
 			fileArgs.Lock = false
 			fileArgs.Name = filename
 			if((flag & O_CREATE) == O_CREATE){
-				log.Printf("Client: Permissions for New file!\n")
+				log.Println("Client: Permissions for New file!")
 				fileArgs.NewFile = true
 			} else {
 				fileArgs.NewFile = false
 			}
 			err := client.Call("Master.ReadOpen", &fileArgs,&fileInfo)
 			if(err != nil){
-				log.Printf("Client: Open fail ", err )
+				log.Println("Client: Open fail ", err)
 				return sfs.FAIL
 			}
 			if fileInfo.New && (flag & O_CREATE) == O_CREATE {
-				log.Printf("Client: New file!\n")
+				log.Println("Client: New file!")
 
 			}else if !fileInfo.New  && (flag & O_CREATE) != O_CREATE   {
-				log.Printf("Client: Old file!\n")
+				log.Println("Client: Old file!")
 			}else {
 				return sfs.FAIL
 			}
@@ -106,7 +106,7 @@ func Open(filename string , flag int ) (int){
 			d.permissions = flag
 			openDescriptors[fd] = &d
 		}else{
-			log.Printf("Client: else of open!\n")
+			log.Println("Client: else of open!")
 			fd++
 			var d nameAndPtr
 			d.name = filename
@@ -123,12 +123,12 @@ func Open(filename string , flag int ) (int){
 /* read */
 func Read (fd int, size int) ([]byte, int ){
 
-	log.Printf("Client: **********READ BEGIN***********\n");
+	log.Println("Client: **********READ BEGIN***********");
 	nameAndPointer, present :=  openDescriptors[fd]
 	var entireRead []byte
 
 	if !present {
-		log.Printf("Client: fd does not exist\n");
+		log.Println("Client: fd does not exist");
 		return entireRead, sfs.FAIL
 	}
 
@@ -137,7 +137,7 @@ func Read (fd int, size int) ([]byte, int ){
 	fdFile, present := openFiles[filename]
 
 	if((nameAndPointer.permissions & O_RDONLY) != O_RDONLY){ //check if file was opened with Read permissions
-		log.Printf("Client: Cannot read without read permissions\n")
+		log.Println("Client: Cannot read without read permissions")
 		return entireRead, FAIL
 	}
 
@@ -148,7 +148,7 @@ func Read (fd int, size int) ([]byte, int ){
 		entireRead = make([]byte,size)
 	}
 	if !present {
-		log.Printf("Client: File not in open list!\n")
+		log.Println("Client: File not in open list!")
 		return entireRead, FAIL
 	}
 	index := 0
@@ -158,23 +158,23 @@ func Read (fd int, size int) ([]byte, int ){
 		endIndex = int(fdFile.size)
 	}
 	endChunk := int(math.Ceil((float64(filePtr)+float64(size))/sfs.CHUNK_SIZE))
-	log.Printf("Client: size = %d\n", size)
-	log.Printf("Client: openFiles = %v  openDescriptors = %v\n", openFiles, openDescriptors)
-	log.Printf("Client: index = %d, startIndex = %d", index, startIndex)
-	log.Printf("Client: endIndex = %d, endChunk = %d", endIndex, endChunk)
-	log.Printf("Client: filestarting size = %d",fdFile.size)
-	log.Printf("Client: fileName   %s",fdFile.name)
+	log.Println("Client: size = ", size)
+	log.Println("Client: openFiles =", openFiles, "openDescriptors =", openDescriptors)
+	log.Println("Client: index = %d, startIndex = ", index, startIndex)
+	log.Println("Client: endIndex = %d, endChunk = ", endIndex, endChunk)
+	log.Println("Client: filestarting size = ",fdFile.size)
+	log.Println("Client: fileName ",fdFile.name)
 	if endChunk >  int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE))) {
 		endChunk = int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE)))
-		log.Printf("Client: file was smaller than read size")
+		log.Println("Client: file was smaller than read size")
 	}
 	var returned int
 	for i := int(filePtr/sfs.CHUNK_SIZE); i<endChunk; i++ {
 		chunkServerMirrors := fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Servers
 		numChunkServers := len(chunkServerMirrors)
 		if (numChunkServers < 1) {
-				log.Printf("Client: Dial Failed in Read")
-				return entireRead, sfs.FAIL
+			log.Println("Client: Dial Failed in Read")
+			return entireRead, sfs.FAIL
 		}
 
 		returned, bytesRead := GetChunk(*fdFile, i)
@@ -196,17 +196,17 @@ func Read (fd int, size int) ([]byte, int ){
 		openDescriptors[fd].filePtr	=openFiles[filename].size
 	}
 	printByteSlice(entireRead)
-	log.Printf("Client: *********READ END*************\n");
+	log.Println("Client: *********READ END*************");
 	return  entireRead, returned;
 }
 
 /* write */
 func Write (fd int, data []byte) (int){
-	log.Printf("Client: *************WRITE BEGIN**********\n");
+	log.Println("Client: *************WRITE BEGIN**********");
 
 	masterServ,masterErr  := rpc.Dial("tcp",master + ":1338")
 	if masterErr != nil {
-		log.Printf("Client: dial fail: %s", masterErr)
+		log.Println("Client: dial fail: ", masterErr)
 		return FAIL
 	}
 	if masterServ == nil {
@@ -215,7 +215,7 @@ func Write (fd int, data []byte) (int){
 
 	nameAndPointer, inMap :=  openDescriptors[fd]
 	if !inMap {
-		log.Printf("Client: fd does not exist\n");
+		log.Println("Client: fd does not exist");
 		return sfs.FAIL
 	}
 	filename := nameAndPointer.name
@@ -223,14 +223,14 @@ func Write (fd int, data []byte) (int){
 
 	fdFile, inMap := openFiles[filename]
 	if !inMap {
-		log.Printf("Client: File not in open list!\n")
+		log.Println("Client: File not in open list!")
 		return FAIL
 	}
 
-	log.Printf("Client: filestarting size = %d",fdFile.size)
-	log.Printf("Client: fileName   %s",fdFile.name)
+	log.Println("Client: filestarting size = ",fdFile.size)
+	log.Println("Client: fileName ",fdFile.name)
 	if((nameAndPointer.permissions & O_WRONLY) != O_WRONLY){
-		log.Printf("Client: Cannot write without write permissions\n")
+		log.Println("Client: Cannot write without write permissions")
 		return FAIL
 	}
 
@@ -238,7 +238,7 @@ func Write (fd int, data []byte) (int){
 	chunkOffset := int(filePtr)/int(sfs.CHUNK_SIZE)
 	var toWrite sfs.Chunk
 
-//special case if writing to middle of first chunk
+	//special case if writing to middle of first chunk
 	if  indexWithinChunk  > 0 {
 		returned, bytesRead := GetChunk(*fdFile, chunkOffset)
 		if(returned == sfs.SUCCESS){
@@ -246,7 +246,7 @@ func Write (fd int, data []byte) (int){
 				toWrite.Data[i] = bytesRead[i]
 			}
 		}else{
-			log.Printf("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
+			log.Println("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
 			return FAIL
 		}
 	}
@@ -257,7 +257,7 @@ func Write (fd int, data []byte) (int){
 		indexWithinChunk++
 		if (indexWithinChunk == sfs.CHUNK_SIZE || i == len(data)-1 ){
 
-//special case if write to middle of last chunk
+			//special case if write to middle of last chunk
 			if  i == len(data)-1  && fdFile.size > filePtr && indexWithinChunk != sfs.CHUNK_SIZE {
 				returned, bytesRead := GetChunk(*fdFile, chunkOffset)
 				if(returned == sfs.SUCCESS){
@@ -265,46 +265,46 @@ func Write (fd int, data []byte) (int){
 						toWrite.Data[i] = bytesRead[i]
 					}
 				}else{
-					log.Printf("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
+					log.Println("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
 					return FAIL
 				}
-
+				
 			}
 
 			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
 				returned, toPush := AddChunks(fdFile.name, 1)
 				if returned == sfs.FAIL {
-					log.Printf("AddChunk failed 1")
+					log.Println("AddChunk failed 1")
 					return sfs.FAIL
 				}
 				fdFile.chunkInfo.Push(toPush)
-				log.Printf("Client: adding chunk x")
+				log.Println("Client: adding chunk x")
 			}else{
 				returned, toSet := AddChunks(fdFile.name, 1)
 				if returned == sfs.FAIL {
-					log.Printf("AddChunk failed 1")
+					log.Println("AddChunk failed 1")
 					return sfs.FAIL
 				}
 				fdFile.chunkInfo.Set(chunkOffset, toSet )
-				log.Printf("Client: adding chunk y")
+				log.Println("Client: adding chunk y")
 			}
 			fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
 			fileArgs.Data = toWrite
 
 			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
-				log.Printf("fdFile.chunkInfo %v", fdFile.chunkInfo)
+				log.Println("fdFile.chunkInfo ", fdFile.chunkInfo)
 			}
 
 			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
 			numChunkServers := len(servers)
 			if (numChunkServers < 1) {
-					log.Printf("Client: Dial Failed in Write")
-					return sfs.FAIL
+				log.Println("Client: Dial Failed in Write")
+				return sfs.FAIL
 			}
 
-			log.Printf("Client: numChunkServers %d", numChunkServers);
+			log.Println("Client: numChunkServers ", numChunkServers);
 			for j:=0; j < (numChunkServers); j++ {
-				log.Printf("Client:  j %d", j);
+				log.Println("Client:  j", j);
 				client,err  := rpc.Dial("tcp",servers[j].String())
 				if err != nil ||  client == nil{
 					log.Println("Client: Dial to chunk failed, returned bad client");
@@ -361,7 +361,7 @@ func Write (fd int, data []byte) (int){
 				if returned == sfs.FAIL {
 					return sfs.FAIL
 				}
-				log.Printf("Client: adding chunk zz")
+				log.Println("Client: adding chunk zz")
 				fdFile.chunkInfo.Push(toPush)
 				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
 					toWrite.Data[c] = 0;
@@ -383,78 +383,71 @@ func Write (fd int, data []byte) (int){
 	if openDescriptors[fd].filePtr > fdFile.size {
 		openDescriptors[fd].filePtr = fdFile.size
 	}
-	log.Printf("Client: file ending size %d", openFiles[filename].size);
-	log.Printf("Client: fileInfo.Status = %d \n", fileInfo.Status);
-	log.Printf("Client: ************WRITE END**************\n");
+	log.Println("Client: file ending size ", openFiles[filename].size);
+	log.Println("Client: fileInfo.Status = ", fileInfo.Status);
+	log.Println("Client: ************WRITE END**************");
 	return fileInfo.Status
 }
 
 func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
-	log.Printf("Client: in Get Chunk\n")
+	log.Println("Client: Getting Chunk", fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID)
 	fileArgsRead := new (sfs.ReadArgs)
 	fileInfoRead := new (sfs.ReadReturn)
 	fileArgsRead.Nice = 1 // try things nicely first
 	Servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers
 	numServers := len(Servers)
-		for i:= 0 ; i < (numServers*2) ; i ++ {
-		log.Printf("trying server %s\n",Servers[i%numServers].String())
-		log.Printf("On try %d out of %d with %d# of servers\n",i,((numServers*2)-1),numServers);
-			if i >= numServers {
-				fileArgsRead.Nice = 0
-			}
-//			for j := 0 ; j < numServers ; j ++ {
-//				log.Printf("Client: server: %s", Servers[j%numServers].String())
-//			}
-			client,err :=rpc.Dial("tcp",Servers[i%numServers].String())
-			if client == nil {
-				log.Printf("Client: Dial Failed in GetChunk client == nil ")
-					log.Printf("On try %d out of %d with %d# of servers\n",i,(numServers*2-1),numServers);
-				if i != (numServers*2)-1 {
-					continue
-				}else {
-					log.Printf("Client: missed continue in GetChunk ")
-					return sfs.FAIL, fileInfoRead.Data.Data
-				}
-			}
-			//defer client.Close()
-			if err != nil {
-				log.Printf("Client: Dial Failed in GetChunk err != nil %s", err.String())
-				if i != (numServers*2-1) {
-					continue
-				}else{
-					log.Printf("Client: missed continue in GetChunk ")
-					return sfs.FAIL, fileInfoRead.Data.Data
-				}
-			}
-			log.Println("Dial succeeded")
-			fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
-			if fileArgsRead.ChunkID == 0 {
-				log.Printf("Client: ChunkID = 0, Chunk ID should never be 0")
-			}
-			log.Println("calling")
-			err = client.Call("Server.Read", &fileArgsRead,&fileInfoRead);
-			log.Println("back from call")
-			client.Close();
-			if err!=nil{
-				log.Printf("Client: Server.Read failed: %s, on server %s\n", err.String(),Servers[i%numServers].String());
-					log.Printf("On try %d out of %d with %d# of servers\n",i,(numServers*2-1), numServers);
-				if i != (numServers*2-1) {
-					continue
-				}
+	for i:= 0 ; i < (numServers*2) ; i ++ {
+		if i >= numServers {
+			fileArgsRead.Nice = 0
+		}
+
+		client,err :=rpc.Dial("tcp",Servers[i%numServers].String())
+		if client == nil {
+			log.Println("Client: Dial Failed in GetChunk client == nil ")
+			if i != (numServers*2)-1 {
+				continue
+			} else {
+				log.Println("Client: missed continue in GetChunk ")
 				return sfs.FAIL, fileInfoRead.Data.Data
 			}
-
-			if fileInfoRead.Status != sfs.SUCCESS {
-				log.Printf("Client: retrying dial to new server in one second\n")
-			//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
-				//client.Close()
-			}else{
-				break
-			}
-
-			log.Printf("At end of function with status %d\n",fileInfoRead.Status)
 		}
-		return sfs.SUCCESS, fileInfoRead.Data.Data
+		//defer client.Close()
+		if err != nil {
+			log.Println("Client: Dial Failed in GetChunk err != nil ", err)
+			if i != (numServers*2-1) {
+				continue
+			}else{
+				log.Println("Client: missed continue in GetChunk ")
+				return sfs.FAIL, fileInfoRead.Data.Data
+			}
+		}
+		
+		fileArgsRead.ChunkID= fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).ChunkID;
+		if fileArgsRead.ChunkID == 0 {
+			log.Println("Client: ChunkID = 0, Chunk ID should never be 0")
+		}
+		
+		err = client.Call("Server.Read", &fileArgsRead,&fileInfoRead);
+		client.Close();
+		if err!=nil{
+			log.Printf("Client: Server.Read failed: %s, on server %s\n", err.String(),Servers[i%numServers].String());
+			log.Printf("On try %d out of %d with %d# of servers\n",i,(numServers*2-1), numServers);
+			if i != (numServers*2-1) {
+				continue
+			}
+			return sfs.FAIL, fileInfoRead.Data.Data
+		}
+
+		if fileInfoRead.Status != sfs.SUCCESS {
+			log.Println("Client: Read failed with status", fileInfoRead.Status)
+
+		}else{
+			break
+		}
+
+		log.Println("At end of function with status ", fileInfoRead.Status)
+	}
+	return sfs.SUCCESS, fileInfoRead.Data.Data
 
 }
 
@@ -463,7 +456,7 @@ func Delete(filename string) (int){
 
 	_ , present := openFiles[filename]
 	if (!present ){
-		log.Printf("Client: filename does not exist  %s\n", filename);
+		log.Println("Client: filename does not exist ", filename);
 		return FAIL
 	}
 	var dummy file
@@ -474,7 +467,7 @@ func Delete(filename string) (int){
 	defer client.Close()
 
 	if err != nil{
-		log.Printf("Client: Dial Error %s", err.String());
+		log.Println("Client: Dial Error", err);
 		return FAIL
 	}else{
 		fileArgs := new (sfs.DeleteArgs)
@@ -482,7 +475,7 @@ func Delete(filename string) (int){
 		fileArgs.Name = filename
 		err := client.Call("Master.DeleteFile", &fileArgs,&fileInfo)
 		if(err != nil || !fileInfo.Status){
-			log.Printf("Client: Delete fail ", fileInfo.Status, err )
+			log.Println("Client: Delete fail ", fileInfo.Status, err)
 			return FAIL
 		}
 	}
@@ -493,12 +486,12 @@ func Close(fd int) (int){
 	n, inMap :=  openDescriptors[fd]
 	filename := n.name
 	if !inMap {
-		log.Printf("Client: fd does not exist\n");
+		log.Println("Client: fd does not exist");
 		return FAIL
 	}
 	_ , present := openFiles[filename]
 	if (!present ){
-		log.Printf("Client: filename does not exist  %s\n", filename);
+		log.Println("Client: filename does not exist", filename);
 		return FAIL
 	}
 	var dummy nameAndPtr
@@ -514,17 +507,17 @@ func ReadDir(path string) ([]string, int){
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
 	defer client.Close()
 	if err != nil{
-		log.Printf("Client: Dial Error %s", err.String());
+		log.Println("Client: Dial Error", err);
 		return readDirRet.FileNames,  FAIL
 	}else{
 		err = client.Call("Master.ReadDir", &readDirArgs, &readDirRet)
 		if(err != nil){
-			log.Printf("Client: Read Dir fail ", err )
+			log.Println("Client: Read Dir fail ", err )
 			return readDirRet.FileNames,  FAIL
 		}
 	}
 	for i:= 0 ; i < len(readDirRet.FileNames) ; i++ {
-		log.Printf("Client: Got back directory: %s", readDirRet.FileNames[i])
+		log.Println("Client: Got back directory: ", readDirRet.FileNames[i])
 	}
 	return readDirRet.FileNames,  WIN
 }
@@ -533,11 +526,11 @@ func ReadDir(path string) ([]string, int){
 func Seek (fd int, offset int, whence int) (int){
 	n, inMap :=  openDescriptors[fd]
 	filename := n.name
-	log.Printf("Client: filestarting size = %d", openFiles[filename].size)
-	log.Printf("Client: fileName   %s",openFiles[filename].name)
+	log.Println("Client: filestarting size = ", openFiles[filename].size)
+	log.Println("Client: fileName ",openFiles[filename].name)
 
 	if !inMap {
-		log.Printf("Client: fd does not exist\n");
+		log.Println("Client: fd does not exist");
 		return FAIL
 	}
 	_ , present := openFiles[filename]
@@ -563,15 +556,15 @@ func Seek (fd int, offset int, whence int) (int){
 }
 
 func printByteSlice(toPrint []byte){
-	log.Printf("Client: bytes Read length = %d", len(toPrint))
-	log.Printf("Client: bytes Read:")
+	log.Println("Client: bytes Read length = ", len(toPrint))
+	log.Println("Client: bytes Read:")
 	var st string
 
 	for i := 0; i < len(toPrint); i++{
-	  st += string(toPrint[i])
+		st += string(toPrint[i])
 	}
 
-	log.Printf(st)
+	log.Println(st)
 }
 
 func MakeDir(path string) (int) {
@@ -584,13 +577,13 @@ func MakeDir(path string) (int) {
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 	defer masterConn.Close()
 	if(err != nil){
-		log.Printf("Error Dialing Master(MakeDir):", err.String())
+		log.Println("Error Dialing Master(MakeDir):", err)
 		return sfs.FAIL
 	}
 
 	err = masterConn.Call("Master.MakeDir",&args,&returnVal)
 	if(err != nil){
-		log.Printf("Error Calling Master(MakeDir):", err.String())
+		log.Println("Error Calling Master(MakeDir):", err)
 		return sfs.FAIL
 	}
 
@@ -609,13 +602,13 @@ func RemoveDir(path string) (int) {
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 	defer masterConn.Close()
 	if(err != nil){
-		log.Printf("Error Dialing Master(Remove Dir):", err.String())
+		log.Println("Error Dialing Master(Remove Dir):", err)
 		return sfs.FAIL
 	}
 
 	err = masterConn.Call("Master.RemoveDir",&args,&returnVal)
 	if(err != nil){
-		log.Printf("Error Calling Master(RemoveDir):", err.String())
+		log.Println("Error Calling Master(RemoveDir):", err)
 		return sfs.FAIL
 	}
 
@@ -634,13 +627,13 @@ func AddChunks(fileName string, numChunks uint64) (int, sfs.ChunkInfo) {
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 
 	if(err != nil){
-		log.Printf("Error Dialing Master(AddChunks):", err.String())
+		log.Println("Error Dialing Master(AddChunks):", err)
 		return sfs.FAIL, returnVal.Info
 	}
 
 	err = masterConn.Call("Master.GetNewChunk",&args,&returnVal)
 	if(err != nil){
-		log.Printf("Error Calling Master(AddChunks):", err.String())
+		log.Println("Error Calling Master(AddChunks):", err)
 		return sfs.FAIL, returnVal.Info
 	}
 	masterConn.Close()
