@@ -307,8 +307,8 @@ func Write (fd int, data []byte) (int){
 				log.Println("Client:  j", j);
 				client,err  := rpc.Dial("tcp",servers[j].String())
 				if err != nil ||  client == nil{
-					log.Println("Client: Dial to chunk failed, returned bad client");
-					log.Println("Client: retrying dial in one second");
+					log.Println("Client: Dial to chunk failed, returned bad client", err);
+					//log.Println("Client: retrying dial in one second");
 					numServers := len(fileArgs.Info.Servers)
 					tmp := fileArgs.Info.Servers[numServers-1]
 					for n:=0 ; n<numServers-1 ; n++{
