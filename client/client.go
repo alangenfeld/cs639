@@ -362,6 +362,7 @@ func Write (fd int, data []byte) (int){
 
 			// reply to master
 			fileInfo.Info.ChunkID = fileArgs.Info.ChunkID
+			fileInfo.Info.Hash = hasher.Sum()
 			fileInfo.Info.Size = uint64(((indexWithinChunk-1)%int(sfs.CHUNK_SIZE)) +1)
 			mapArgs := &sfs.MapChunkToFileArgs{fdFile.name, chunkOffset, fileInfo.Info}
 			var mapRet sfs.MapChunkToFileReturn
