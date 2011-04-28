@@ -767,7 +767,7 @@ func sigHandler() {
 		log.Printf("Signal received: %d!\n", sig)
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
-			log.Printf"\n\nchunk map: %+v \n\nhashToChunks map: %+v\n\n", chunks, hashToChunkMap)
+			log.Printf("\n\nchunk map: %+v \n\nhashToChunks map: %+v\n\n", chunks, hashToChunkMap)
 			DumpTrie()
 			os.Exit(1337)
 		}
