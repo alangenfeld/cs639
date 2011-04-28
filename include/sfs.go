@@ -8,7 +8,7 @@ import (
 )
 
 //const CHUNK_SIZE = 1024*1024*32 // 32 MB
-const CHUNK_SIZE = 32                // 32
+const CHUNK_SIZE = 32                 // 32
 const HEARTBEAT_WAIT = 3 * 1000000000 // 15 seconds
 const NREPLICAS = 3
 const FAIL = -1
@@ -48,7 +48,7 @@ type MakeDirReturn struct {
 }
 
 type RemoveDirArgs struct {
-	DirName string
+	DirName   string
 	Recursive bool
 }
 
@@ -134,10 +134,12 @@ type ReplicateChunkReturn struct {
 type GetNewChunkArgs struct {
 	Name  string
 	Count uint64
+	Hash  []byte
 }
 
 type GetNewChunkReturn struct {
-	Info ChunkInfo
+	Info     ChunkInfo
+	NewChunk bool
 }
 
 type MapChunkToFileArgs struct {
@@ -172,4 +174,5 @@ type ChunkInfo struct {
 	ChunkID uint64
 	Size    uint64
 	Servers []net.TCPAddr
+	Hash    []byte
 }

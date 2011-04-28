@@ -26,6 +26,7 @@ var sHeap *serverHeap
 var servers map[uint64](*server)
 var addrToServerMap map[string](*server)
 var chunks map[uint64](*chunk)
+var hashToChunkMap map[string](*chunk)
 
 var heartbeatMonitors map[uint64](chan int64)
 
@@ -41,6 +42,8 @@ type chunk struct {
 	chunkID uint64
 	size    uint64
 	servers *vector.Vector
+	hash	[]byte
+	refCt	uint64
 }
 
 type Master int
@@ -71,6 +74,19 @@ func (m *Master) ReadOpen(args *sfs.OpenArgs, info *sfs.OpenReturn) os.Error {
 	info.Size = file.size
 
 	info.Chunk = make([]sfs.ChunkInfo, file.chunks.Len())
+	
+	for i := 0; i < file.chunks.Len(); i++ {
+		thisChunk := file.chunks.At(i).(*chunk)
+		info.Chunk[i].ChunkID = thisChunk.chunkID
+		info.Chunk[i].Size = thisChunk.size
+		info.Chunk[i].Hash = thisChunk.hash
+		
+		info.Chunk[i].Servers = make([]net.TCPAddr, thisChunk.servers.Len())
+		
+		for j := 0; j < thisChunk.servers.Len(); j++ {
+			info.Chunk[i].Servers[j] = thisChunk.servers.At(j).(*server).addr
+		}
+	}
 
 	return err
 }
@@ -84,42 +100,64 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 	}
 
 	log.Printf("master: MapChunkToFile: ChunkID: %d  Offset %d  nservers: %d\n", args.Chunk.ChunkID, args.Offset, len(args.Chunk.Servers))
-	var newChunk chunk
+	
+	thisChunk, ok := chunks[args.Chunk.ChunkID]
+	
+	if !ok {
+		thisChunk = new(chunk)
 
-	newChunk.chunkID = args.Chunk.ChunkID
-	newChunk.size = args.Chunk.Size
-	newChunk.servers = new(vector.Vector)
-	for i := 0; i < len(args.Chunk.Servers); i++ {
-		newChunk.servers.Push(addrToServerMap[args.Chunk.Servers[i].String()])
+		thisChunk.chunkID = args.Chunk.ChunkID
+		thisChunk.size = args.Chunk.Size
+		thisChunk.servers = new(vector.Vector)
+		for i := 0; i < len(args.Chunk.Servers); i++ {
+			thisChunk.servers.Push(addrToServerMap[args.Chunk.Servers[i].String()])
+		}
+		thisChunk.hash = args.Chunk.Hash
 	}
-
-	_, err := file.MapChunk(args.Offset, &newChunk)
+	
+	_, err := file.MapChunk(args.Offset, thisChunk)
 
 	if err != nil {
 		return os.NewError("Could not add chunk! Ruh roh")
 	}
-
+	
 	return nil
 }
 
 func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkReturn) os.Error {
-	ret.Info.ChunkID = nextChunk
-
-	nextChunk++
-
-	var nreps int
+	thisChunk, ok := hashToChunkMap[string(args.Hash)]
 	
-	if sHeap.vec.Len() < sfs.NREPLICAS {
-		nreps = sHeap.vec.Len()
+	if ok {
+		ret.Info.ChunkID = thisChunk.chunkID
+		ret.Info.Size = thisChunk.size
+		ret.Info.Hash = thisChunk.hash
+		ret.Info.Servers = make([]net.TCPAddr, thisChunk.servers.Len())
+		
+		for cnt1 := 0; cnt1 < thisChunk.servers.Len(); cnt1++ {
+			ret.Info.Servers[cnt1] = thisChunk.servers.At(cnt1).(*server).addr
+		}
+		
+		ret.NewChunk = false
 	} else {
-		nreps = sfs.NREPLICAS
-	}
+		ret.Info.ChunkID = nextChunk
 
-	ret.Info.Servers = make([]net.TCPAddr, nreps)
-	for i := 0; i < nreps; i++ {
-		ret.Info.Servers[i] = sHeap.vec.At(i).(*server).addr
-	}
+		nextChunk++
 
+		var nreps int
+
+		if sHeap.vec.Len() < sfs.NREPLICAS {
+			nreps = sHeap.vec.Len()
+		} else {
+			nreps = sfs.NREPLICAS
+		}
+
+		ret.Info.Servers = make([]net.TCPAddr, nreps)
+		for i := 0; i < nreps; i++ {
+			ret.Info.Servers[i] = sHeap.vec.At(i).(*server).addr
+		}
+		ret.NewChunk = true
+	}
+	
 	return nil
 }
 
@@ -200,8 +238,9 @@ func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.E
 		return err
 	} else {
 		for j := 0; j < i.chunks.Len(); j++ {
-			chunks[i.chunks.At(j).(*chunk).chunkID] = nil, false
+			i.chunks.At(j).(*chunk).unmapChunk()
 		}
+
 		empty := t.Remove(name)
 
 		if empty {
@@ -536,7 +575,7 @@ func DeleteFile(name string) (err os.Error) {
 		//for each chunk in the server, make an unmap call.
 		for i := 0; i < cnt1; i++ {
 			chunk := inode.chunks.At(i).(*chunk)
-
+			
 			chunk.unmapChunk()
 		}
 	}
@@ -600,9 +639,10 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		if ok {
 			c.unmapChunk()
 		}
-		
+		newChunk.refCt++		
 		i.chunks.Set(offset, newChunk)
 	} else if offset == i.chunks.Len() {
+		newChunk.refCt++
 		i.chunks.Push(newChunk)
 	} else {
 		return 0, os.NewError("Fucking A.")
@@ -614,15 +654,27 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		//if the server dies after right replication but before dying..
 		if s != nil {
 			s.chunks.Push(newChunk)
-		}else {
+		} else {
 			newChunk.servers.Delete(j)
 		}
+	}
+
+	chunks[newChunk.chunkID] = newChunk
+	
+	if newChunk.hash != nil {
+		hashToChunkMap[string(newChunk.hash)] = newChunk
 	}
 
 	return newChunk.chunkID, nil
 }
 
 func (c *chunk) unmapChunk() (err os.Error){
+	c.refCt--
+	
+	if c.refCt == 0 {
+		return nil
+	}
+	
 	cnt := c.servers.Len()	
 	for j := 0; j < cnt; j++ {
 		c.servers.At(j).(*server).evictedChunks.Push(c.chunkID)
@@ -635,7 +687,7 @@ func (c *chunk) unmapChunk() (err os.Error){
 		}
 	}
 	
-	//chunks[c.chunkID] = &chunk{}, false
+	chunks[c.chunkID] = &chunk{}, false
 	
 	return nil
 }
@@ -722,6 +774,7 @@ func init() {
 	servers = make(map[uint64](*server))
 	addrToServerMap = make(map[string](*server))
 	heartbeatMonitors = make(map[uint64](chan int64))
+	hashToChunkMap = make(map[string](*chunk))
 	//	sMap = make(map[net.TCPAddr](*server))
 	heap.Init(sHeap)
 	sHeap.serverChan = make(chan *heapCommand)
