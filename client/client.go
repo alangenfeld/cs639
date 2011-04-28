@@ -183,7 +183,7 @@ func Read (fd int, size int) ([]byte, int ){
 		hasher := sha256.New()
 		hasher.Write(bytesRead[:])
 		if(string(hasher.Sum()) != string(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Hash)){
-			log.Printf("looks like your hash may be bit off matey...arrrrrr\n")
+			log.Printf("looks like your hash may be bit off matey...arrrrrr\n\texpected: %x got: %x\n", fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Hash, hasher.Sum())
 		}
 
 		if(returned == sfs.SUCCESS ){
@@ -281,6 +281,7 @@ func Write (fd int, data []byte) (int){
 			hasher := sha256.New()
 			hasher.Write(toWrite.Data[:])
 
+			log.Printf("Write computed hash %x for file %s\n", hasher.Sum(), fdFile.name)
 
 			returned, toPush,newChunk := AddChunks(fdFile.name, 1,hasher.Sum())
 
@@ -642,6 +643,8 @@ func AddChunks(fileName string, numChunks uint64,hash []byte) (int, sfs.ChunkInf
 	args.Name = fileName
 	args.Count = numChunks
 	args.Hash = hash
+
+	log.Printf("AddChunks: getting chunk for file %s with hash %x\n", fileName, args.Hash)
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 
