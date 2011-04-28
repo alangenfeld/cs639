@@ -300,7 +300,7 @@ func Write (fd int, data []byte) (int){
 				log.Println("Client: adding chunk y")
 			}
 
-			if(!newChunk){
+			if(newChunk){
 					fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
 					fileArgs.Data = toWrite
 
