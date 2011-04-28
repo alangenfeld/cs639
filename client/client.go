@@ -8,7 +8,7 @@ import (
 	"log"
 	"../include/sfs"
 	"math"
-	"time"
+//	"time"
 )
 
 const(
@@ -305,17 +305,21 @@ func Write (fd int, data []byte) (int){
 			log.Println("Client: numChunkServers ", numChunkServers);
 			for j:=0; j < (numChunkServers); j++ {
 				log.Println("Client:  j", j);
-				client,err  := rpc.Dial("tcp",servers[j].String())
+				client,err  := rpc.Dial("tcp",servers[0].String())
+				for i:= 0 ; i < len(servers) ; i ++ {
+					log.Println("Client: servers contains : " + servers[i].String() )
+				}
 				if err != nil ||  client == nil{
 					log.Println("Client: Dial to chunk failed, returned bad client", err);
 					//log.Println("Client: retrying dial in one second");
 					numServers := len(fileArgs.Info.Servers)
 					tmp := fileArgs.Info.Servers[numServers-1]
-					for n:=0 ; n<numServers-1 ; n++{
+					for n:=0 ; n<numServers -1 ; n++{
 						fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
 					}
 					fileArgs.Info.Servers[0] = tmp
-					time.Sleep(sfs.HEARTBEAT_WAIT/15)
+				//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
+
 					if j == numChunkServers-1 {
 						return sfs.FAIL
 					}
