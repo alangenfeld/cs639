@@ -31,10 +31,7 @@ func main(){
 	
 	fmt.Printf("\nEND OF LIST\n")
 
-	ret := client.Close(fd)
-	if(ret != client.WIN) {
-		panic("close failed")
-	}
+
 	os.Exit(0)
 }
 
