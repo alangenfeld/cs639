@@ -99,7 +99,7 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 		return error
 	}
 
-	log.Printf("master: MapChunkToFile: ChunkID: %d  Offset %d  nservers: %d\n", args.Chunk.ChunkID, args.Offset, len(args.Chunk.Servers))
+	log.Printf("master: MapChunkToFile: ChunkID: %d  Offset: %d  nservers: %d Hash: %x\n", args.Chunk.ChunkID, args.Offset, len(args.Chunk.Servers), args.Chunk.Hash)
 	
 	thisChunk, ok := chunks[args.Chunk.ChunkID]
 	
@@ -125,9 +125,15 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 }
 
 func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkReturn) os.Error {
-	thisChunk, ok := hashToChunkMap[string(args.Hash)]
+	ok := false
+	var thisChunk *chunk
+		
+	if args.Hash != nil {
+		thisChunk, ok = hashToChunkMap[string(args.Hash)]
+	}
 	
 	if ok {
+		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", ret.Info.Hash, ret.Info.ChunkID)
 		ret.Info.ChunkID = thisChunk.chunkID
 		ret.Info.Size = thisChunk.size
 		ret.Info.Hash = thisChunk.hash
@@ -139,6 +145,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 		
 		ret.NewChunk = false
 	} else {
+		log.Printf("GetNewChunk: Hash: %x ChunkID: %d\n", ret.Info.Hash, nextChunk)
 		ret.Info.ChunkID = nextChunk
 
 		nextChunk++
