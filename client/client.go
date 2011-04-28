@@ -275,7 +275,7 @@ func Write (fd int, data []byte) (int){
 					log.Println("Client: Dial Failed in GetChunk trying to get beginning of first chunk")
 					return FAIL
 				}
-				
+
 			}
 
 			hasher := sha256.New()
@@ -320,20 +320,18 @@ func Write (fd int, data []byte) (int){
 					for j:=0; j < (numChunkServers); j++ {
 						log.Println("Client:  j", j);
 						client,err  := rpc.Dial("tcp",servers[0].String())
+						log.Println("Client: tried server : " + servers[0].String() )
 						for i:= 0 ; i < len(servers) ; i ++ {
 							log.Println("Client: servers contains : " + servers[i].String() )
 						}
 						if err != nil ||  client == nil{
 							log.Println("Client: Dial to chunk failed, returned bad client", err);
-							//log.Println("Client: retrying dial in one second");
 							numServers := len(fileArgs.Info.Servers)
 							tmp := fileArgs.Info.Servers[numServers-1]
 							for n:=0 ; n<numServers -1 ; n++{
 								fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
 							}
 							fileArgs.Info.Servers[0] = tmp
-						//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
-
 							if j == numChunkServers-1 {
 								return sfs.FAIL
 							}
@@ -344,6 +342,12 @@ func Write (fd int, data []byte) (int){
 						client.Close()
 						if err != nil{
 							log.Println("Client: Server.Write failed:", err);
+							numServers := len(fileArgs.Info.Servers)
+							tmp := fileArgs.Info.Servers[numServers-1]
+							for n:=0 ; n<numServers -1 ; n++{
+								fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
+							}
+							fileArgs.Info.Servers[0] = tmp
 							if j == numChunkServers-1 {
 								return sfs.FAIL
 							}
