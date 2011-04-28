@@ -147,10 +147,7 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		if len(args.Info.Servers) < 2 {
 			break
 		}
-		
-
-		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)-1]
-		log.Println(args.Info.Servers)
+		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		if err != nil {
 			log.Println("chunk: dialing error: ", err)
