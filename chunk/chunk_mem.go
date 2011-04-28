@@ -147,13 +147,10 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		if len(args.Info.Servers) < 2 {
 			break
 		}
-		
-
-		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)-1]
-
+		args.Info.Servers = args.Info.Servers[1:len(args.Info.Servers)]
 		client, err := rpc.Dial("tcp", args.Info.Servers[0].String())
 		if err != nil {
-			log.Printf("chunk: dialing error: ", err)
+			log.Println("chunk: dialing error: ", err)
 			continue
 		}
 		log.Println("chunk: forwarding write to ", args.Info.Servers[0])
@@ -295,7 +292,7 @@ func SendHeartbeat(masterAddress string){
 				logging = false
 			}
 		}
-		addCount(requestLoad)
+		//addCount(requestLoad)
 		requestLoad = 0
 		time.Sleep(sfs.HEARTBEAT_WAIT)	
 	}
@@ -305,7 +302,7 @@ func SendHeartbeat(masterAddress string){
 func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.ReplicateChunkReturn) os.Error {
 	requestLoad++
 	if args.Servers == nil {
-		log.Printf("chunk: replication call: nil address.")
+		log.Println("chunk: replication call: nil address.")
 		return nil
 	}
 	
@@ -388,7 +385,7 @@ func getAvgReq() int {
 }
 
 func addCount(currReq int) {
-    log.Println("Index is: ", loadArrayIndex)
+    log.Println("in addCount: Index is: ", loadArrayIndex)
 	loadArray[loadArrayIndex] = currReq
 	loadArrayIndex ++
 	if loadArrayIndex >= len(loadArray) {
@@ -401,7 +398,7 @@ func sigHandler() {
 	for {
 		sig := <- signal.Incoming
 		
-		log.Printf("Signal received: %d!\n", sig)
+		log.Println("Signal received: %d!\n", sig)
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
 			log.Println("Chunk Server going down ", (*tcpAddr).String())

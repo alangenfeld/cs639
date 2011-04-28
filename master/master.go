@@ -462,10 +462,18 @@ func RemoveServer(serv *server) os.Error {
 
 	rep_size := int(math.Floor(rep_factor * network_size))
 
-	//for each chunk in the server, make a replication call.
+	//for each chunk in the server, make a replication call
+	sanity_threshhold1 := 40
+	sanity_threshhold2 := 100
+	sanity_count := 0
 	for cnt := 0; cnt < serv.chunks.Len(); {
 
-		index := rand.Intn(rep_size)
+		var index int
+		if sanity_count > sanity_threshhold1 {
+		    index = rand.Intn(rep_size)
+		}else{
+		    index = rand.Intn(sHeap.vec.Len())
+		}
 
 		otherserver := sHeap.vec.At(index).(*server)
 
@@ -477,11 +485,17 @@ func RemoveServer(serv *server) os.Error {
 
 		if err != nil {
 			log.Printf("master: RemoveServer: unable to dial %s\n", str)
+			sanity_count = sanity_count + 1
 			continue
 		} else {
 			log.Printf("master: RemoveServer: dial %s succeeded\n", str)
 		}
 
+		if sanity_count > sanity_threshhold2 {
+			log.Printf("master: RemoveServer: tried 100 times to dial servers to replicate, and gave up!!!!\n")
+			break
+			
+		}
 		chunk := serv.chunks.At(cnt).(*chunk)
 
 		//populate chunk location vector
@@ -501,6 +515,7 @@ func RemoveServer(serv *server) os.Error {
 		log.Printf("%s", reply)
 		client.Close();
 		cnt++
+		sanity_count = 0
 	}
 
 	log.Printf("RemoveServer: removing %s\n", str1)
