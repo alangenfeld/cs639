@@ -9,6 +9,7 @@ import (
 	"../include/sfs"
 	"math"
 //	"time"
+	"crypto/sha256"
 )
 
 const(
@@ -178,6 +179,12 @@ func Read (fd int, size int) ([]byte, int ){
 		}
 
 		returned, bytesRead := GetChunk(*fdFile, i)
+		
+		hasher := sha256.New()
+		hasher.Write(bytesRead[:])
+		if(string(hasher.Sum()) != string(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Hash)){
+			log.Printf("looks like your hash may be bit off matey...arrrrrr\n")
+		}
 
 		if(returned == sfs.SUCCESS ){
 			for k:=0; k<sfs.CHUNK_SIZE ; k++{
@@ -271,8 +278,13 @@ func Write (fd int, data []byte) (int){
 				
 			}
 
+			hasher := sha256.New()
+			hasher.Write(toWrite.Data[:])
+
+
+			returned, toPush,newChunk := AddChunks(fdFile.name, 1,hasher.Sum())
+
 			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
-				returned, toPush := AddChunks(fdFile.name, 1)
 				if returned == sfs.FAIL {
 					log.Println("AddChunk failed 1")
 					return sfs.FAIL
@@ -280,69 +292,71 @@ func Write (fd int, data []byte) (int){
 				fdFile.chunkInfo.Push(toPush)
 				log.Println("Client: adding chunk x")
 			}else{
-				returned, toSet := AddChunks(fdFile.name, 1)
 				if returned == sfs.FAIL {
 					log.Println("AddChunk failed 1")
 					return sfs.FAIL
 				}
-				fdFile.chunkInfo.Set(chunkOffset, toSet )
+				fdFile.chunkInfo.Set(chunkOffset, toPush )
 				log.Println("Client: adding chunk y")
 			}
-			fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
-			fileArgs.Data = toWrite
 
-			if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
-				log.Println("fdFile.chunkInfo ", fdFile.chunkInfo)
-			}
+			if(!newChunk){
+					fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
+					fileArgs.Data = toWrite
 
-			servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
-			numChunkServers := len(servers)
-			if (numChunkServers < 1) {
-				log.Println("Client: Dial Failed in Write")
-				return sfs.FAIL
-			}
-
-			log.Println("Client: numChunkServers ", numChunkServers);
-			for j:=0; j < (numChunkServers); j++ {
-				log.Println("Client:  j", j);
-				client,err  := rpc.Dial("tcp",servers[0].String())
-				for i:= 0 ; i < len(servers) ; i ++ {
-					log.Println("Client: servers contains : " + servers[i].String() )
-				}
-				if err != nil ||  client == nil{
-					log.Println("Client: Dial to chunk failed, returned bad client", err);
-					//log.Println("Client: retrying dial in one second");
-					numServers := len(fileArgs.Info.Servers)
-					tmp := fileArgs.Info.Servers[numServers-1]
-					for n:=0 ; n<numServers -1 ; n++{
-						fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
+					if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
+						log.Println("fdFile.chunkInfo ", fdFile.chunkInfo)
 					}
-					fileArgs.Info.Servers[0] = tmp
-				//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
 
-					if j == numChunkServers-1 {
+					servers := fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers;
+					numChunkServers := len(servers)
+					if (numChunkServers < 1) {
+						log.Println("Client: Dial Failed in Write")
 						return sfs.FAIL
 					}
-					continue
-				}
 
-				err = client.Call("Server.Write", &fileArgs,&fileInfo);
-				client.Close()
-				if err != nil{
-					log.Println("Client: Server.Write failed:", err);
-					if j == numChunkServers-1 {
-						return sfs.FAIL
+					log.Println("Client: numChunkServers ", numChunkServers);
+					for j:=0; j < (numChunkServers); j++ {
+						log.Println("Client:  j", j);
+						client,err  := rpc.Dial("tcp",servers[0].String())
+						for i:= 0 ; i < len(servers) ; i ++ {
+							log.Println("Client: servers contains : " + servers[i].String() )
+						}
+						if err != nil ||  client == nil{
+							log.Println("Client: Dial to chunk failed, returned bad client", err);
+							//log.Println("Client: retrying dial in one second");
+							numServers := len(fileArgs.Info.Servers)
+							tmp := fileArgs.Info.Servers[numServers-1]
+							for n:=0 ; n<numServers -1 ; n++{
+								fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
+							}
+							fileArgs.Info.Servers[0] = tmp
+						//	time.Sleep(sfs.HEARTBEAT_WAIT/15)
+
+							if j == numChunkServers-1 {
+								return sfs.FAIL
+							}
+							continue
+						}
+
+						err = client.Call("Server.Write", &fileArgs,&fileInfo);
+						client.Close()
+						if err != nil{
+							log.Println("Client: Server.Write failed:", err);
+							if j == numChunkServers-1 {
+								return sfs.FAIL
+							}
+							continue
+						}
+						if(fileInfo.Status!=0){
+							log.Println("Client: Server.Write status non zero=",fileInfo.Status)
+							if j == numChunkServers-1 {
+								return sfs.FAIL
+							}
+							continue
+						}
+						break
 					}
-					continue
-				}
-				if(fileInfo.Status!=0){
-					log.Println("Client: Server.Write status non zero=",fileInfo.Status)
-					if j == numChunkServers-1 {
-						return sfs.FAIL
-					}
-					continue
-				}
-				break
 			}
 
 			// reply to master
@@ -360,8 +374,8 @@ func Write (fd int, data []byte) (int){
 			chunkOffset++;
 			indexWithinChunk =0
 
-			if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
-				returned, toPush := AddChunks(fdFile.name, 1)
+			/*if(fdFile.chunkInfo.Len() <  chunkOffset-1 ){
+				returned, toPush,newChunk := AddChunks(fdFile.name, 1,hasher.Sum())
 				if returned == sfs.FAIL {
 					return sfs.FAIL
 				}
@@ -370,7 +384,7 @@ func Write (fd int, data []byte) (int){
 				for c := 0; c<sfs.CHUNK_SIZE ; c++ {
 					toWrite.Data[c] = 0;
 				}
-			}
+			}*/
 		}
 	}
 	if masterServ != nil {
@@ -620,28 +634,29 @@ func RemoveDir(path string) (int) {
 
 }
 
-func AddChunks(fileName string, numChunks uint64) (int, sfs.ChunkInfo) {
+func AddChunks(fileName string, numChunks uint64,hash []byte) (int, sfs.ChunkInfo,bool) {
 
 	var args sfs.GetNewChunkArgs
 	var returnVal sfs.GetNewChunkReturn
 
 	args.Name = fileName
 	args.Count = numChunks
+	args.Hash = hash
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 
 	if(err != nil){
 		log.Println("Error Dialing Master(AddChunks):", err)
-		return sfs.FAIL, returnVal.Info
+		return sfs.FAIL, returnVal.Info, returnVal.NewChunk
 	}
 
 	err = masterConn.Call("Master.GetNewChunk",&args,&returnVal)
 	if(err != nil){
 		log.Println("Error Calling Master(AddChunks):", err)
-		return sfs.FAIL, returnVal.Info
+		return sfs.FAIL, returnVal.Info, returnVal.NewChunk
 	}
 	masterConn.Close()
-	return sfs.SUCCESS, returnVal.Info
+	return sfs.SUCCESS, returnVal.Info, returnVal.NewChunk
 
 }
 
