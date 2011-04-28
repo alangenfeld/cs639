@@ -133,7 +133,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 	}
 	
 	if ok {
-		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", ret.Info.Hash, ret.Info.ChunkID)
+		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", args.Hash, ret.Info.ChunkID)
 		ret.Info.ChunkID = thisChunk.chunkID
 		ret.Info.Size = thisChunk.size
 		ret.Info.Hash = thisChunk.hash
@@ -145,7 +145,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 		
 		ret.NewChunk = false
 	} else {
-		log.Printf("GetNewChunk: Hash: %x ChunkID: %d\n", ret.Info.Hash, nextChunk)
+		log.Printf("GetNewChunk: Hash: %x ChunkID: %d\n", args.Hash, nextChunk)
 		ret.Info.ChunkID = nextChunk
 
 		nextChunk++
@@ -767,6 +767,7 @@ func sigHandler() {
 		log.Printf("Signal received: %d!\n", sig)
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
+			log.Printf"\n\nchunk map: %+v \n\nhashToChunks map: %+v\n\n", chunks, hashToChunkMap)
 			DumpTrie()
 			os.Exit(1337)
 		}
