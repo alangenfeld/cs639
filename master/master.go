@@ -321,10 +321,10 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 		chunkRange := len(args.AddedChunks)
 		for cnt := 0; cnt < chunkRange; cnt++ {
 			//chunk , chunkOK := chunks[args.AddedChunks.At(cnt).(*chunk).chunkID]
-			chunk, chunkOK := chunks[args.AddedChunks[0].ChunkID]
+			chunk, chunkOK := chunks[args.AddedChunks[cnt].ChunkID]
 			//log.Printf("Herp dDerp %d\n", args.AddedChunks[0].ChunkID)
 			if chunkOK == true {
-				server.chunks.Push(args.AddedChunks[cnt])
+				server.chunks.Push(chunk)
 				chunk.servers.Push(server)
 			} /*else{
 				log.Printf("BeatHeart: Error chunk %s does not exist\n",
