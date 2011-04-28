@@ -147,6 +147,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 	} else {
 		log.Printf("GetNewChunk: Hash: %x ChunkID: %d\n", args.Hash, nextChunk)
 		ret.Info.ChunkID = nextChunk
+		ret.Info.Hash = args.Hash
 
 		nextChunk++
 
