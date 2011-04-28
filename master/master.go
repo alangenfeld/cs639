@@ -705,11 +705,13 @@ func (c *chunk) unmapChunk() (err os.Error){
 		for k := 0; k < cnt2; k++ {
 			if c.servers.At(j).(*server).chunks.At(k).(*chunk) == c {
 				c.servers.At(j).(*server).chunks.Delete(k)
+				cnt2--
 			}
 		}
 	}
 	
 	chunks[c.chunkID] = &chunk{}, false
+	hashToChunkMap[string(c.hash)] = &chunk{}, false
 	
 	return nil
 }
