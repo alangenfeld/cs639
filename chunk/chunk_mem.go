@@ -98,6 +98,7 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if !present{
 		ret.Status = sfs.FAIL
 		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
+		return nil
 	}
 
 
@@ -157,7 +158,8 @@ func (t *Server) Write(args *sfs.WriteArgs, ret *sfs.WriteReturn) os.Error {
 		err = client.Call("Server.Write", &args, &inRet)
 	        client.Close()
 		if err != nil {
-			log.Fatal("chunk: server error: ", err)
+			log.Println("chunk: server error: ", err)
+			continue
 		}
 		break
 	}
