@@ -58,11 +58,11 @@ func dialServer(address string) (*rpc.Client, os.Error){
 func Open(filename string , flag int ) (int){
 	log.Println("Client: opening ", filename)
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
-	defer client.Close()
 	if err != nil{
 		log.Println("Client: Dial Error ", err);
 		return FAIL
 	}else{
+		defer client.Close()
 		_,openF :=  openFiles[filename]
 
 		if !openF {
