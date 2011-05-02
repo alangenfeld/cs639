@@ -263,9 +263,9 @@ func Write (fd int, data []byte) (int){
 		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
 		if ((indexWithinChunk == sfs.CHUNK_SIZE || i == len(data)-1)){
-			
+			log.Println("DIS OR DAT", fdFile.size, "writing...", filePtr+uint64(len(data)))
 			//special case if write to middle of last chunk
-			if  i == len(data)-1  && fdFile.size > filePtr && indexWithinChunk != sfs.CHUNK_SIZE {
+			if  i == len(data)-1  && fdFile.size > (filePtr+uint64(len(data))) && indexWithinChunk != sfs.CHUNK_SIZE {
 				returned, bytesRead := GetChunk(*fdFile, chunkOffset)
 				if(returned == sfs.SUCCESS){
 					for i:= indexWithinChunk ; i < sfs.CHUNK_SIZE ; i++ {
