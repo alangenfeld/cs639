@@ -119,7 +119,7 @@ sub runTest {
 		sleep(10);
 		sys("$ssh $servers[1] ".
 		    "'$testdir/../chunk/serv $master ".
-		    "&>> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
+		    "&> $testdir/$outputDir/chunk1.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 	    }
 	    exit(0);
 	}
@@ -146,7 +146,7 @@ sub runTest {
 		print "Restarting $i\n";
 		sys("$ssh $servers[$i] ".
 		    "'$testdir/../chunk/serv $master ".
-		    "&>> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
+		    "&> $testdir/$outputDir/chunk$i.log' ".($verbose != 1 ? " &> /dev/null":"")." &");
 	    }
 	    exit(0);
 	}
