@@ -412,8 +412,8 @@ func populateServer(serv *server) os.Error {
 	
 	for i := 0; i < 3; i++{
 		client, err := rpc.Dial("tcp", str)
-		if(client == nil){
-			log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
+		if(err != nil || client == nil){
+			log.Printf("master: PopulateServer: dialing client %s, err: %+v\n", str, err)
 			<-time.After(50000000)
 			continue
 		}
