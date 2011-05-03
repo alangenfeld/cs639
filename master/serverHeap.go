@@ -5,6 +5,7 @@ import (
 	"log"
 	"container/vector"
 	"container/heap"
+	"strconv"
 )
 
 type server struct {
@@ -60,6 +61,7 @@ func (s * serverHeap) Remove(serv interface{}) {
 	ch := make(chan *heapCommand)
     s.serverChan <- &heapCommand{2,serv,ch}
 	<-ch
+	s.printPresent()
 }
 func (s * serverHeap) Handler() {
 
@@ -105,6 +107,17 @@ func (s * serverHeap) Handler() {
 			rec.retChan <- &heapCommand{}
 		}
 	}
+}
+
+func (sh *serverHeap) printPresent() {
+	var out string = ""
+	cnt := sh.vec.Len()
+	for i := 0; i < cnt; i++ {
+		s := sh.vec.At(i).(*server)
+		out += "\ts.id: " + strconv.Uitoa64(s.id) + " nchunks: " + strconv.Itoa(s.chunks.Len()) + "\n"
+	}
+	
+	log.Printf("master: server heap state follows:\n%s", out)
 }
 
 

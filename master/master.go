@@ -471,7 +471,7 @@ func RemoveServer(serv *server) os.Error {
 		rep_factor = .3
 	}
 
-	rep_size := int(math.Floor(rep_factor * network_size))
+	rep_size := int(math.Fmin(math.Ceil(rep_factor * network_size), network_size))
 
 	//for each chunk in the server, make a replication call
 	sanity_threshhold1 := 40
@@ -487,10 +487,19 @@ func RemoveServer(serv *server) os.Error {
 		}
 
 		otherserver := sHeap.vec.At(index).(*server)
+		chunk := serv.chunks.At(cnt).(*chunk)
+		
+		sCnt := chunk.servers.Len()
+		for ijk := 0; ijk < sCnt; ijk++ {
+			if chunk.servers.At(ijk).(*server) == otherserver {
+				log.Printf("master: RemoveServer: abort replication req; server already present\n")
+				continue
+			}
+		}
 
 		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
 
-		log.Printf("master: RemoveServer: dialing %s\n", str)
+		log.Printf("master: RemoveServer: dialing %s to replicate\n", str)
 
 		client, err := rpc.Dial("tcp", str)
 
@@ -507,7 +516,7 @@ func RemoveServer(serv *server) os.Error {
 			break
 			
 		}
-		chunk := serv.chunks.At(cnt).(*chunk)
+		
 
 		//populate chunk location vector
 		chunklist := make([]net.TCPAddr, chunk.servers.Len())
@@ -522,9 +531,11 @@ func RemoveServer(serv *server) os.Error {
 		err = client.Call("Server.ReplicateChunk", args, reply)
 		if err != nil {
 			log.Printf("master: RemoveServer: unable to call %s\n", str)
+			client.Close()
+			continue
 		}
 		log.Printf("%s", reply)
-		client.Close();
+		client.Close()
 		cnt++
 		sanity_count = 0
 	}
