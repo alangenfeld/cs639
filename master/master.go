@@ -111,7 +111,7 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 		thisChunk.size = args.Chunk.Size
 		thisChunk.servers = new(vector.Vector)
 		for i := 0; i < len(args.Chunk.Servers); i++ {
-			thisChunk.servers.Push(addrToServerMap[args.Chunk.Servers[i].String()])
+			thisChunk.AssociateServer(addrToServerMap[args.Chunk.Servers[i].String()])
 		}
 		thisChunk.hash = args.Chunk.Hash
 	}
@@ -707,7 +707,7 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		
 		//if the server dies after right replication but before dying..
 		if s != nil {
-			s.chunks.Push(newChunk)
+			s.AssociateChunk(newChunk)
 		} else {
 			newChunk.servers.Delete(j)
 		}
