@@ -475,13 +475,14 @@ func RemoveServer(serv *server) os.Error {
 	rep_size := int(math.Fmin(math.Ceil(rep_factor * network_size), network_size))
 
 	//for each chunk in the server, make a replication call
-	sanity_threshhold1 := 40
-	sanity_threshhold2 := 100
+	sanity_threshhold1 := 4
+	sanity_threshhold2 := 10
 	sanity_count := 0
 	
+	targetServerMap := make(map[string](bool))
 	
 ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
-
+		
 		var index int
 		if sanity_count > sanity_threshhold1 {
 		    index = rand.Intn(rep_size)
@@ -493,17 +494,26 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 		chunk := serv.chunks.At(cnt).(*chunk)
 		
 		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
-		log.Printf("master: RemoveServer: attempting to replicate chunk %d to server %s\n", chunk.chunkID, str)
 		
 		sCnt := chunk.servers.Len()
 		for ijk := 0; ijk < sCnt; ijk++ {
 			if chunk.servers.At(ijk).(*server) == otherserver {
-				log.Printf("master: RemoveServer: abort replication req; server already present\n")
+				targetServerMap[str] = true
+				
+				if len(targetServerMap) >= len(servers){
+					log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas\n", chunk.chunkID)
+					cnt++
+					sanity_count = 0
+					targetServerMap = make(map[string](bool))
+				}
+				
 				continue ChunkReplicate
 			}
 		}
+		
+		log.Printf("master: RemoveServer: attempting to replicate chunk %d to server %s\n", chunk.chunkID, str)
 
-		log.Printf("master: RemoveServer: dialing %s to replicate\n", str)
+		//log.Printf("master: RemoveServer: dialing %s to replicate\n", str)
 
 		client, err := rpc.Dial("tcp", str)
 
@@ -516,7 +526,7 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 		}
 
 		if sanity_count > sanity_threshhold2 {
-			log.Printf("master: RemoveServer: tried 100 times to dial servers to replicate, and gave up!!!!\n")
+			log.Printf("master: RemoveServer: tried %d times to dial servers to replicate, and gave up!!!!\n", sanity_threshhold2)
 			break
 			
 		}
@@ -541,6 +551,7 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 		client.Close()
 		cnt++
 		sanity_count = 0
+		targetServerMap = make(map[string](bool))
 	}
 
 	log.Printf("RemoveServer: finished %s\n", str1)
