@@ -15,6 +15,7 @@ import (
 	"rand"
 	"math"
 	"os/signal"
+	"runtime"
 )
 
 var t *trie.Trie
@@ -774,6 +775,10 @@ func sigHandler() {
 			log.Printf("\n\nchunk map len: %d \n\nhashToChunks map len: %d\n\n", len(chunks), len(hashToChunkMap))
 			DumpTrie()
 			os.Exit(1337)
+		} else if sig.String() == "SIGHUP: terminal line hangup" {
+			runtime.GC()
+			log.Printf("Garbage collection complete!")
+			DumpTrie()
 		}
 
 		for s := range servers {
