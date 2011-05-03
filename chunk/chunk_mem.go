@@ -89,8 +89,8 @@ func Init(masterAddress string, loggingFlag bool) {
 	tmpS := new(Server)
 	tmpRet := new(sfs.ReplicateChunkReturn)
 	if ret.ChunksToGet != nil {
-		for _, toGet := range ret.ChunksToGet {
-			tmpS.ReplicateChunk(&toGet, tmpRet)
+		for cnt := 0; cnt < len(ret.ChunksToGet); cnt++ {
+			tmpS.ReplicateChunk(&(ret.ChunksToGet[cnt]), tmpRet)
 		}
 	}
 }

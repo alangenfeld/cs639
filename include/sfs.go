@@ -64,7 +64,7 @@ type ChunkBirthArgs struct {
 
 type ChunkBirthReturn struct {
 	ChunkServerID uint64
-	ChunksToGet   map[uint64](ReplicateChunkArgs)
+	ChunksToGet   []ReplicateChunkArgs
 }
 
 type WriteArgs struct {

@@ -402,7 +402,7 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	return s
 }
 
-func populateServer(serv *server) (map[uint64](sfs.ReplicateChunkArgs)) {
+func populateServer(serv *server) ([]sfs.ReplicateChunkArgs) {
 	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 	log.Printf("master: PopulateServer: populating %s\n", str)
 	log.Printf("master: PopulateServer: server heap state:\n%s\n", sHeap.printPresent())
@@ -411,7 +411,7 @@ func populateServer(serv *server) (map[uint64](sfs.ReplicateChunkArgs)) {
 		return nil
 	}
 	
-	thisMap := make(map[uint64](sfs.ReplicateChunkArgs))
+	thisVec := new(vector.Vector)
 	for _, chunk := range chunks {
 		//log.Printf("master: PopulateServer: examining chunk %+v, nservers %d\n", *chunk, chunk.servers.Len())
 		if chunk.servers.Len() < sfs.NREPLICAS {
@@ -423,11 +423,18 @@ func populateServer(serv *server) (map[uint64](sfs.ReplicateChunkArgs)) {
 			}
 
 			//send rpc call off
-			thisMap[chunk.chunkID] = sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
+			thisVec.Push(sfs.ReplicateChunkArgs{chunk.chunkID, chunklist})
 		}
 	}
+	
+	cnt := thisVec.Len()
+	
+	thisSlice := make([]sfs.ReplicateChunkArgs, cnt)
+	for i := 0; i < cnt; i++{
+		thisSlice[i] = thisVec.Pop().(sfs.ReplicateChunkArgs) //horribly inefficient but what can you do...
+	}
 
-	return thisMap
+	return thisSlice
 }
 
 func RemoveServer(serv *server) os.Error {
