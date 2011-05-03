@@ -667,7 +667,7 @@ func AddChunks(fileName string, numChunks uint64,hash []byte) (int, sfs.ChunkInf
 
 	args.Name = fileName
 	args.Count = numChunks
-	args.Hash =  nil //hash
+	args.Hash =  hash
 
 	log.Printf("AddChunks: getting chunk for file %s with hash %x\n", fileName, args.Hash)
 
