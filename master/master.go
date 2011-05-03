@@ -456,6 +456,7 @@ func RemoveServer(serv *server) os.Error {
 	addrToServerMap[serv.addr.String()] = &server{}, false
 
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
+	log.Printf("RemoveServer: begin %s\n", str1)
 	
 	network_size := float64(sHeap.vec.Len())
 	if network_size <= 0 { 
@@ -477,7 +478,9 @@ func RemoveServer(serv *server) os.Error {
 	sanity_threshhold1 := 40
 	sanity_threshhold2 := 100
 	sanity_count := 0
-	for cnt := 0; cnt < serv.chunks.Len(); {
+	
+	
+ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 
 		var index int
 		if sanity_count > sanity_threshhold1 {
@@ -489,15 +492,16 @@ func RemoveServer(serv *server) os.Error {
 		otherserver := sHeap.vec.At(index).(*server)
 		chunk := serv.chunks.At(cnt).(*chunk)
 		
+		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
+		log.Printf("master: RemoveServer: attempting to replicate chunk %d to server %s\n", chunk.chunkID, str)
+		
 		sCnt := chunk.servers.Len()
 		for ijk := 0; ijk < sCnt; ijk++ {
 			if chunk.servers.At(ijk).(*server) == otherserver {
 				log.Printf("master: RemoveServer: abort replication req; server already present\n")
-				continue
+				continue ChunkReplicate
 			}
 		}
-
-		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
 
 		log.Printf("master: RemoveServer: dialing %s to replicate\n", str)
 
@@ -516,7 +520,6 @@ func RemoveServer(serv *server) os.Error {
 			break
 			
 		}
-		
 
 		//populate chunk location vector
 		chunklist := make([]net.TCPAddr, chunk.servers.Len())
@@ -534,13 +537,13 @@ func RemoveServer(serv *server) os.Error {
 			client.Close()
 			continue
 		}
-		log.Printf("%s", reply)
+		//log.Printf("%s", reply)
 		client.Close()
 		cnt++
 		sanity_count = 0
 	}
 
-	log.Printf("RemoveServer: removing %s\n", str1)
+	log.Printf("RemoveServer: finished %s\n", str1)
 	return nil
 }
 
