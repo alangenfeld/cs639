@@ -62,7 +62,6 @@ func (s * serverHeap) Remove(serv interface{}) {
 	ch := make(chan *heapCommand)
     s.serverChan <- &heapCommand{2,serv,ch}
 	<-ch
-	s.printPresent()
 }
 func (s * serverHeap) Handler() {
 
@@ -110,15 +109,23 @@ func (s * serverHeap) Handler() {
 	}
 }
 
-func (sh *serverHeap) printPresent() {
+func (sh *serverHeap) printPresent() string {
 	var out string = ""
 	cnt := sh.vec.Len()
 	for i := 0; i < cnt; i++ {
 		s := sh.vec.At(i).(*server)
-		out += "\ts.id: " + strconv.Uitoa64(s.id) + "addr: " + fmt.Sprintf("%s:%d", s.addr.IP.String(), s.addr.Port) + " nchunks: " + strconv.Itoa(s.chunks.Len()) + "\n"
+		out += "\ts.id: " + strconv.Uitoa64(s.id) + " addr: " + fmt.Sprintf("%s:%d", s.addr.IP.String(), s.addr.Port) + " nchunks: " + strconv.Itoa(s.chunks.Len()) + " chunks: "
+		
+		cnt2 := s.chunks.Len()
+		for j := 0; j < cnt2; j++ {
+			out += strconv.Uitoa64(s.chunks.At(j).(*chunk).chunkID) + ", "
+		}
+		
+		out += "\n"
 	}
 	
-	log.Printf("master: server heap state follows:\n%s", out)
+	//log.Printf("master: server heap state follows:\n%s", out)
+	return out
 }
 
 

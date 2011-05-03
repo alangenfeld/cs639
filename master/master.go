@@ -441,9 +441,11 @@ func populateServer(serv *server) os.Error {
 }
 
 func RemoveServer(serv *server) os.Error {
+	log.Printf("master: RemoveServer: server heap pre removal:\n%s\n", sHeap.printPresent())
 
 	//Remove the Server
 	sHeap.Remove(serv)
+	log.Printf("master: RemoveServer: server heap post removal:\n%s\n", sHeap.printPresent())
 
 	for i := 0; i < sHeap.vec.Len(); i++ {
 		if sHeap.vec.At(i).(*server).id == serv.id {
@@ -456,7 +458,7 @@ func RemoveServer(serv *server) os.Error {
 	addrToServerMap[serv.addr.String()] = &server{}, false
 
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
-	log.Printf("RemoveServer: begin %s\n", str1)
+	log.Printf("master: RemoveServer: begin %s\n", str1)
 	
 	network_size := float64(sHeap.vec.Len())
 	if network_size <= 0 { 
@@ -554,7 +556,8 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 		targetServerMap = make(map[string](bool))
 	}
 
-	log.Printf("RemoveServer: finished %s\n", str1)
+	log.Printf("master: RemoveServer: finished %s\n", str1)
+	log.Printf("master: RemoveServer: server heap post replication:\n%s\n", sHeap.printPresent())
 	return nil
 }
 
