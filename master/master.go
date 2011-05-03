@@ -404,38 +404,43 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 func populateServer(serv *server) os.Error {
 	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 	log.Printf("master: PopulateServer: populating %s\n", str)
+	log.Printf("master: PopulateServer: server heap state:\n%s\n", sHeap.printPresent())
 
 	if len(chunks) == 0 {
 		return nil
 	}
-	client, err := rpc.Dial("tcp", str)
-	if(client == nil){
-		log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
-		return nil
-	}
 	
-	for _,chunk := range chunks {
-	
-		if chunk.servers.Len() < sfs.NREPLICAS {
-		
-			//populate chunk location list
-			chunklist := make([]net.TCPAddr, chunk.servers.Len())
-			for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
-				chunklist[cnt1] = chunk.servers.At(cnt1).(*server).addr
-			}
-
-			//send rpc call off
-			args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
-			reply := new(sfs.ReplicateChunkReturn)
-			log.Printf("master: PopulateServer: issuing replication req to %s\n", str)
-			err = client.Call("Server.ReplicateChunk", args, reply)
-			if err != nil {
-				log.Printf("master: PopulateServer: unable to call %s\n", str)
-			}
-			log.Printf("%s", reply)
+	for i := 0; i < 3; i++{
+		client, err := rpc.Dial("tcp", str)
+		if(client == nil){
+			log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
+			client.Close()
+			continue
 		}
+		
+		for _, chunk := range chunks {
+			log.Printf("master: PopulateServer: examining chunk %+v, nservers %d\n", *chunk, chunk.servers.Len())
+			if chunk.servers.Len() < sfs.NREPLICAS {
+
+				//populate chunk location list
+				chunklist := make([]net.TCPAddr, chunk.servers.Len())
+				for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
+					chunklist[cnt1] = chunk.servers.At(cnt1).(*server).addr
+				}
+
+				//send rpc call off
+				args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
+				reply := new(sfs.ReplicateChunkReturn)
+				log.Printf("master: PopulateServer: issuing replication req to %s\n", str)
+				err = client.Call("Server.ReplicateChunk", args, reply)
+				if err != nil {
+					log.Printf("master: PopulateServer: unable to call %s\n", str)
+				}
+				log.Printf("%s", reply)
+			}
+		}
+		client.Close()
 	}
-	client.Close()
 	
 	return nil
 }
@@ -498,6 +503,18 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
 		
 		sCnt := chunk.servers.Len()
+		
+		if sCnt >= len(servers) {
+			log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas\n", chunk.chunkID)
+			cnt++
+			sanity_count = 0
+			targetServerMap = make(map[string](bool))
+		}
+		
+		if targetServerMap[str] == true {
+			continue
+		}
+		
 		for ijk := 0; ijk < sCnt; ijk++ {
 			if chunk.servers.At(ijk).(*server) == otherserver {
 				targetServerMap[str] = true
