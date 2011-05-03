@@ -414,7 +414,7 @@ func populateServer(serv *server) os.Error {
 		client, err := rpc.Dial("tcp", str)
 		if(client == nil){
 			log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
-			client.Close()
+			<-time.After(50000000)
 			continue
 		}
 		
