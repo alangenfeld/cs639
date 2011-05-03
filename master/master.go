@@ -333,8 +333,9 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 			chunk, chunkOK := chunks[args.AddedChunks[cnt].ChunkID]
 			//log.Printf("Herp dDerp %d\n", args.AddedChunks[0].ChunkID)
 			if chunkOK == true {
-				server.chunks.Push(chunk)
-				chunk.servers.Push(server)
+				//server.chunks.Push(chunk)
+				//chunk.servers.Push(server)
+				AssociateChunkAndServer(chunk, server)
 			} /*else{
 				log.Printf("BeatHeart: Error chunk %s does not exist\n",
 				chunks[args.AddedChunks[0].ChunkID)
@@ -399,8 +400,10 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	return s
 }
+
 func populateServer(serv *server) os.Error {
 	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
+	log.Printf("master: PopulateServer: populating %s\n", str)
 
 	if len(chunks) == 0 {
 		return nil
@@ -435,9 +438,8 @@ func populateServer(serv *server) os.Error {
 	client.Close()
 	
 	return nil
-
-
 }
+
 func RemoveServer(serv *server) os.Error {
 
 	//Remove the Server
@@ -719,11 +721,27 @@ func (c *chunk) unmapChunk() (err os.Error){
 }
 
 func (c *chunk) AssociateServer(s *server) os.Error {
+	cnt := c.servers.Len()
+	for i := 0; i < cnt; i++ {
+		if c.servers.At(i).(*server) == s {
+			log.Printf("master: AssociateServer: dupe found\n")
+			return nil
+		}
+	}
+	
 	c.servers.Push(s)
 	return nil
 } 
 
 func (s *server) AssociateChunk(c *chunk) os.Error {
+	cnt := s.chunks.Len()
+	for i := 0; i < cnt; i++ {
+		if s.chunks.At(i).(*chunk) == c {
+			log.Printf("master: AssociateChunk: dupe found\n")
+			return nil
+		}
+	}
+	
 	s.chunks.Push(c)
 	return nil
 }
