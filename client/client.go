@@ -361,6 +361,8 @@ func Write (fd int, data []byte) (int){
 					log.Println("Client: Wrote chunk", fileArgs.Info.ChunkID, "with", fileArgs.Data)
 					break
 				}
+			}else{
+				fileInfo.Info = toPush
 			}
 
 			// reply to master
@@ -638,7 +640,7 @@ func AddChunks(fileName string, numChunks uint64,hash []byte) (int, sfs.ChunkInf
 
 	args.Name = fileName
 	args.Count = numChunks
-	args.Hash = hash
+	args.Hash =  nil //hash
 
 	log.Printf("AddChunks: getting chunk for file %s with hash %x\n", fileName, args.Hash)
 
