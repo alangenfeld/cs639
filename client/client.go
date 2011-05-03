@@ -280,6 +280,9 @@ func Write (fd int, data []byte) (int){
 
 			hasher := sha256.New()
 			hasher.Write(toWrite.Data[:])
+			if len(toWrite.Data) < sfs.CHUNK_SIZE {
+				hasher.Write(make([]byte,(sfs.CHUNK_SIZE-len(toWrite.Data))))
+			}
 
 			log.Printf("Write computed hash %x for file %s\n", hasher.Sum(), fdFile.name)
 
