@@ -134,7 +134,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 	}
 	
 	if ok {
-		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", args.Hash, ret.Info.ChunkID)
+		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", args.Hash, thisChunk.chunkID)
 		ret.Info.ChunkID = thisChunk.chunkID
 		ret.Info.Size = thisChunk.size
 		ret.Info.Hash = thisChunk.hash
@@ -311,7 +311,7 @@ func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Erro
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
 	str := fmt.Sprintf("%s:%d", args.ChunkServerIP.IP.String(), args.ChunkServerIP.Port)
-	log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
+	//log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
 
 	//find the server who's heart is beating
 	server, servOK := servers[args.ChunkServerID]
