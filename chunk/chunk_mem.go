@@ -101,12 +101,12 @@ func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
 	if logging {
 	//	id = logger.Start("Read")
 	}
-	log.Println("chunk: Reading from chunk ", args.ChunkID)
+	log.Println("chunk: Reading from chunk", args.ChunkID)
 
 	data,present := chunkTable[args.ChunkID]
 	if !present{
 		ret.Status = sfs.FAIL
-		log.Println("chunk: Invalid read request chunk ", args.ChunkID)
+		log.Println("chunk: Invalid read request chunk", args.ChunkID)
 		return nil
 	}
 
@@ -287,7 +287,7 @@ func SendHeartbeat(masterAddress string){
 			log.Println("chunk: heartbeat")
 			err = master.Call("Master.BirthChunk", &bArgs, &bRet)
 			if err != nil {
-				log.Fatal("chunk call error: ", err)
+				log.Fatal("chunk call error:", err)
 			}
 		} else if ret.ChunksToRemove != nil {
 			for i := 0; i < ret.ChunksToRemove.Len(); i++ {
@@ -317,7 +317,7 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 		return nil
 	}
 	
-	log.Println("chunk: replication request chunk ", args.ChunkID);
+	log.Println("chunk: replication request chunk", args.ChunkID);
 	_,present := chunkTable[args.ChunkID]
 	if present {
 		log.Println("chunk: already have it!");
@@ -334,21 +334,26 @@ func (t *Server) ReplicateChunk(args *sfs.ReplicateChunkArgs, ret *sfs.Replicate
 			defer replicationHost.Close()
 		}
 		if err != nil {
-			log.Println("chunk: replication error ", err)
+			log.Println("chunk: replication error", err)
 			continue
 		}
 		
 		var readArgs sfs.ReadArgs
 		var readRet sfs.ReadReturn
 		readArgs.ChunkID = args.ChunkID
-		log.Println("chunk: replicating from ", args.Servers[i]);
+		readArgs.Nice = sfs.FORCE
+		log.Println("chunk: replicating from", args.Servers[i]);
 		err = replicationHost.Call("Server.Read", &readArgs, &readRet)
 		if err != nil {
-			log.Println("chunk: replication error ", err)
+			log.Println("chunk: replication error", err)
 			continue
 		}
-		
+		log.Println("chunk: replication complete")
+
 		chunkTable[args.ChunkID] = readRet.Data
+		var info sfs.ChunkInfo
+		info.ChunkID = readArgs.ChunkID
+		addedChunks.Push(info)
 		capacity--
 		break
 	}
@@ -409,7 +414,7 @@ func sigHandler() {
 	for {
 		sig := <- signal.Incoming
 		
-		log.Println("Signal received: %d!\n", sig)
+		log.Println("Signal received:", sig)
 		
 		if sig.String() == "SIGTERM: termination" || sig.String() == "SIGINT: interrupt" {
 			log.Println("Chunk Server going down ", (*tcpAddr).String())

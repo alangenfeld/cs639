@@ -124,7 +124,6 @@ func Open(filename string , flag int ) (int){
 			nextFile.chunkInfo = new(vector.Vector)
 			for i := 0 ; i < cap(fileInfo.Chunk); i ++ {
 				nextFile.chunkInfo.Push(fileInfo.Chunk[i])
-				log.Printf("Client: In Open file: %s contains %+v \n", filename, fileInfo.Chunk[i])
 			}
 			nextFile.size = openFiles[filename].size
 			openFiles[filename] = &nextFile
@@ -181,7 +180,7 @@ func Read (fd int, size int) ([]byte, int ){
 	endChunk := int(math.Ceil((float64(filePtr)+float64(size))/sfs.CHUNK_SIZE))
 	log.Println("Client: fileName ",fdFile.name)
 	log.Println("Client: size = ", size, "index = ", index,  "  startIndex = ", startIndex)
-	log.Println("Client: endIndex = %d, endChunk = ", endIndex, endChunk)
+	log.Println("Client: endIndex = ", endIndex, "endChunk = ", endChunk)
 	log.Println("Client: filestarting size = ",fdFile.size)
 	if endChunk >  int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE))) {
 		endChunk = int(math.Ceil(float64(fdFile.size)/float64(sfs.CHUNK_SIZE)))
@@ -203,7 +202,7 @@ func Read (fd int, size int) ([]byte, int ){
 		hasher := sha256.New()
 		hasher.Write(bytesRead[:])
 		if(string(hasher.Sum()) != string(fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Hash)){
-			log.Printf("looks like your hash may be bit off matey...arrrrrr\n\texpected: %x got: %x\n", fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Hash, hasher.Sum())
+			//log.Printf("looks like your hash may be bit off matey...arrrrrr\n\texpected: %x got: %x\n", fdFile.chunkInfo.At(i).(sfs.ChunkInfo).Hash, hasher.Sum())
 		}
 
 		if(returned == sfs.SUCCESS ){
@@ -222,7 +221,7 @@ func Read (fd int, size int) ([]byte, int ){
 	if openDescriptors[fd].filePtr > fdFile.size {
 		openDescriptors[fd].filePtr	=openFiles[filename].size
 	}
-	printByteSlice(entireRead)
+//	printByteSlice(entireRead)
 	log.Println("Client: *********READ END*************");
 	return  entireRead, returned;
 }
@@ -266,7 +265,6 @@ func Write (fd int, data []byte) (int){
 	var toWrite sfs.Chunk
 
 	//special case if writing to middle of first chunk
-	log.Println("fptr", filePtr, "size", fdFile.size,"chunk", indexWithinChunk)
 	if  (indexWithinChunk  > 0) && (filePtr <= fdFile.size) {
 		returned, bytesRead := GetChunk(*fdFile, chunkOffset)
 		if(returned == sfs.SUCCESS){
@@ -283,7 +281,7 @@ func Write (fd int, data []byte) (int){
 	for i:=0 ; i < len(data) ; i++  {
 		toWrite.Data[int(indexWithinChunk)] = data[i]
 		indexWithinChunk++
-//		log.Println("INDEX i", i, indexWithinChunk, chunkOffset)
+
 		if ((indexWithinChunk == sfs.CHUNK_SIZE || i == len(data)-1)){
 			//special case if write to middle of last chunk
 			if  i == len(data)-1  && fdFile.size > (filePtr+uint64(len(data))) && indexWithinChunk != sfs.CHUNK_SIZE {
@@ -309,8 +307,7 @@ func Write (fd int, data []byte) (int){
 			}
 
 			returned, toPush, newChunk := AddChunks(fdFile.name, 1,hasher.Sum())
-
-			if(fdFile.chunkInfo.Len() <= chunkOffset+1) {
+			if(fdFile.chunkInfo.Len() <= chunkOffset) {
 				if returned == sfs.FAIL {
 					log.Println("AddChunk failed 1")
 					return sfs.FAIL
@@ -327,9 +324,9 @@ func Write (fd int, data []byte) (int){
 			}
 			log.Println("new chunk ? ", newChunk)
 			if(newChunk){
+
 				fileArgs.Info = fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo)
 				fileArgs.Data = toWrite
-
 				if(len(fdFile.chunkInfo.At(chunkOffset).(sfs.ChunkInfo).Servers)<1){
 					log.Println("fdFile.chunkInfo ", fdFile.chunkInfo)
 				}
@@ -365,12 +362,14 @@ func Write (fd int, data []byte) (int){
 					client.Close()
 					if err != nil{
 						log.Println("Client: Server.Write failed:", err);
+						/*
 						numServers := len(fileArgs.Info.Servers)
 						tmp := fileArgs.Info.Servers[numServers-1]
 						for n:=0 ; n<numServers -1 ; n++{
 							fileArgs.Info.Servers[n+1] = fileArgs.Info.Servers[n]
 						}
 						fileArgs.Info.Servers[0] = tmp
+						*/
 						if j == numChunkServers-1 {
 							return sfs.FAIL
 						}
@@ -437,9 +436,6 @@ func GetChunk(fdFile file,  chunkOffset int)(int, [sfs.CHUNK_SIZE]byte){
 	for i:= 0 ; i < (numServers*2) ; i ++ {
 		if i >= numServers {
 			fileArgsRead.Nice = 0
-		}
-		for j:= 0 ; j < numServers ; j ++ {
-			log.Println("Client: servers contains:", Servers[j] )
 		}
 		client,err :=rpc.Dial("tcp",Servers[i%numServers].String())
 		if client == nil {
@@ -669,7 +665,7 @@ func AddChunks(fileName string, numChunks uint64,hash []byte) (int, sfs.ChunkInf
 	args.Count = numChunks
 	args.Hash =  hash
 
-	log.Printf("AddChunks: getting chunk for file %s with hash %x\n", fileName, args.Hash)
+//	log.Printf("AddChunks: getting chunk for file %s with hash %x\n", fileName, args.Hash)
 
 	masterConn,err := rpc.Dial("tcp", master + ":1338")
 
