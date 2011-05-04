@@ -497,7 +497,7 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 		sCnt := chunk.servers.Len()
 		
 		if sCnt >= len(servers) {
-			log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas\n", chunk.chunkID)
+			log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas. chunk.servers: %+v servers: %+v\n", chunk.chunkID, *chunk.servers, *servers)
 			cnt++
 			sanity_count = 0
 			targetServerMap = make(map[string](bool))
@@ -512,7 +512,7 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 				targetServerMap[str] = true
 				
 				if len(targetServerMap) >= len(servers){
-					log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas\n", chunk.chunkID)
+					log.Printf("master: RemoveServer: abort replication req for chunk %d; targetServerMap full. map: %+v servers: %+v\n", chunk.chunkID, targetServerMap, *servers)
 					cnt++
 					sanity_count = 0
 					targetServerMap = make(map[string](bool))
