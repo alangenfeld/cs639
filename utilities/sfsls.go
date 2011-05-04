@@ -27,6 +27,7 @@ func main(){
 	iter := len(list)
 	for c := 0; c < iter; c++ {
 	    fmt.Printf(list[c])
+	    fmt.Printf("\n")
 	}
 	
 	fmt.Printf("\nEND OF LIST\n")

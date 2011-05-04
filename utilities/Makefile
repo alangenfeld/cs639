@@ -9,7 +9,7 @@ gl=8l
 su=8
 endif
 
-all: put sfscat get sfsls
+all: put sfscat get sfsls SFShell
 
 put: put.$(su) ../client/client.go
 	$(gl) -o put put.$(su)
@@ -22,6 +22,12 @@ sfscat: sfscat.$(su) ../client/client.go
 
 sfscat.$(su): sfscat.go
 	$(gc) sfscat.go
+
+SFShell: SFShell.$(su) ../client/client.go
+	$(gl) -o SFShell SFShell.$(su)
+
+SFShell.$(su): SFShell.go
+	$(gc) SFShell.go
 
 get: get.$(su) ../client/client.go
 	$(gl) -o get get.$(su)

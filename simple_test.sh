@@ -8,7 +8,8 @@ echo "##########################################################"
 sleep 2
 
 pwd=`pwd`
-$ssh mumble-01 "$pwd/master/master"&
+logout=`mktemp $pwd/stealth-XXXXXX`
+$ssh mumble-01 "$pwd/master/master | tee $logout"&
 sleep 2
 $ssh mumble-40 "$pwd/chunk/serv mumble-01"&
 $ssh mumble-39 "$pwd/chunk/serv mumble-01"&
