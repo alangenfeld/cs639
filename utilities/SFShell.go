@@ -79,7 +79,7 @@ func main() {
 		
 		}else if strings.HasPrefix(line,"logout") {
 		
-			fmt.Printf("exiting..")
+			fmt.Printf("exiting..\n")
 			os.Exit(1)
 		}
 		
@@ -135,7 +135,7 @@ func get(line string) bool {
 source, dest, err1 := parse2args(line)
 	
 	if err1 == false {
-		fmt.Printf("Usage: put <src> <dst>\n")
+		fmt.Printf("Usage: get <src> <dst>\n")
 		return false
 	}
 	
@@ -184,7 +184,7 @@ func ls(line string) bool {
 	file, err1 := parse1args(line)
 	
 	if err1 == false {
-		fmt.Printf("Usage: put <src> <dst>\n")
+		fmt.Printf("Usage: ls <file>\n")
 		return false
 	}
 
