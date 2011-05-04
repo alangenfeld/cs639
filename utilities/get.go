@@ -2,6 +2,7 @@ package main
 
 import (
 	"../client/client"
+	"../include/sfs"
 	"fmt"
 	"flag"
 	"os"
@@ -32,7 +33,7 @@ func main(){
 
 	fmt.Printf("BEGIN OF FILE\n")
 	for ;true; {
-		data, err := client.Read(fd, 1024)
+		data, err := client.Read(fd, sfs.CHUNK_SIZE)
 		if(err != 0) {
 			panic("read failed")
 		}
