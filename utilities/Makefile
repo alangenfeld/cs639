@@ -43,6 +43,6 @@ sfsls.$(su): sfsls.go
 	$(gc) sfsls.go
 
 clean:
-	-rm -f *.$(su) put sfscat get
+	-rm -f *.$(su) put sfscat get sfsls SFShell
 
 clean-all: clean

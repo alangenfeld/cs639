@@ -23,14 +23,12 @@ func main(){
 		fmt.Printf("\nCouldn't call ReadDir on file %s\n", *file)
 	}
 
-	fmt.Printf("BEGIN OF LIST\n")
 	iter := len(list)
 	for c := 0; c < iter; c++ {
 	    fmt.Printf(list[c])
 	    fmt.Printf("\n")
 	}
 	
-	fmt.Printf("\nEND OF LIST\n")
 
 
 	os.Exit(0)
