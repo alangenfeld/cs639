@@ -111,7 +111,7 @@ func (m *Master) MapChunkToFile(args *sfs.MapChunkToFileArgs, ret *sfs.MapChunkT
 		thisChunk.size = args.Chunk.Size
 		thisChunk.servers = new(vector.Vector)
 		for i := 0; i < len(args.Chunk.Servers); i++ {
-			thisChunk.servers.Push(addrToServerMap[args.Chunk.Servers[i].String()])
+			thisChunk.AssociateServer(addrToServerMap[args.Chunk.Servers[i].String()])
 		}
 		thisChunk.hash = args.Chunk.Hash
 	}
@@ -134,7 +134,7 @@ func (m *Master) GetNewChunk(args *sfs.GetNewChunkArgs, ret *sfs.GetNewChunkRetu
 	}
 	
 	if ok {
-		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", args.Hash, ret.Info.ChunkID)
+		log.Printf("GetNewChunk: duplicate hash found. Hash: %x ChunkID: %d\n", args.Hash, thisChunk.chunkID)
 		ret.Info.ChunkID = thisChunk.chunkID
 		ret.Info.Size = thisChunk.size
 		ret.Info.Hash = thisChunk.hash
@@ -274,14 +274,15 @@ func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn
 			}
 		}
 	}else{
-		err := populateServer(s)
-		if err != nil {
+		thisMap := populateServer(s)
+		/*if thisMap == nil {
 			log.Fatal("error populating server %v\n", s);
-		}
+		}*/
+		info.ChunksToGet = thisMap
 	}
 
 	info.ChunkServerID = s.id
-
+	
 	log.Println("Birthed a Chunk Server!\n")
 
 	return nil
@@ -311,7 +312,7 @@ func (m *Master) DeleteFile(args *sfs.DeleteArgs, ret *sfs.DeleteReturn) os.Erro
 
 func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) os.Error {
 	str := fmt.Sprintf("%s:%d", args.ChunkServerIP.IP.String(), args.ChunkServerIP.Port)
-	log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
+	//log.Printf("BeatHeart: %s's HEART IS BEATING\n", str)
 
 	//find the server who's heart is beating
 	server, servOK := servers[args.ChunkServerID]
@@ -333,8 +334,9 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 			chunk, chunkOK := chunks[args.AddedChunks[cnt].ChunkID]
 			//log.Printf("Herp dDerp %d\n", args.AddedChunks[0].ChunkID)
 			if chunkOK == true {
-				server.chunks.Push(chunk)
-				chunk.servers.Push(server)
+				//server.chunks.Push(chunk)
+				//chunk.servers.Push(server)
+				AssociateChunkAndServer(chunk, server)
 			} /*else{
 				log.Printf("BeatHeart: Error chunk %s does not exist\n",
 				chunks[args.AddedChunks[0].ChunkID)
@@ -399,22 +401,21 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 
 	return s
 }
-func populateServer(serv *server) os.Error {
+
+func populateServer(serv *server) ([]sfs.ReplicateChunkArgs) {
 	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
+	log.Printf("master: PopulateServer: populating %s\n", str)
+	log.Printf("master: PopulateServer: server heap state:\n%s\n", sHeap.printPresent())
 
 	if len(chunks) == 0 {
 		return nil
 	}
-	client, err := rpc.Dial("tcp", str)
-	if(client == nil){
-		log.Printf("master: PopulateServer: dialing client %s, nil\n", str)
-		return nil
-	}
 	
-	for _,chunk := range chunks {
-	
+	thisVec := new(vector.Vector)
+	for _, chunk := range chunks {
+		//log.Printf("master: PopulateServer: examining chunk %+v, nservers %d\n", *chunk, chunk.servers.Len())
 		if chunk.servers.Len() < sfs.NREPLICAS {
-		
+
 			//populate chunk location list
 			chunklist := make([]net.TCPAddr, chunk.servers.Len())
 			for cnt1 := 0; cnt1 < chunk.servers.Len(); cnt1++ {
@@ -422,26 +423,26 @@ func populateServer(serv *server) os.Error {
 			}
 
 			//send rpc call off
-			args := &sfs.ReplicateChunkArgs{chunk.chunkID, chunklist}
-			reply := new(sfs.ReplicateChunkReturn)
-			log.Printf("master: PopulateServer: issuing replication req to %s\n", str)
-			err = client.Call("Server.ReplicateChunk", args, reply)
-			if err != nil {
-				log.Printf("master: PopulateServer: unable to call %s\n", str)
-			}
-			log.Printf("%s", reply)
+			thisVec.Push(sfs.ReplicateChunkArgs{chunk.chunkID, chunklist})
 		}
 	}
-	client.Close()
 	
-	return nil
+	cnt := thisVec.Len()
+	
+	thisSlice := make([]sfs.ReplicateChunkArgs, cnt)
+	for i := 0; i < cnt; i++{
+		thisSlice[i] = thisVec.Pop().(sfs.ReplicateChunkArgs) //horribly inefficient but what can you do...
+	}
 
-
+	return thisSlice
 }
+
 func RemoveServer(serv *server) os.Error {
+	log.Printf("master: RemoveServer: server heap pre removal:\n%s\n", sHeap.printPresent())
 
 	//Remove the Server
 	sHeap.Remove(serv)
+	log.Printf("master: RemoveServer: server heap post removal:\n%s\n", sHeap.printPresent())
 
 	for i := 0; i < sHeap.vec.Len(); i++ {
 		if sHeap.vec.At(i).(*server).id == serv.id {
@@ -454,6 +455,7 @@ func RemoveServer(serv *server) os.Error {
 	addrToServerMap[serv.addr.String()] = &server{}, false
 
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
+	log.Printf("master: RemoveServer: begin %s\n", str1)
 	
 	network_size := float64(sHeap.vec.Len())
 	if network_size <= 0 { 
@@ -469,14 +471,17 @@ func RemoveServer(serv *server) os.Error {
 		rep_factor = .3
 	}
 
-	rep_size := int(math.Floor(rep_factor * network_size))
+	rep_size := int(math.Fmin(math.Ceil(rep_factor * network_size), network_size))
 
 	//for each chunk in the server, make a replication call
-	sanity_threshhold1 := 40
-	sanity_threshhold2 := 100
+	sanity_threshhold1 := 4
+	sanity_threshhold2 := 10
 	sanity_count := 0
-	for cnt := 0; cnt < serv.chunks.Len(); {
-
+	
+	targetServerMap := make(map[string](bool))
+	
+ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
+		
 		var index int
 		if sanity_count > sanity_threshhold1 {
 		    index = rand.Intn(rep_size)
@@ -485,10 +490,41 @@ func RemoveServer(serv *server) os.Error {
 		}
 
 		otherserver := sHeap.vec.At(index).(*server)
-
+		chunk := serv.chunks.At(cnt).(*chunk)
+		
 		str := fmt.Sprintf("%s:%d", otherserver.addr.IP.String(), otherserver.addr.Port)
+		
+		sCnt := chunk.servers.Len()
+		
+		if sCnt >= len(servers) {
+			log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas\n", chunk.chunkID)
+			cnt++
+			sanity_count = 0
+			targetServerMap = make(map[string](bool))
+		}
+		
+		if targetServerMap[str] == true {
+			continue
+		}
+		
+		for ijk := 0; ijk < sCnt; ijk++ {
+			if chunk.servers.At(ijk).(*server) == otherserver {
+				targetServerMap[str] = true
+				
+				if len(targetServerMap) >= len(servers){
+					log.Printf("master: RemoveServer: abort replication req for chunk %d; all active servers already hold replicas\n", chunk.chunkID)
+					cnt++
+					sanity_count = 0
+					targetServerMap = make(map[string](bool))
+				}
+				
+				continue ChunkReplicate
+			}
+		}
+		
+		log.Printf("master: RemoveServer: attempting to replicate chunk %d to server %s\n", chunk.chunkID, str)
 
-		log.Printf("master: RemoveServer: dialing %s\n", str)
+		//log.Printf("master: RemoveServer: dialing %s to replicate\n", str)
 
 		client, err := rpc.Dial("tcp", str)
 
@@ -501,11 +537,10 @@ func RemoveServer(serv *server) os.Error {
 		}
 
 		if sanity_count > sanity_threshhold2 {
-			log.Printf("master: RemoveServer: tried 100 times to dial servers to replicate, and gave up!!!!\n")
+			log.Printf("master: RemoveServer: tried %d times to dial servers to replicate, and gave up!!!!\n", sanity_threshhold2)
 			break
 			
 		}
-		chunk := serv.chunks.At(cnt).(*chunk)
 
 		//populate chunk location vector
 		chunklist := make([]net.TCPAddr, chunk.servers.Len())
@@ -520,14 +555,18 @@ func RemoveServer(serv *server) os.Error {
 		err = client.Call("Server.ReplicateChunk", args, reply)
 		if err != nil {
 			log.Printf("master: RemoveServer: unable to call %s\n", str)
+			client.Close()
+			continue
 		}
-		log.Printf("%s", reply)
-		client.Close();
+		//log.Printf("%s", reply)
+		client.Close()
 		cnt++
 		sanity_count = 0
+		targetServerMap = make(map[string](bool))
 	}
 
-	log.Printf("RemoveServer: removing %s\n", str1)
+	log.Printf("master: RemoveServer: finished %s\n", str1)
+	log.Printf("master: RemoveServer: server heap post replication:\n%s\n", sHeap.printPresent())
 	return nil
 }
 
@@ -677,7 +716,7 @@ func (i *inode) MapChunk(offset int, newChunk *chunk) (chunkID uint64, err os.Er
 		
 		//if the server dies after right replication but before dying..
 		if s != nil {
-			s.chunks.Push(newChunk)
+			s.AssociateChunk(newChunk)
 		} else {
 			newChunk.servers.Delete(j)
 		}
@@ -719,11 +758,27 @@ func (c *chunk) unmapChunk() (err os.Error){
 }
 
 func (c *chunk) AssociateServer(s *server) os.Error {
+	cnt := c.servers.Len()
+	for i := 0; i < cnt; i++ {
+		if c.servers.At(i).(*server) == s {
+			log.Printf("master: AssociateServer: dupe found\n")
+			return nil
+		}
+	}
+	
 	c.servers.Push(s)
 	return nil
 } 
 
 func (s *server) AssociateChunk(c *chunk) os.Error {
+	cnt := s.chunks.Len()
+	for i := 0; i < cnt; i++ {
+		if s.chunks.At(i).(*chunk) == c {
+			log.Printf("master: AssociateChunk: dupe found\n")
+			return nil
+		}
+	}
+	
 	s.chunks.Push(c)
 	return nil
 }

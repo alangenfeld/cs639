@@ -70,6 +70,8 @@ func Init(masterAddress string, loggingFlag bool) {
 	}
     logger.QuickInit()
 
+	go sigHandler()
+
 	master, err := rpc.Dial("tcp", masterAddress + ":1338")
 	if master != nil {
 		defer master.Close()
@@ -83,7 +85,14 @@ func Init(masterAddress string, loggingFlag bool) {
 		log.Fatal("chunk call error: ", err)
 	}
 	chunkServerID = ret.ChunkServerID
-	go sigHandler();
+	
+	tmpS := new(Server)
+	tmpRet := new(sfs.ReplicateChunkReturn)
+	if ret.ChunksToGet != nil {
+		for cnt := 0; cnt < len(ret.ChunksToGet); cnt++ {
+			tmpS.ReplicateChunk(&(ret.ChunksToGet[cnt]), tmpRet)
+		}
+	}
 }
 
 func (t *Server) Read(args *sfs.ReadArgs, ret *sfs.ReadReturn) os.Error {
