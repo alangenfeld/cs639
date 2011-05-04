@@ -18,7 +18,7 @@ const BUFSIZE = 256
 func main() {
 	
 	fmt.Printf("Hello World\n")
-	master := flag.String("m", "", "specify the master")
+	master := flag.String("m", "mumble-02.cs.wisc.edu", "specify the master")
 	flag.Parse();
 	
 	if *master == "" {
@@ -70,9 +70,14 @@ func main() {
 				fmt.Printf("Fatal error in ls.\n")
 			}
 	
-		
 		}else if strings.HasPrefix(line,"pwd") {
 		
+		
+		}else if strings.HasPrefix(line,"mkdir") {
+			err := mkdir(line)
+			if err == false {
+				fmt.Printf("Fatal error in mkdir.\n")
+			}
 		
 		}else if strings.HasPrefix(line,"cd") {
 		
@@ -132,7 +137,7 @@ func put(line string) bool {
 }
 
 func get(line string) bool {
-source, dest, err1 := parse2args(line)
+	source, dest, err1 := parse2args(line)
 	
 	if err1 == false {
 		fmt.Printf("Usage: get <src> <dst>\n")
@@ -201,6 +206,24 @@ func ls(line string) bool {
 	return true
 }
 
+func mkdir(line string) bool {
+
+	dir, err1 := parse1args(line)
+	
+	if err1 == false {
+		fmt.Printf("Usage: mkdir <dir>\n")
+		return false
+	}
+	
+	err := client.MakeDir(dir)
+	
+	if err == sfs.FAIL {
+		return false
+	}
+	
+	return true
+
+}
 func parse1args(line string) (string,bool) {
 
 	slice := strings.Index(line," ")
