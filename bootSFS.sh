@@ -29,7 +29,7 @@ cleanup()
 if [ "$#" != "1" ]
 then
     echo "Specify the number of computers to infect."
-    echo "example: spawnChunks hostname numServers"
+    echo "example: numServers"
 else
     if [ $1 -gt 40 ]
     then
@@ -50,6 +50,7 @@ else
 	    num="$c"
 	fi
 	$ssh mumble-$num "$pwd/chunk/serv $master" &
+	sleep 1
     done
 
     while :
