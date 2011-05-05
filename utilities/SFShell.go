@@ -18,7 +18,7 @@ const BUFSIZE = 256
 func main() {
 	
 	fmt.Printf("Hello World\n")
-	master := flag.String("m", "", "specify the master")
+	master := flag.String("m", "mumble-02.cs.wisc.edu", "specify the master")
 	flag.Parse();
 	
 	if *master == "" {
@@ -69,25 +69,120 @@ func main() {
 			if err == false {
 				fmt.Printf("Fatal error in ls.\n")
 			}
+		}else if strings.HasPrefix(line,"rmdir") {
+			err := rmdir(line)
+			if err == false {
+				fmt.Printf("Fatal error in rmdir.\n")
+			}
+			
+		}else if strings.HasPrefix(line,"rm") {
+			err := rm(line)
+			if err == false {
+				fmt.Printf("Fatal error in rm.\n")
+			}
+		
 	
-		
 		}else if strings.HasPrefix(line,"pwd") {
+			fmt.Printf("pwd not currently supported")
 		
+		}else if strings.HasPrefix(line,"mkdir") {
+			err := mkdir(line)
+			if err == false {
+				fmt.Printf("Fatal error in mkdir.\n")
+			}
+		}else if strings.HasPrefix(line,"help") {
+			help()
 		
 		}else if strings.HasPrefix(line,"cd") {
-		
+			fmt.Printf("cd not currently supported")	
 		
 		}else if strings.HasPrefix(line,"logout") {
 		
 			fmt.Printf("exiting..\n")
 			os.Exit(1)
+		}else{
+		
+			fmt.Printf("Command does not exist\n")
 		}
+		
+		
 		
 
 	}
 
 }
 
+func help() {
+
+	fmt.Printf("get <src> <dst>\n")
+	fmt.Printf("put <src> <dst>\n")
+	fmt.Printf("ls <dir>\n")
+	fmt.Printf("mkdir <dir>")
+	fmt.Printf("rm <file>")
+	fmt.Printf("rmdir <file>")
+	
+	
+}
+
+func rm(line string) bool {
+
+	file, err1 := parse1args(line)
+
+	if err1 == false {
+		fmt.Printf("Usage: put <src> <dst>\n")
+		return false
+	}
+	
+	err := client.Delete(file)
+
+	
+	if err == sfs.FAIL {
+		return false
+	}
+	
+	return true
+
+}
+
+func rmdir(line string) bool {
+
+	file, err1 := parse1args(line)
+
+	if err1 == false {
+		fmt.Printf("Usage: put <src> <dst>\n")
+		return false
+	}
+	
+	err := client.RemoveDir(file)
+
+	
+	if err == sfs.FAIL {
+		return false
+	}
+	
+	return true
+
+}
+
+
+func mkdir(line string) bool {
+
+	dir, err1 := parse1args(line)
+	
+	if err1 == false {
+		fmt.Printf("Usage: mkdir <dir>\n")
+		return false
+	}
+	fmt.Printf("%s\n", dir);
+	err := client.MakeDir(dir)
+	
+	if err == sfs.FAIL {
+		return false
+	}
+	
+	return true
+
+}
 func put(line string) bool {
 	source, dest, err1 := parse2args(line)
 	
@@ -132,7 +227,7 @@ func put(line string) bool {
 }
 
 func get(line string) bool {
-source, dest, err1 := parse2args(line)
+	source, dest, err1 := parse2args(line)
 	
 	if err1 == false {
 		fmt.Printf("Usage: get <src> <dst>\n")
@@ -200,6 +295,7 @@ func ls(line string) bool {
 	}
 	return true
 }
+
 
 func parse1args(line string) (string,bool) {
 
