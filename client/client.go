@@ -496,11 +496,12 @@ func Delete(filename string) (int){
 
 	_ , present := openFiles[filename]
 	if (!present ){
-		log.Println("Client: filename does not exist ", filename);
-		return FAIL
+//		log.Println("Client: filename does not exist ", filename);
+//		return FAIL
+	}else{
+		var dummy file
+		openFiles[filename] = &dummy,false
 	}
-	var dummy file
-	openFiles[filename] = &dummy,false
 
 
 	client,err :=rpc.Dial("tcp", master + ":1338"); //IP needs to be changed to Master's IP
@@ -556,9 +557,9 @@ func ReadDir(path string) ([]string, int){
 			return readDirRet.FileNames,  FAIL
 		}
 	}
-	for i:= 0 ; i < len(readDirRet.FileNames) ; i++ {
-		log.Println("Client: Got back directory: ", readDirRet.FileNames[i])
-	}
+//	for i:= 0 ; i < len(readDirRet.FileNames) ; i++ {
+//		log.Println("Client: Got back directory: ", readDirRet.FileNames[i])
+//	}
 	return readDirRet.FileNames,  WIN
 }
 
