@@ -319,15 +319,14 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 
 	//find the server who's heart is beating
 	server, servOK := servers[args.ChunkServerID]
-	_, servOK1 := addrToServerMap[args.ChunkServerIP.IP.String()]
+	_, servOK1 := addrToServerMap[str]
 	
 	if servOK == false || servOK1 == false {
 		log.Printf("BEATHEART :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str, args.ChunkServerID, servOK, servOK1)
-		log.Printf("BEATHEART1 :: painfully dumping map .. \n (%+v)\n", addrToServerMap)
 	}
 	
 	if servOK == false {
-		log.Printf("BeatHeart: Server (%s) not in server map; telling it to rebirth itself a la Madonna\n", str)
+		log.Printf("BEATHEART1 : Server (%s) not in server map; telling it to rebirth itself a la Madonna\n", str)
 		info.Accepted = false
 		return nil
 	}
