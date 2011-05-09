@@ -323,6 +323,7 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 	
 	if servOK == false || servOK1 == false {
 		log.Printf("BEATHEART :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str, args.ChunkServerID, servOK, servOK1)
+		log.Printf("BEATHEART1 :: painfully dumping map .. \n (%+v)\n", addrToServerMap)
 	}
 	
 	if servOK == false {
