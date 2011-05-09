@@ -69,7 +69,7 @@ func main() {
 			if err == false {
 				fmt.Printf("Fatal error in ls.\n")
 			}
-		}else if strings.HasPrefix(line,"rmdir") {
+		}else if strings.HasPrefix(line,"rmdirg") {
 			err := rmdir(line)
 			if err == false {
 				fmt.Printf("Fatal error in rmdir.\n")

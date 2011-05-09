@@ -262,6 +262,9 @@ func (m *Master) RemoveFile(args *sfs.RemoveArgs, result *sfs.RemoveReturn) os.E
 func (m *Master) BirthChunk(args *sfs.ChunkBirthArgs, info *sfs.ChunkBirthReturn) os.Error {
 
 	s := AddServer(args.ChunkServerIP, args.Capacity)
+	
+	log.Printf("Server (%s) got chunk ID (%d)\n", args.ChunkServerIP.String(), s.id)
+	
 	go s.monitorServerBeats(heartbeatMonitors[s.id])
 	
 	
@@ -316,6 +319,12 @@ func (m *Master) BeatHeart(args *sfs.HeartbeatArgs, info *sfs.HeartbeatReturn) o
 
 	//find the server who's heart is beating
 	server, servOK := servers[args.ChunkServerID]
+	_, servOK1 := addrToServerMap[args.ChunkServerIP.IP.String()]
+	
+	if servOK == false || servOK1 == false {
+		log.Printf("BEATHEART :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str, args.ChunkServerID, servOK, servOK1)
+	}
+	
 	if servOK == false {
 		log.Printf("BeatHeart: Server (%s) not in server map; telling it to rebirth itself a la Madonna\n", str)
 		info.Accepted = false
@@ -398,7 +407,14 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	heap.Push(sHeap, s)
 	servers[s.id] = s
 	addrToServerMap[servAddr.String()] = s
+	
+	
+	_, test1 := servers[s.id]
+	_, test2 := addrToServerMap[servAddr.String()]
+	
 
+		log.Printf("ADDSERVER :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str, s.id, test1, test2)
+	
 	return s
 }
 
@@ -567,6 +583,13 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 
 	log.Printf("master: RemoveServer: finished %s\n", str1)
 	log.Printf("master: RemoveServer: server heap post replication:\n%s\n", sHeap.printPresent())
+	
+	_, test1 := servers[serv.id]
+	_, test2 := addrToServerMap[serv.addr.String()]
+	
+	if test1 == true || test2 == true {
+		log.Printf("REMOVESERVER :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str1, serv.id, test1, test2)
+	}
 	return nil
 }
 
