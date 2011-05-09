@@ -7,6 +7,7 @@ import (
 	"container/heap"
 	"strconv"
 	"fmt"
+	"time"
 )
 
 type server struct {
@@ -64,47 +65,52 @@ func (s * serverHeap) Remove(serv interface{}) {
 	<-ch
 }
 func (s * serverHeap) Handler() {
+	var rec *heapCommand
 
-	for rec := range s.serverChan {
-	
-		if(rec.command == 0){
-			s.vec.Push(rec.server)
-			rec.retChan <- &heapCommand{}
-		}
-		if(rec.command == 1){
-			rec.retChan <- &heapCommand{1,s.vec.Pop(),nil}
-		}
-		if(rec.command == 2){
-			deadServer := rec.server.(*server)
-			//find the server to remove
-			for cnt := 0; cnt < s.vec.Len(); cnt++ {
-			
-				testserv := s.vec.At(cnt).(*server)
-				if(testserv.id == deadServer.id){
-					log.Printf("master: heap Handler: found server %d to delete\n", deadServer.id)
-				
-					//find each chunk to modify
-					for cnt1 := 0; cnt1 < testserv.chunks.Len(); cnt1++{
-					
-						tempchunk := testserv.chunks.At(cnt1).(*chunk)
-						
-						//find the server to remove from EACH CHUNK LIST
-						for cnt2 := 0; cnt2 < tempchunk.servers.Len(); cnt2++ {
-						
-							tempserv := tempchunk.servers.At(cnt2).(*server)
-							if(tempserv.id == deadServer.id){
-								tempchunk.servers.Delete(cnt2)
-							}
-						}	
-					}
-					prevCnt := s.vec.Len()
-					s.vec.Delete(cnt)
-					log.Printf("master: heap Handler: prev vec count %d, now %d\n", prevCnt, s.vec.Len())
-					break
-				}
+	for{
+		select{
+		case rec = <- s.serverChan:
+			if(rec.command == 0){
+				s.vec.Push(rec.server)
+				rec.retChan <- &heapCommand{}
 			}
+			if(rec.command == 1){
+				rec.retChan <- &heapCommand{1,s.vec.Pop(),nil}
+			}
+			if(rec.command == 2){
+				deadServer := rec.server.(*server)
+				//find the server to remove
+				for cnt := 0; cnt < s.vec.Len(); cnt++ {
+
+					testserv := s.vec.At(cnt).(*server)
+					if(testserv.id == deadServer.id){
+						log.Printf("master: heap Handler: found server %d to delete\n", deadServer.id)
+
+						//find each chunk to modify
+						for cnt1 := 0; cnt1 < testserv.chunks.Len(); cnt1++{
+
+							tempchunk := testserv.chunks.At(cnt1).(*chunk)
+
+							//find the server to remove from EACH CHUNK LIST
+							for cnt2 := 0; cnt2 < tempchunk.servers.Len(); cnt2++ {
+
+								tempserv := tempchunk.servers.At(cnt2).(*server)
+								if(tempserv.id == deadServer.id){
+									tempchunk.servers.Delete(cnt2)
+								}
+							}	
+						}
+						prevCnt := s.vec.Len()
+						s.vec.Delete(cnt)
+						log.Printf("master: heap Handler: prev vec count %d, now %d\n", prevCnt, s.vec.Len())
+						break
+					}
+				}
+				heap.Init(s)
+				rec.retChan <- &heapCommand{}
+			}
+		case <- time.After(30 * 1000000000):
 			heap.Init(s)
-			rec.retChan <- &heapCommand{}
 		}
 	}
 }
