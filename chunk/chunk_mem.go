@@ -289,6 +289,7 @@ func SendHeartbeat(masterAddress string){
 			if err != nil {
 				log.Fatal("chunk call error:", err)
 			}
+			chunkServerID = bRet.ChunkServerID
 		} else if ret.ChunksToRemove != nil {
 			for i := 0; i < ret.ChunksToRemove.Len(); i++ {
 				chunkTable[ret.ChunksToRemove.At(i).(uint64)] = 
