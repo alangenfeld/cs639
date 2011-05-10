@@ -67,6 +67,7 @@ func (s * serverHeap) Remove(serv interface{}) {
 func (s * serverHeap) Handler() {
 	var rec *heapCommand
 
+	ticker := time.Tick(30 * 1000000000)
 	for{
 		select{
 		case rec = <- s.serverChan:
@@ -109,8 +110,11 @@ func (s * serverHeap) Handler() {
 				heap.Init(s)
 				rec.retChan <- &heapCommand{}
 			}
-		case <- time.After(30 * 1000000000):
+		case <- ticker :
+			log.Printf("master: scheduled reheap\n")
+			log.Printf("BEFORE \n %s \n", s.printPresent())
 			heap.Init(s)
+			log.Printf("AFTER  \n %s \n", s.printPresent())
 		}
 	}
 }
