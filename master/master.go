@@ -383,7 +383,7 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	
 	str := fmt.Sprintf("%s:%d", servAddr.IP.String(), servAddr.Port)
 	
-	old_server,check := addrToServerMap[servAddr.String()];
+	old_server,check := addrToServerMap[str];
 	if check{
 		err := RemoveServer(old_server)
 		if err != nil {
@@ -406,11 +406,11 @@ func AddServer(servAddr net.TCPAddr, capacity uint64) *server {
 	heartbeatMonitors[s.id] = make(chan int64)
 	heap.Push(sHeap, s)
 	servers[s.id] = s
-	addrToServerMap[servAddr.String()] = s
+	addrToServerMap[str] = s
 	
 	
 	_, test1 := servers[s.id]
-	_, test2 := addrToServerMap[servAddr.String()]
+	_, test2 := addrToServerMap[str]
 	
 
 		log.Printf("ADDSERVER :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str, s.id, test1, test2)
@@ -466,9 +466,10 @@ func RemoveServer(serv *server) os.Error {
 			return nil
 		}
 	}
-
+	str := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
+	
 	servers[serv.id] = &server{}, false
-	addrToServerMap[serv.addr.String()] = &server{}, false
+	addrToServerMap[str] = &server{}, false
 
 	str1 := fmt.Sprintf("removing server %s:%d", serv.addr.IP.String(), serv.addr.Port)
 	log.Printf("master: RemoveServer: begin %s\n", str1)
@@ -584,8 +585,9 @@ ChunkReplicate:	for cnt := 0; cnt < serv.chunks.Len(); {
 	log.Printf("master: RemoveServer: finished %s\n", str1)
 	log.Printf("master: RemoveServer: server heap post replication:\n%s\n", sHeap.printPresent())
 	
+	str2 := fmt.Sprintf("%s:%d", serv.addr.IP.String(), serv.addr.Port)
 	_, test1 := servers[serv.id]
-	_, test2 := addrToServerMap[serv.addr.String()]
+	_, test2 := addrToServerMap[str2]
 	
 	if test1 == true || test2 == true {
 		log.Printf("REMOVESERVER :: server (%s) with id (%d) :: serverMap (%v)  :: addrMap (%v)", str1, serv.id, test1, test2)
