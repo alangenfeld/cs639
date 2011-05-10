@@ -35,13 +35,10 @@ func (s * serverHeap) Len() int {
 func (s * serverHeap) Less(i, j int) bool { 
 	si := s.vec.At(i).(*server)
 	sj := s.vec.At(j).(*server)
-	if(si.chunks.Len() < 1 || sj.chunks.Len() < 1){
-		return true;
-	}else{
+	
 		//return (si.capacity/uint64(si.chunks.Len())) > (sj.capacity/uint64(sj.chunks.Len()))
 		return uint64(si.chunks.Len()) > uint64(sj.chunks.Len())
-	}
-	return false
+	
 }
 func (s * serverHeap) Swap(i, j int)      {
 	 s.vec.Swap(i,j)
